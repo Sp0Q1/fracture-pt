@@ -7,7 +7,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Security Services</h1>
-    <p class="page-subtitle">Professional offensive security services for European businesses</p>
+    <p class="page-subtitle">Everything below is part of the platform. Pick a plan and it's all included.</p>
 </div>
 
 {% if items %}
@@ -23,11 +23,6 @@
             <p>{{ item.description | truncate(length=200, end="...") }}</p>
             <div class="form-actions">
                 <a href="/services/{{ item.slug }}" class="button" data-variant="secondary">Learn More</a>
-                {% if item.is_automated %}
-                <a href="/api/auth/oidc/authorize" class="button">Start Scanning</a>
-                {% else %}
-                <a href="/engagements/new" class="button">Request Quote</a>
-                {% endif %}
             </div>
         </article>
         {% endfor %}
@@ -40,10 +35,11 @@
 {% endif %}
 
 <section class="cta-banner mt-6">
-    <h2>Not Sure Which Service You Need?</h2>
-    <p>Our security experts can help you identify the right approach for your organisation.</p>
-    <div class="form-actions">
-        <a href="/contact" class="button">Talk to an Expert</a>
+    <h2>Not Sure Where to Start?</h2>
+    <p>All services are included in our subscription plans. For standalone pentesting, use the scope wizard.</p>
+    <div class="cta-group">
+        <a href="/pricing" class="button cta-button">See Plans</a>
+        <a href="/scope" class="button outline">Scope a Pentest</a>
     </div>
 </section>
 {% endblock content %}

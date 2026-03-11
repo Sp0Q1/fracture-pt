@@ -24,67 +24,24 @@
         </div>
     </article>
 
-    {% if tiers | length > 0 %}
-    <div class="page-header mt-6">
-        <h2>Pricing</h2>
-        <p class="page-subtitle">Choose the plan that fits your organisation</p>
-    </div>
-
-    <div class="pricing-grid centered">
-        {% for tier in tiers %}
-        <article class="card card-accent pricing-card{% if tier.sort_order == 1 %} featured{% endif %}">
-            {% if tier.sort_order == 1 %}
-            <div class="featured-badge">Most Popular</div>
-            {% endif %}
-            <header>
-                <h3>{{ tier.name }}</h3>
-            </header>
-            <div class="pricing-amount">
-                {% if tier.price_cents > 0 %}
-                    <span class="price">&euro;{{ tier.price_cents / 100 }}</span>
-                    <span class="period">/{{ tier.billing_period }}</span>
-                {% else %}
-                    <span class="price">Custom</span>
-                    <span class="period">Contact us</span>
-                {% endif %}
-            </div>
-            <ul class="pricing-features">
-                {% if tier.max_targets > 0 %}
-                <li>Up to {{ tier.max_targets }} targets</li>
-                {% else %}
-                <li>Unlimited targets</li>
-                {% endif %}
-                {% if tier.max_scans_per_month == 1 %}
-                <li>Monthly scans</li>
-                {% elif tier.max_scans_per_month > 1 %}
-                <li>Weekly scans</li>
-                {% else %}
-                <li>Daily scans</li>
-                {% endif %}
-            </ul>
-            <div class="form-actions">
-                {% if tier.price_cents > 0 %}
-                <a href="/api/auth/oidc/authorize" class="button{% if tier.sort_order == 1 %} cta-button{% endif %}">Get Started</a>
-                {% else %}
-                <a href="/contact" class="button" data-variant="secondary">Contact Sales</a>
-                {% endif %}
-            </div>
-        </article>
-        {% endfor %}
-    </div>
-    {% endif %}
-
+    {% if not service.is_automated %}
     <section class="cta-banner mt-6">
-        <h2>Ready to Get Started?</h2>
-        <p>Secure your infrastructure with EU-based security testing.</p>
+        <h2>Scope Your Engagement</h2>
+        <p>Configure your pentest, pick approach and scope, and get an instant price estimate.</p>
         <div class="cta-group">
-            {% if service.is_automated %}
-            <a href="/free-scan" class="button cta-button">Start Free Scan</a>
-            {% else %}
-            <a href="/engagements/new" class="button cta-button">Request a Quote</a>
-            {% endif %}
+            <a href="/scope" class="button cta-button">Open Scope Wizard</a>
             <a href="/contact" class="button outline">Talk to an Expert</a>
         </div>
     </section>
+    {% else %}
+    <section class="cta-banner mt-6">
+        <h2>Included in Every Plan</h2>
+        <p>Vulnerability scanning and attack surface mapping are part of all subscriptions, starting at &euro;99/month.</p>
+        <div class="cta-group">
+            <a href="/pricing" class="button cta-button">See Plans</a>
+            <a href="/free-scan" class="button outline">Try Free Scan</a>
+        </div>
+    </section>
+    {% endif %}
 </div>
 {% endblock content %}
