@@ -3,12 +3,13 @@
 {% block title %}Invoices -- GetHacked{% endblock title %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Invoices <span class="badge secondary">{{ items | length }}</span></h1>
-    <p class="page-subtitle">{{ org_name | default(value="") }}</p>
-</div>
+<div class="container">
+    <div class="page-header">
+        <h1>Invoices <span class="badge secondary">{{ items | length }}</span></h1>
+        <p class="page-subtitle">{{ org_name | default(value="") }}</p>
+    </div>
 
-{% if items %}
+    {% if items %}
     <table>
         <thead>
             <tr>
@@ -53,5 +54,6 @@
         <h3>No Invoices</h3>
         <p>Invoices will appear here when you have active subscriptions or completed engagements.</p>
     </article>
-{% endif %}
+    {% endif %}
+</div>
 {% endblock content %}

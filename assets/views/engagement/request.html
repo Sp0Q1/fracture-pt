@@ -5,10 +5,11 @@
 {% block page_title_block %}{% endblock page_title_block %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Request a Penetration Test</h1>
-    <p class="page-subtitle">Define the scope for your engagement in {{ org_name | default(value="your organization") }}</p>
-</div>
+<div class="container">
+    <div class="page-header">
+        <h1>Request a Penetration Test</h1>
+        <p class="page-subtitle">Define the scope for your engagement in {{ org_name | default(value="your organization") }}</p>
+    </div>
 
 <article class="card form-card">
     <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
@@ -83,4 +84,5 @@
         </div>
     </form>
 </article>
+</div>
 {% endblock content %}

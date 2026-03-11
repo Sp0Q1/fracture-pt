@@ -1,14 +1,16 @@
 use async_trait::async_trait;
-use axum::{Router as AxumRouter, middleware, http::{header, HeaderName}, response::Response};
+use axum::{
+    http::{header, HeaderName},
+    middleware,
+    response::Response,
+    Router as AxumRouter,
+};
 use loco_rs::{
     app::{AppContext, Initializer},
     Result,
 };
 
-async fn set_security_headers(
-    request: axum::extract::Request,
-    next: middleware::Next,
-) -> Response {
+async fn set_security_headers(request: axum::extract::Request, next: middleware::Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
 
@@ -20,14 +22,8 @@ async fn set_security_headers(
             .parse()
             .unwrap(),
     );
-    headers.insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        "nosniff".parse().unwrap(),
-    );
-    headers.insert(
-        header::X_FRAME_OPTIONS,
-        "DENY".parse().unwrap(),
-    );
+    headers.insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
+    headers.insert(header::X_FRAME_OPTIONS, "DENY".parse().unwrap());
     headers.insert(
         header::REFERRER_POLICY,
         "strict-origin-when-cross-origin".parse().unwrap(),
