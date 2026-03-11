@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Services -- GetHacked{% endblock title %}
+
+{% block meta_description %}Professional penetration testing, automated vulnerability scanning, and red team exercises. EU-based offensive security from GetHacked.eu.{% endblock meta_description %}
+
+{% block content %}
+<div class="service-list">
+    <div class="page-header">
+        <h1>Security Services</h1>
+        <p class="page-subtitle">Everything below is part of the platform. Pick a plan and it's all included.</p>
+    </div>
+
+    {% if items %}
+        <div class="service-grid">
+            {% for item in items %}
+            <article class="card card-accent">
+                <header>
+                    <h3>{{ item.name }}</h3>
+                    <span class="badge {% if item.category == 'automated' %}primary{% elif item.category == 'manual' %}warning{% else %}secondary{% endif %}">
+                        {{ item.category }}
+                    </span>
+                </header>
+                <p>{{ item.description | truncate(length=200, end="...") }}</p>
+                <div class="form-actions">
+                    <a href="/services/{{ item.slug }}" class="button" data-variant="secondary">Learn More</a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <article class="card empty-state">
+            <h3>Services Coming Soon</h3>
+            <p>Our service catalog is being prepared. Check back shortly.</p>
+        </article>
+    {% endif %}
+
+    <section class="cta-banner mt-6">
+        <h2>Not Sure Where to Start?</h2>
+        <p>All services are included in our subscription plans. For standalone pentesting, use the scope wizard.</p>
+        <div class="cta-group">
+            <a href="/pricing" class="button cta-button">See Plans</a>
+            <a href="/scope" class="button outline">Scope a Pentest</a>
+        </div>
+    </section>
+</div>
+{% endblock content %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Add Target -- GetHacked{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Add Scan Target</h1>
+        <p class="page-subtitle">Register a target in {{ org_name | default(value="your organization") }}</p>
+    </div>
+
+<article class="card form-card">
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/targets" method="post">
+        <div data-field>
+            <label for="target_type">Target Type</label>
+            <select id="target_type" name="target_type" required>
+                <option value="domain">Domain</option>
+                <option value="ip">IP Address</option>
+                <option value="cidr">CIDR Range</option>
+                <option value="url">URL</option>
+            </select>
+        </div>
+        <div data-field>
+            <label for="hostname">Hostname</label>
+            <input id="hostname" name="hostname" type="text" placeholder="example.com" />
+        </div>
+        <div data-field>
+            <label for="ip_address">IP Address</label>
+            <input id="ip_address" name="ip_address" type="text" placeholder="93.184.216.34" />
+        </div>
+        <div data-field>
+            <label for="label">Label</label>
+            <input id="label" name="label" type="text" placeholder="Production Web Server" />
+            <small data-hint>A friendly name for this target.</small>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Add Target</button>
+            <a href="/targets" class="button" data-variant="secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+</div>
+{% endblock content %}

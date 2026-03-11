@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }} -- GetHacked{% endblock title %}
+
+{% block meta_description %}{{ service.description | truncate(length=160, end="...") }}{% endblock meta_description %}
+
+{% block content %}
+<div class="service-page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/services">Services</a>
+        <span class="separator" aria-hidden="true">/</span>
+        <span aria-current="page">{{ service.name }}</span>
+    </nav>
+
+    <article class="card detail-card">
+        <header>
+            <h2>{{ service.name }}</h2>
+            <span class="badge {% if service.category == 'automated' %}primary{% elif service.category == 'manual' %}warning{% else %}secondary{% endif %}">
+                {{ service.category }}
+            </span>
+        </header>
+        <div class="service-description">
+            {{ service.description }}
+        </div>
+    </article>
+
+    {% if not service.is_automated %}
+    <section class="cta-banner mt-6">
+        <h2>Scope Your Engagement</h2>
+        <p>Configure your pentest, pick approach and scope, and get an instant price estimate.</p>
+        <div class="cta-group">
+            <a href="/scope" class="button cta-button">Open Scope Wizard</a>
+            <a href="/contact" class="button outline">Talk to an Expert</a>
+        </div>
+    </section>
+    {% else %}
+    <section class="cta-banner mt-6">
+        <h2>Included in Every Plan</h2>
+        <p>Vulnerability scanning and attack surface mapping are part of all subscriptions, starting at &euro;99/month.</p>
+        <div class="cta-group">
+            <a href="/pricing" class="button cta-button">See Plans</a>
+            <a href="/free-scan" class="button outline">Try Free Scan</a>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock content %}

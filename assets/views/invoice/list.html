@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Invoices -- GetHacked{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Invoices <span class="badge secondary">{{ items | length }}</span></h1>
+        <p class="page-subtitle">{{ org_name | default(value="") }}</p>
+    </div>
+
+    {% if items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Issued</th>
+                <th>Due</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+           {% for item in items %}
+            <tr>
+                <td>#{{ item.pid | truncate(length=8, end="") }}</td>
+                <td>
+                    {% if item.amount_cents %}
+                        &euro;{{ item.amount_cents | divided_by(divisor=100) }}
+                        <small>{{ item.currency | default(value="EUR") | upper }}</small>
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge {% if item.status == 'paid' %}success{% elif item.status == 'overdue' %}danger{% elif item.status == 'sent' %}warning{% else %}secondary{% endif %}">
+                        {{ item.status }}
+                    </span>
+                </td>
+                <td>{% if item.issued_at %}{{ item.issued_at | date(format="%Y-%m-%d") }}{% else %}--{% endif %}</td>
+                <td>{% if item.due_at %}{{ item.due_at | date(format="%Y-%m-%d") }}{% else %}--{% endif %}</td>
+                <td>
+                    {% if item.pdf_path %}
+                    <a href="{{ item.pdf_path }}" class="button small" data-variant="secondary" download>PDF</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <article class="card empty-state">
+        <h3>No Invoices</h3>
+        <p>Invoices will appear here when you have active subscriptions or completed engagements.</p>
+    </article>
+    {% endif %}
+</div>
+{% endblock content %}

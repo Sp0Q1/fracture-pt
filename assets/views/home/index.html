@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}GetHacked.eu | EU-Based Penetration Testing & Security Platform{% endblock title %}
+{% block meta_description %}Offensive security platform with real-time findings. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. Transparent process, SSO on every plan. From EUR 99/mo.{% endblock meta_description %}
+
+{% block content %}
+{% if user_name %}
+
+    <div class="container dashboard-home">
+        <div class="page-header">
+            <div class="hstack">
+                <div>
+                    <h1>Welcome back, {{ user_name }}</h1>
+                    <p class="page-subtitle">{% if org_name %}{{ org_name }}{% else %}Select an organisation{% endif %}</p>
+                </div>
+                <a href="/engagements/new" class="button cta-button">Request Pentest</a>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-4">
+                <article class="card stat-card card-accent">
+                    <div class="stat-number">{{ scan_count | default(value=0) }}</div>
+                    <div class="stat-label">Scans</div>
+                </article>
+            </div>
+            <div class="col-4">
+                <article class="card stat-card card-accent">
+                    <div class="stat-number">{{ engagement_count | default(value=0) }}</div>
+                    <div class="stat-label">Pentests</div>
+                </article>
+            </div>
+            <div class="col-4">
+                <article class="card stat-card card-accent">
+                    <div class="stat-number"><span class="badge success">Active</span></div>
+                    <div class="stat-label">Session</div>
+                </article>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <article class="card card-accent">
+                    <header>Scans</header>
+                    <p>Run automated vulnerability scans on your targets.</p>
+                    <a href="/targets" class="button outline">View Scans</a>
+                </article>
+            </div>
+            <div class="col-6">
+                <article class="card card-accent">
+                    <header>Pentests</header>
+                    <p>Manage your penetration testing engagements.</p>
+                    <a href="/engagements" class="button outline">View Pentests</a>
+                </article>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+
+    <section class="hero">
+        <h1><span class="gradient-text">Know Your Weaknesses</span><br>Before Attackers Do.</h1>
+        <p class="subtitle">Penetration testing, vulnerability scanning, and attack surface mapping &mdash; all in one platform. Real-time findings, transparent reporting, and a security team that works with you, not around you.</p>
+        <div class="cta-group">
+            <a href="/free-scan" class="button large cta-button">Start Free Scan</a>
+            <a href="/pricing" class="button outline large">View Pricing Plans</a>
+        </div>
+        <div class="trust-section">
+            <div class="trust-badges">
+                <span class="badge outline">Real-Time Findings</span>
+                <span class="badge outline">Offensive Security Experts</span>
+                <span class="badge outline">Transparent Process</span>
+                <span class="badge outline">100% EU-Hosted</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="services-grid">
+        <h2>Offensive Security, Done Right</h2>
+        <p class="section-subtitle">Comprehensive security testing services with real-time visibility into every step.</p>
+        <div class="row">
+            <div class="col-4">
+                <article class="card card-accent">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <header>Vulnerability Scanning</header>
+                    <p>Continuous automated scanning with instant alerts. Deep threat detection engine, scheduled scans, and trending.</p>
+                    <a href="/services/scanning">Learn more &rarr;</a>
+                </article>
+            </div>
+            <div class="col-4">
+                <article class="card card-accent">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/>
+                        </svg>
+                    </div>
+                    <header>Penetration Testing</header>
+                    <p>Expert-led manual testing by experienced security researchers. Web apps, APIs, networks, and cloud infrastructure.</p>
+                    <a href="/services/pentesting">Learn more &rarr;</a>
+                </article>
+            </div>
+            <div class="col-4">
+                <article class="card card-accent">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                        </svg>
+                    </div>
+                    <header>Red Teaming</header>
+                    <p>Full-scope adversary simulation. Social engineering, physical access, and technical exploitation chained together.</p>
+                    <a href="/services/red-team">Learn more &rarr;</a>
+                </article>
+            </div>
+        </div>
+        <article class="card card-accent asm-featured">
+            <div class="asm-featured-inner">
+                <div class="asm-featured-content">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><circle cx="11" cy="11" r="3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <header>Attack Surface Mapping</header>
+                        <p>Discover your external exposure before attackers do. Subdomains, open ports, certificates, and shadow IT &mdash; mapped continuously and monitored around the clock.</p>
+                    </div>
+                </div>
+                <div class="asm-featured-cta">
+                    <a href="/free-scan" class="button cta-button">Try Free Scan</a>
+                    <a href="/services/attack-surface-mapping">Learn more &rarr;</a>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="platform-showcase">
+        <h2>See Every Finding As It Happens</h2>
+        <p class="section-subtitle">Your pentesters report directly into the platform. You see findings the moment they're discovered &mdash; no waiting for the final report.</p>
+        <div class="platform-mock">
+            <div class="mock-topbar">
+                <span class="mock-title">Engagement: Web Application Pentest &mdash; Q1 2026</span>
+                <span class="badge outline small">In Progress</span>
+            </div>
+            <div class="mock-stats">
+                <div class="mock-stat">
+                    <span class="mock-stat-num red">4</span>
+                    <span class="mock-stat-label">Extreme</span>
+                </div>
+                <div class="mock-stat">
+                    <span class="mock-stat-num orange">7</span>
+                    <span class="mock-stat-label">High</span>
+                </div>
+                <div class="mock-stat">
+                    <span class="mock-stat-num yellow">12</span>
+                    <span class="mock-stat-label">Elevated</span>
+                </div>
+                <div class="mock-stat">
+                    <span class="mock-stat-num blue">3</span>
+                    <span class="mock-stat-label">Moderate</span>
+                </div>
+                <div class="mock-stat">
+                    <span class="mock-stat-num muted">1</span>
+                    <span class="mock-stat-label">Low</span>
+                </div>
+            </div>
+            <div class="mock-findings">
+                <div class="mock-finding">
+                    <span class="mock-severity severity-extreme">Extreme</span>
+                    <span class="mock-finding-title">SQL Injection in /api/v2/users search parameter</span>
+                    <span class="mock-finding-meta">Tester A &middot; 2 min ago</span>
+                </div>
+                <div class="mock-finding">
+                    <span class="mock-severity severity-high">High</span>
+                    <span class="mock-finding-title">Missing rate limiting on authentication endpoint</span>
+                    <span class="mock-finding-meta">Tester B &middot; 18 min ago</span>
+                </div>
+                <div class="mock-finding">
+                    <span class="mock-severity severity-elevated">Elevated</span>
+                    <span class="mock-finding-title">Outdated TLS 1.0 still enabled on staging server</span>
+                    <span class="mock-finding-meta">Tester A &middot; 43 min ago</span>
+                </div>
+                <div class="mock-finding">
+                    <span class="mock-severity severity-moderate">Moderate</span>
+                    <span class="mock-finding-title">Missing Content-Security-Policy header on /dashboard</span>
+                    <span class="mock-finding-meta">Tester C &middot; 1 hr ago</span>
+                </div>
+            </div>
+        </div>
+        <div class="platform-detail-mock">
+            <div class="mock-topbar">
+                <span class="mock-severity severity-extreme">Extreme</span>
+                <span class="mock-title">SQL Injection in /api/v2/users search parameter</span>
+            </div>
+            <div class="mock-detail-body">
+                <div class="mock-detail-section">
+                    <h4>Description</h4>
+                    <p>The <code>search</code> query parameter on the <code>/api/v2/users</code> endpoint is directly concatenated into a SQL query without parameterisation. An attacker can extract the entire database contents, including user credentials and session tokens.</p>
+                </div>
+                <div class="mock-detail-section">
+                    <h4>Reproduction Steps</h4>
+                    <ol>
+                        <li>Send a GET request to <code>/api/v2/users?search=test' UNION SELECT ...</code></li>
+                        <li>Observe that the response includes data from other database tables</li>
+                        <li>Automated extraction confirmed with sqlmap</li>
+                    </ol>
+                </div>
+                <div class="mock-detail-section">
+                    <h4>Recommendation</h4>
+                    <p>Use parameterised queries or prepared statements for all database interactions. Apply input validation and restrict the character set for search parameters.</p>
+                </div>
+            </div>
+        </div>
+        <div class="row platform-features">
+            <div class="col-4">
+                <div class="card card-accent platform-feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <h3>Live Findings Feed</h3>
+                    <p>Pentesters log vulnerabilities as they discover them. Each finding appears on your dashboard instantly.</p>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card card-accent platform-feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    </div>
+                    <h3>Real-Time Dashboard</h3>
+                    <p>Severity breakdown, engagement progress, and findings count &mdash; always up to date, at a glance.</p>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card card-accent platform-feature-card">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <h3>Start Fixing Immediately</h3>
+                    <p>Your dev team can start addressing critical findings while the pentest is still in progress.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <h2>From Scope to Secure</h2>
+        <p class="section-subtitle">Our end-to-end pentest workflow keeps everything in one platform.</p>
+        <div class="steps">
+            <div class="step">
+                <span class="step-number">1</span>
+                <div class="step-content">
+                    <h3>Define Your Scope</h3>
+                    <p>Log in and describe what needs testing. Our <a href="/scope">guided scope wizard</a> walks you through declaring target systems, IP ranges, domains, testing windows, and exclusions.</p>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <div class="step-content">
+                    <h3>Receive Your Offer</h3>
+                    <p>Our team reviews your scope and creates a tailored offer with pricing, timeline, and deliverables &mdash; delivered directly in your dashboard.</p>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <div class="step-content">
+                    <h3>Accept and Engage</h3>
+                    <p>Accept the offer and your engagement is created instantly. Your dedicated pentest team is assigned and ready to begin within the agreed testing window.</p>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                <div class="step-content">
+                    <h3>Watch Findings Come In</h3>
+                    <p>During the engagement, pentesters log findings in real time. Each finding includes a business-level description, technical reproduction steps, impact assessment, and remediation recommendation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">5</span>
+                <div class="step-content">
+                    <h3>Download Your Report</h3>
+                    <p>When testing is complete, all findings compile into a comprehensive, downloadable report with technical detail, severity ratings, and remediation guidance. Ready to share with your team or stakeholders.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing-section">
+        <h2>Continuous Security Monitoring</h2>
+        <p class="section-subtitle">Attack surface mapping, automated vulnerability scanning, and manual testing hours &mdash; all in one subscription.</p>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="tier-name">Recon</div>
+                <div class="tier-tagline">Know your attack surface.</div>
+                <div class="tier-price">&euro;99 <small>/month</small></div>
+                <div class="tier-period"><span class="annual-save">&euro;990/yr &mdash; save 17%</span></div>
+                <ul class="tier-features">
+                    <li>Single domain</li>
+                    <li>Continuous attack surface mapping</li>
+                    <li>Subdomain &amp; shadow IT discovery</li>
+                    <li>Certificate monitoring</li>
+                    <li>Monthly vulnerability scan</li>
+                    <li>Deep threat detection engine</li>
+                    <li>PDF reporting &amp; email alerts</li>
+                    <li>SSO (OIDC) included</li>
+                </ul>
+                <a href="/api/auth/oidc/authorize" class="button outline w-100 tier-cta">Start with Recon</a>
+            </div>
+            <div class="pricing-card">
+                <div class="tier-name">Strike</div>
+                <div class="tier-tagline">Scanning plus manual review.</div>
+                <div class="tier-price">&euro;299 <small>/month</small></div>
+                <div class="tier-period"><span class="annual-save">&euro;2,990/yr &mdash; save 17%</span></div>
+                <ul class="tier-features">
+                    <li>Everything in Recon, plus:</li>
+                    <li>Weekly automated scanning</li>
+                    <li>2 hours manual testing/month</li>
+                    <li>Vulnerability trending</li>
+                    <li>API access for CI/CD</li>
+                </ul>
+                <a href="/api/auth/oidc/authorize" class="button outline w-100 tier-cta">Choose Strike</a>
+            </div>
+            <div class="pricing-card featured">
+                <span class="tier-badge">Most Popular</span>
+                <div class="tier-name">Offensive</div>
+                <div class="tier-tagline">Dedicated pentesting included.</div>
+                <div class="tier-price">&euro;499 <small>/month</small></div>
+                <div class="tier-period"><span class="annual-save">&euro;4,990/yr &mdash; save 17%</span></div>
+                <ul class="tier-features">
+                    <li>Everything in Strike, plus:</li>
+                    <li>Multi-domain coverage</li>
+                    <li>4 hours manual pentesting/month</li>
+                    <li>Source code review</li>
+                    <li>Custom scan profiles</li>
+                    <li>Remediation tracking</li>
+                    <li>Priority support (24h SLA)</li>
+                </ul>
+                <a href="/api/auth/oidc/authorize" class="button w-100 tier-cta">Go Offensive</a>
+            </div>
+            <div class="pricing-card">
+                <div class="tier-name">Enterprise</div>
+                <div class="tier-tagline">Full-spectrum security at scale.</div>
+                <div class="tier-price">Custom</div>
+                <div class="tier-period">Tailored to your needs</div>
+                <ul class="tier-features">
+                    <li>Everything in Offensive, plus:</li>
+                    <li>Bundled pentest days/month</li>
+                    <li>Red team exercises</li>
+                    <li>Incident response retainer</li>
+                    <li>Dedicated account manager</li>
+                    <li>On-premises deployment</li>
+                    <li>SLA-backed support (4h response)</li>
+                </ul>
+                <a href="/contact" class="button outline w-100 tier-cta">Contact Sales</a>
+            </div>
+        </div>
+        <div class="text-center mt-4 mb-4">
+            <a href="/pricing">See full feature comparison &rarr;</a>
+        </div>
+        <div class="row callout-row">
+            <div class="col-6">
+                <div class="card card-accent callout-card">
+                    <h3>Standalone Penetration Test</h3>
+                    <p>No subscription needed. Configure a one-off pentest engagement and get an instant price estimate.</p>
+                    <a href="/scope" class="button cta-button">Scope Your Pentest</a>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card card-accent callout-card">
+                    <h3>Incident Response</h3>
+                    <p>Already breached? Our IR team is available on retainer for Enterprise clients, or on-demand for anyone.</p>
+                    <a href="/contact" class="button outline">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="urgency-banner">
+        <h3>Your Attack Surface Is Growing Every Day</h3>
+        <p>Every new deployment, every API endpoint, every cloud resource expands your attack surface. Attackers are scanning your infrastructure right now. The question is whether you found the vulnerabilities first.</p>
+        <a href="/api/auth/oidc/authorize" class="button outline">Map Your Attack Surface</a>
+    </div>
+
+    <section class="cta-banner">
+        <h2>Ready to Find Your Vulnerabilities?</h2>
+        <p>Start with a free scan or talk to our security team about a managed engagement.</p>
+        <div class="cta-group">
+            <a href="/free-scan" class="button large cta-button">Start Free Scan</a>
+            <a href="/contact" class="button outline large">Talk to Our Team</a>
+        </div>
+    </section>
+
+{% endif %}
+{% endblock content %}

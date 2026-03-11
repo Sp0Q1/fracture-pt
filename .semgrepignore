@@ -1,0 +1,9 @@
+# Development-only secrets (local Zitadel instance)
+.env
+.env.*
+
+# Build artifacts
+target/
+
+# Dependencies
+node_modules/

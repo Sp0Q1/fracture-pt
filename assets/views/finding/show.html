@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} -- GetHacked{% endblock title %}
+
+{% block content %}
+<div class="container">
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/findings">Findings</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ item.title }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header>
+        <h2>{{ item.title }}</h2>
+        <span class="badge {% if item.severity == 'extreme' %}danger{% elif item.severity == 'high' %}warning{% elif item.severity == 'elevated' %}primary{% elif item.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
+            {{ item.severity }}
+        </span>
+    </header>
+
+    <div class="detail-row">
+        <span class="detail-label">Category</span>
+        <span class="detail-value">{{ item.category | replace(from="_", to=" ") }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value"><span class="badge secondary">{{ item.status }}</span></span>
+    </div>
+    {% if item.cve_id %}
+    <div class="detail-row">
+        <span class="detail-label">CVE ID</span>
+        <span class="detail-value"><code>{{ item.cve_id }}</code></span>
+    </div>
+    {% endif %}
+    {% if item.affected_asset %}
+    <div class="detail-row">
+        <span class="detail-label">Affected Asset</span>
+        <span class="detail-value"><code>{{ item.affected_asset }}</code></span>
+    </div>
+    {% endif %}
+
+    <h3>Description</h3>
+    <p>{{ item.description }}</p>
+
+    {% if item.technical_description %}
+    <h3>Technical Description</h3>
+    <pre>{{ item.technical_description }}</pre>
+    {% endif %}
+
+    {% if item.impact %}
+    <h3>Impact</h3>
+    <p>{{ item.impact }}</p>
+    {% endif %}
+
+    {% if item.recommendation %}
+    <h3>Recommendation</h3>
+    <p>{{ item.recommendation }}</p>
+    {% endif %}
+
+    {% if item.evidence %}
+    <h3>Evidence</h3>
+    <pre>{{ item.evidence }}</pre>
+    {% endif %}
+
+    <div class="form-actions">
+        <a href="/findings" class="button" data-variant="secondary">Back to Findings</a>
+    </div>
+</article>
+</div>
+{% endblock content %}

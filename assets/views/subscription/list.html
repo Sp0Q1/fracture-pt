@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Subscriptions -- GetHacked{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Subscriptions <span class="badge secondary">{{ items | length }}</span></h1>
+        <p class="page-subtitle">{{ org_name | default(value="") }}</p>
+    </div>
+
+    {% if items %}
+        <table class="clickable-rows">
+            <thead>
+                <tr>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Expires</th>
+                </tr>
+            </thead>
+            <tbody>
+               {% for item in items %}
+                <tr>
+                    <td>Tier #{{ item.tier_id }}</td>
+                    <td>
+                        <span class="badge {% if item.status == 'active' %}success{% elif item.status == 'past_due' %}danger{% elif item.status == 'trialing' %}primary{% else %}secondary{% endif %}">
+                            {{ item.status | replace(from="_", to=" ") }}
+                        </span>
+                    </td>
+                    <td>{{ item.starts_at | date(format="%Y-%m-%d") }}</td>
+                    <td>{% if item.expires_at %}{{ item.expires_at | date(format="%Y-%m-%d") }}{% else %}--{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <article class="card empty-state">
+            <h3>No Active Subscriptions</h3>
+            <p>Browse our services and choose a plan that fits your needs.</p>
+            <a href="/services" class="button">View Services</a>
+        </article>
+    {% endif %}
+</div>
+{% endblock content %}

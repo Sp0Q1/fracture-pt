@@ -1,0 +1,52 @@
+[workspace]
+members = [".", "migration"]
+
+[package]
+name = "gethacked"
+description = "EU-focused pentesting and security services portal"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+default-run = "gethacked-cli"
+
+[workspace.dependencies]
+loco-rs = { version = "0.16" }
+sea-orm = { version = "1.1", features = [
+  "sqlx-sqlite",
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+  "macros",
+] }
+
+[dependencies]
+loco-rs = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+tokio = { version = "1.50", default-features = false, features = [
+  "rt-multi-thread",
+] }
+async-trait = { version = "0.1" }
+axum = { version = "0.8" }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+migration = { path = "migration" }
+fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms" }
+sea-orm = { workspace = true }
+chrono = { version = "0.4" }
+uuid = { version = "1.22", features = ["v4"] }
+fluent-templates = { version = "0.13", features = ["tera"] }
+unic-langid = { version = "0.9" }
+axum-extra = { version = "0.10", features = ["form", "cookie"] }
+slug = { version = "0.1" }
+
+[[bin]]
+name = "gethacked-cli"
+path = "src/bin/main.rs"
+required-features = []
+
+[dev-dependencies]
+loco-rs = { workspace = true, features = ["testing"] }
+serial_test = { version = "3.4" }
+rstest = { version = "0.26" }
+insta = { version = "1.46", features = ["redactions", "yaml", "filters"] }

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} -- GetHacked{% endblock title %}
+
+{% block page_title_block %}{% endblock page_title_block %}
+
+{% block content %}
+<div class="container">
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/engagements">Engagements</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ item.title }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header>
+        <h2>{{ item.title }}</h2>
+        <span class="badge {% if item.status == 'delivered' or item.status == 'closed' %}success{% elif item.status == 'in_progress' %}primary{% elif item.status == 'cancelled' %}danger{% elif item.status == 'offer_sent' %}warning{% else %}secondary{% endif %}">
+            {{ item.status | replace(from="_", to=" ") }}
+        </span>
+    </header>
+
+    <div class="detail-row">
+        <span class="detail-label">Requested</span>
+        <span class="detail-value">{{ item.requested_at | date(format="%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% if item.starts_at %}
+    <div class="detail-row">
+        <span class="detail-label">Started</span>
+        <span class="detail-value">{{ item.starts_at | date(format="%Y-%m-%d") }}</span>
+    </div>
+    {% endif %}
+    {% if item.completed_at %}
+    <div class="detail-row">
+        <span class="detail-label">Completed</span>
+        <span class="detail-value">{{ item.completed_at | date(format="%Y-%m-%d") }}</span>
+    </div>
+    {% endif %}
+
+    <h3>Scope</h3>
+    <div class="detail-row">
+        <span class="detail-label">Target Systems</span>
+        <span class="detail-value">{{ item.target_systems }}</span>
+    </div>
+    {% if item.ip_ranges %}
+    <div class="detail-row">
+        <span class="detail-label">IP Ranges</span>
+        <span class="detail-value"><pre>{{ item.ip_ranges }}</pre></span>
+    </div>
+    {% endif %}
+    {% if item.domains %}
+    <div class="detail-row">
+        <span class="detail-label">Domains</span>
+        <span class="detail-value"><pre>{{ item.domains }}</pre></span>
+    </div>
+    {% endif %}
+    {% if item.exclusions %}
+    <div class="detail-row">
+        <span class="detail-label">Exclusions</span>
+        <span class="detail-value">{{ item.exclusions }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+        <span class="detail-label">Contact</span>
+        <span class="detail-value">{{ item.contact_name }} &lt;{{ item.contact_email }}&gt;</span>
+    </div>
+</article>
+
+{% if offers | length > 0 %}
+<div class="page-header mt-6">
+    <h2>Offers</h2>
+</div>
+{% for offer in offers %}
+<article class="card">
+    <div class="detail-row">
+        <span class="detail-label">Amount</span>
+        <span class="detail-value"><strong>{{ offer.currency }} {{ offer.amount_cents / 100 }}</strong></span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Timeline</span>
+        <span class="detail-value">{{ offer.timeline_days }} business days</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Deliverables</span>
+        <span class="detail-value">{{ offer.deliverables }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Valid Until</span>
+        <span class="detail-value">{{ offer.valid_until | date(format="%Y-%m-%d") }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+            <span class="badge {% if offer.status == 'accepted' %}success{% elif offer.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                {{ offer.status }}
+            </span>
+        </span>
+    </div>
+    {% if offer.status == "pending" and item.status == "offer_sent" %}
+    <div class="form-actions mt-4">
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/engagements/{{ item.pid }}/respond" method="post" class="d-inline">
+            <input type="hidden" name="action" value="accept" />
+            <button type="submit">Accept Offer</button>
+        </form>
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/engagements/{{ item.pid }}/respond" method="post" class="d-inline">
+            <input type="hidden" name="action" value="negotiate" />
+            <div data-field class="d-inline-block">
+                <input name="response_text" type="text" placeholder="Counter-proposal or comments..." />
+            </div>
+            <button type="submit" data-variant="secondary">Negotiate</button>
+        </form>
+    </div>
+    {% endif %}
+</article>
+{% endfor %}
+{% endif %}
+
+{% if findings | length > 0 %}
+<div class="page-header mt-6">
+    <h2>Findings <span class="badge secondary">{{ findings | length }}</span></h2>
+</div>
+<table class="clickable-rows">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Severity</th>
+            <th>Category</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for finding in findings %}
+        <tr data-href="/findings/{{ finding.pid }}">
+            <td>{{ finding.title }}</td>
+            <td>
+                <span class="badge {% if finding.severity == 'extreme' %}danger{% elif finding.severity == 'high' %}warning{% elif finding.severity == 'elevated' %}primary{% elif finding.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
+                    {{ finding.severity }}
+                </span>
+            </td>
+            <td>{{ finding.category | replace(from="_", to=" ") }}</td>
+            <td>{{ finding.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+</div>
+{% endblock content %}
