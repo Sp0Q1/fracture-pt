@@ -1,0 +1,7 @@
+target/
+.git/
+data/
+*.sqlite
+*.sqlite-journal
+.env
+.env.*

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Get a Security Assessment Quote | GetHacked.eu{% endblock title %}
+{% block meta_description %}Request a tailored penetration testing quote for your EU business. Fast response, transparent pricing, and offensive security from an EU-based team.{% endblock meta_description %}
+
+{% block content %}
+<section class="contact-hero">
+    <h1>Get in <span class="gradient-text">Touch</span></h1>
+    <p class="subtitle">Whether you need a custom quote, have a question about our services, or want to discuss your security requirements, we are here to help.</p>
+</section>
+
+<div class="row contact-grid">
+    <div class="col-8">
+        <article class="card card-accent">
+            <header>Send Us a Message</header>
+            <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+            <form action="/api/contact" method="post" class="contact-form">
+                <div class="row">
+                    <div class="col-6">
+                        <label for="contact-name">Full Name <span class="required">*</span></label>
+                        <input type="text" id="contact-name" name="name" required autocomplete="name">
+                    </div>
+                    <div class="col-6">
+                        <label for="contact-email">Work Email <span class="required">*</span></label>
+                        <input type="email" id="contact-email" name="email" required autocomplete="email">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label for="contact-company">Company</label>
+                        <input type="text" id="contact-company" name="company" autocomplete="organization">
+                    </div>
+                    <div class="col-6">
+                        <label for="contact-subject">Subject <span class="required">*</span></label>
+                        <select id="contact-subject" name="subject" required>
+                            <option value="">Select a topic...</option>
+                            <option value="quote">Request a Quote</option>
+                            <option value="enterprise">Enterprise Inquiry</option>
+                            <option value="pentest">Managed Pentest Engagement</option>
+                            <option value="red-team">Red Team Exercise</option>
+                            <option value="partnership">Partnership</option>
+                            <option value="support">Technical Support</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <label for="contact-message">Message <span class="required">*</span></label>
+                <textarea id="contact-message" name="message" rows="6" required placeholder="Tell us about your security needs, target scope, or any questions you have..."></textarea>
+                <div class="form-actions">
+                    <button type="submit" class="button cta-button">Send Message</button>
+                </div>
+                <p class="form-note"><small>We typically respond within one business day. Your data is processed in accordance with our <a href="/legal/privacy">Privacy Policy</a>.</small></p>
+            </form>
+        </article>
+    </div>
+    <div class="col-4">
+        <article class="card card-accent contact-info-card">
+            <header>Contact Information</header>
+            <div class="contact-info-item">
+                <h4>Email</h4>
+                <p><a href="mailto:hello@gethacked.eu">hello@gethacked.eu</a></p>
+            </div>
+            <div class="contact-info-item">
+                <h4>Sales</h4>
+                <p><a href="mailto:sales@gethacked.eu">sales@gethacked.eu</a></p>
+            </div>
+            <div class="contact-info-item">
+                <h4>Security</h4>
+                <p><a href="mailto:security@gethacked.eu">security@gethacked.eu</a></p>
+            </div>
+            <div class="contact-info-item">
+                <h4>Location</h4>
+                <p>European Union<br>
+                Infrastructure: Germany &amp; Netherlands</p>
+            </div>
+        </article>
+
+        <article class="card card-accent mt-4">
+            <header>Quick Links</header>
+            <ul class="contact-links">
+                <li><a href="/pricing">View Pricing Plans</a></li>
+                <li><a href="/services">Browse Services</a></li>
+                <li><a href="/legal/privacy">Privacy Policy</a></li>
+                <li><a href="/legal/terms">Terms of Service</a></li>
+                <li><a href="/legal/imprint">Impressum</a></li>
+            </ul>
+        </article>
+    </div>
+</div>
+
+<section class="contact-trust">
+    <div class="trust-badges">
+        <span class="badge outline">100% EU-Hosted</span>
+        <span class="badge outline">EU Data Processing</span>
+        <span class="badge outline">Encrypted Communications</span>
+    </div>
+</section>
+{% endblock content %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Reports -- GetHacked{% endblock title %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Reports <span class="badge secondary">{{ items | length }}</span></h1>
+    <p class="page-subtitle">{{ org_name | default(value="") }}</p>
+</div>
+
+{% if items %}
+    <table class="clickable-rows">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Format</th>
+                <th>Generated</th>
+            </tr>
+        </thead>
+        <tbody>
+           {% for item in items %}
+            <tr data-href="/reports/{{ item.pid }}">
+                <td>{{ item.title }}</td>
+                <td><span class="badge secondary">{{ item.report_type | replace(from="_", to=" ") }}</span></td>
+                <td>{{ item.format | upper }}</td>
+                <td>{% if item.generated_at %}{{ item.generated_at | date(format="%Y-%m-%d") }}{% else %}Pending{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <article class="card empty-state">
+        <h3>No Reports</h3>
+        <p>Reports will be generated after scans or engagements are completed.</p>
+    </article>
+{% endif %}
+{% endblock content %}

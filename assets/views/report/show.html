@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} -- GetHacked{% endblock title %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/reports">Reports</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ item.title }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header><h2>{{ item.title }}</h2></header>
+    <div class="detail-row">
+        <span class="detail-label">Type</span>
+        <span class="detail-value">{{ item.report_type | replace(from="_", to=" ") }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Format</span>
+        <span class="detail-value">{{ item.format | upper }}</span>
+    </div>
+    {% if item.generated_at %}
+    <div class="detail-row">
+        <span class="detail-label">Generated</span>
+        <span class="detail-value">{{ item.generated_at | date(format="%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% endif %}
+    {% if item.storage_path %}
+    <div class="form-actions">
+        <a href="{{ item.storage_path }}" class="button" download>Download Report</a>
+    </div>
+    {% endif %}
+    <div class="form-actions">
+        <a href="/reports" class="button" data-variant="secondary">Back to Reports</a>
+    </div>
+</article>
+{% endblock content %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Target -- GetHacked{% endblock title %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/targets">Targets</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ item.label | default(value=item.hostname) | default(value=item.ip_address) }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header><h2>{{ item.label | default(value="Target") }}</h2></header>
+    <div class="detail-row">
+        <span class="detail-label">Type</span>
+        <span class="detail-value"><span class="badge secondary">{{ item.target_type }}</span></span>
+    </div>
+    {% if item.hostname %}
+    <div class="detail-row">
+        <span class="detail-label">Hostname</span>
+        <span class="detail-value"><code>{{ item.hostname }}</code></span>
+    </div>
+    {% endif %}
+    {% if item.ip_address %}
+    <div class="detail-row">
+        <span class="detail-label">IP Address</span>
+        <span class="detail-value"><code>{{ item.ip_address }}</code></span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+        <span class="detail-label">Verified</span>
+        <span class="detail-value">{% if item.verified_at %}Yes ({{ item.verification_method }}){% else %}Not yet verified{% endif %}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">ID</span>
+        <span class="detail-value"><code>{{ item.pid }}</code></span>
+    </div>
+    <div class="form-actions">
+        <a href="/targets" class="button" data-variant="secondary">Back to Targets</a>
+        {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
+        <span class="spacer"></span>
+        <button class="outline" data-variant="danger"
+                data-delete-url="/targets/{{ item.pid }}"
+                data-delete-redirect="/targets">Delete</button>
+        {% endif %}
+    </div>
+</article>
+{% endblock content %}

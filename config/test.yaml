@@ -1,0 +1,56 @@
+# Loco configuration file — gethacked test
+
+logger:
+  enable: true
+  pretty_backtrace: true
+  level: warn
+  format: compact
+
+server:
+  port: 5150
+  binding: localhost
+  host: http://localhost
+  middlewares:
+    static:
+      enable: true
+      must_exist: true
+      precompressed: false
+      folder:
+        uri: "/static"
+        path: "assets/static"
+      fallback: "assets/static/404.html"
+
+workers:
+  mode: ForegroundBlocking
+
+mailer:
+  smtp:
+    enable: false
+    host: localhost
+    port: 1025
+    secure: false
+
+settings:
+  # OIDC disabled in test mode -- no Zitadel server available.
+  # The OidcInitializer returns early when oidc key is absent.
+  placeholder: true
+
+database:
+  uri: {{ get_env(name="DATABASE_URL", default="sqlite://gethacked_test.sqlite?mode=rwc") }}
+  enable_logging: false
+  connect_timeout: 500
+  idle_timeout: 500
+  min_connections: 1
+  max_connections: 1
+  auto_migrate: true
+  dangerously_truncate: false
+  dangerously_recreate: true
+
+auth:
+  jwt:
+    secret: test-jwt-secret-must-be-at-least-32-chars-long
+    expiration: 900
+    location:
+      - from: Bearer
+      - from: Cookie
+        name: jwt

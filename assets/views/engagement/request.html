@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Request Pentest -- GetHacked{% endblock title %}
+
+{% block page_title_block %}{% endblock page_title_block %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Request a Penetration Test</h1>
+    <p class="page-subtitle">Define the scope for your engagement in {{ org_name | default(value="your organization") }}</p>
+</div>
+
+<article class="card form-card">
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/engagements" method="post">
+        <div data-field>
+            <label for="service_id">Service Type</label>
+            <select id="service_id" name="service_id" required>
+                <option value="">Select a service...</option>
+                {% for svc in services %}
+                <option value="{{ svc.id }}">{{ svc.name }} ({{ svc.category }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div data-field>
+            <label for="title">Engagement Title</label>
+            <input id="title" name="title" type="text" placeholder="e.g., Q1 2026 Pentest - Production Environment" required />
+            <small data-hint>A descriptive name for this engagement.</small>
+        </div>
+
+        <h3>Scope Definition</h3>
+        <div data-field>
+            <label for="target_systems">Target Systems</label>
+            <textarea id="target_systems" name="target_systems" rows="4" placeholder="Describe the systems, applications, and infrastructure to be tested..." required></textarea>
+        </div>
+        <div data-field>
+            <label for="ip_ranges">IP Ranges</label>
+            <textarea id="ip_ranges" name="ip_ranges" rows="3" placeholder="One IP range per line (e.g., 10.0.0.0/24)"></textarea>
+        </div>
+        <div data-field>
+            <label for="domains">Domains</label>
+            <textarea id="domains" name="domains" rows="3" placeholder="One domain per line (e.g., app.example.com)"></textarea>
+        </div>
+        <div data-field>
+            <label for="exclusions">Exclusions</label>
+            <textarea id="exclusions" name="exclusions" rows="3" placeholder="Systems or areas that must NOT be tested..."></textarea>
+        </div>
+
+        <h3>Testing Window</h3>
+        <div class="hstack gap-4">
+            <div data-field class="flex-1">
+                <label for="test_window_start">Preferred Start</label>
+                <input id="test_window_start" name="test_window_start" type="date" />
+            </div>
+            <div data-field class="flex-1">
+                <label for="test_window_end">Preferred End</label>
+                <input id="test_window_end" name="test_window_end" type="date" />
+            </div>
+        </div>
+
+        <h3>Contact Information</h3>
+        <div data-field>
+            <label for="contact_name">Primary Contact Name</label>
+            <input id="contact_name" name="contact_name" type="text" required />
+        </div>
+        <div data-field>
+            <label for="contact_email">Contact Email</label>
+            <input id="contact_email" name="contact_email" type="email" required />
+        </div>
+        <div data-field>
+            <label for="contact_phone">Contact Phone</label>
+            <input id="contact_phone" name="contact_phone" type="tel" />
+        </div>
+
+        <div data-field>
+            <label for="rules_of_engagement">Rules of Engagement</label>
+            <textarea id="rules_of_engagement" name="rules_of_engagement" rows="4" placeholder="Any special rules, constraints, or requirements for the test..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Submit Request</button>
+            <a href="/engagements" class="button" data-variant="secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% endblock content %}

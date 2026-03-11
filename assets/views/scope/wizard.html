@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Scope Your Pentest | Interactive Security Assessment Configurator | GetHacked.eu{% endblock title %}
+{% block meta_description %}Configure your penetration testing engagement interactively. Choose approach, scope, and duration — get an instant price estimate. EU-based offensive security.{% endblock meta_description %}
+
+{% block content %}
+<section class="scope-hero">
+    <h1>Configure Your <span class="gradient-text">Security Assessment</span></h1>
+    <p class="subtitle">Pick any two variables and we calculate the third. Adjust approach, scope, and duration to see how your pentest shapes up — with a live price estimate.</p>
+</section>
+
+<section class="scope-wizard-section">
+    <div class="scope-wizard-card card card-accent">
+        <div class="scope-lock-row">
+            <label class="scope-lock-toggle">
+                <input type="checkbox" id="lock-approach" checked>
+                <span class="scope-lock-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Approach
+                </span>
+            </label>
+            <label class="scope-lock-toggle">
+                <input type="checkbox" id="lock-scope" checked>
+                <span class="scope-lock-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Scope
+                </span>
+            </label>
+            <label class="scope-lock-toggle">
+                <input type="checkbox" id="lock-duration">
+                <span class="scope-lock-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Duration
+                </span>
+            </label>
+        </div>
+
+        <div class="scope-controls">
+            <div class="scope-control" id="control-approach">
+                <h3>Approach</h3>
+                <p class="scope-control-hint">How much information does the tester start with?</p>
+                <div class="scope-approach-options">
+                    <label class="scope-approach-card">
+                        <input type="radio" name="approach" value="crystal" checked>
+                        <span class="scope-approach-inner">
+                            <strong>Crystal-box</strong>
+                            <small>Full access: source code, credentials, architecture docs. Fastest, most thorough.</small>
+                        </span>
+                    </label>
+                    <label class="scope-approach-card">
+                        <input type="radio" name="approach" value="grey">
+                        <span class="scope-approach-inner">
+                            <strong>Grey-box</strong>
+                            <small>Partial info: user credentials, some docs. Balanced coverage and realism.</small>
+                        </span>
+                    </label>
+                    <label class="scope-approach-card">
+                        <input type="radio" name="approach" value="black">
+                        <span class="scope-approach-inner">
+                            <strong>Black-box</strong>
+                            <small>No prior info. Simulates an external attacker with zero knowledge.</small>
+                        </span>
+                    </label>
+                    <label class="scope-approach-card">
+                        <input type="radio" name="approach" value="redteam">
+                        <span class="scope-approach-inner">
+                            <strong>Red-team</strong>
+                            <small>Full organisation adversary simulation. Social engineering, phishing, physical access. Min. 15 man-days.</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="scope-control" id="control-scope">
+                <h3>Scope <span class="scope-value-display" id="scope-value-display">5 targets</span></h3>
+                <p class="scope-control-hint">IP addresses, VLANs, web apps, APIs, mobile apps, or code repos</p>
+                <div class="scope-slider-group">
+                    <input type="range" id="scope-range" min="1" max="50" value="5" class="scope-slider">
+                    <input type="number" id="scope-number" min="1" max="50" value="5" class="scope-number-input">
+                </div>
+            </div>
+
+            <div class="scope-control derived" id="control-duration">
+                <h3>Duration <span class="scope-value-display" id="duration-value-display">4 man-days</span></h3>
+                <p class="scope-control-hint">Estimated testing effort in man-days</p>
+                <div class="scope-slider-group">
+                    <input type="range" id="duration-range" min="3" max="40" value="4" class="scope-slider">
+                    <input type="number" id="duration-number" min="3" max="40" value="4" class="scope-number-input">
+                </div>
+                <span class="scope-derived-badge">auto-calculated</span>
+            </div>
+        </div>
+
+        <div class="scope-result-row">
+            <div class="scope-box-visual" id="scope-box-visual">
+                <div class="scope-box-inner" id="scope-box-inner">
+                    <div class="scope-box-face scope-box-front"></div>
+                    <div class="scope-box-face scope-box-back"></div>
+                    <div class="scope-box-face scope-box-right"></div>
+                    <div class="scope-box-face scope-box-left"></div>
+                    <div class="scope-box-face scope-box-top"></div>
+                    <div class="scope-box-face scope-box-bottom"></div>
+                </div>
+            </div>
+            <div class="scope-price-area">
+                <div class="scope-price" id="scope-price">&euro;5,600</div>
+                <div class="scope-price-label">Estimated starting price (excl. VAT)</div>
+                <div class="scope-price-breakdown" id="scope-breakdown">4 man-days &times; &euro;1,400/day</div>
+                <p class="scope-price-disclaimer">This is a rough estimate. Final pricing depends on complexity, target type, and specific requirements discussed during scoping.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="scope-approaches">
+    <h2>Testing Approaches Explained</h2>
+    <div class="row">
+        <div class="col-6">
+            <article class="card card-accent scope-explain-card crystal">
+                <h4>Crystal-box &amp; Grey-box</h4>
+                <p><strong>Crystal-box</strong> gives the tester full access to source code, architecture diagrams, and credentials — the most thorough and efficient approach. <strong>Grey-box</strong> provides partial information (user-level credentials, limited docs), balancing realism with coverage.</p>
+            </article>
+        </div>
+        <div class="col-6">
+            <article class="card card-accent scope-explain-card threat">
+                <h4>Black-box &amp; Red-team</h4>
+                <p><strong>Black-box</strong> simulates an external attacker with zero knowledge — realistic but takes longer. <strong>Red-team</strong> is a full adversary simulation combining social engineering, phishing, and technical exploitation across multiple vectors.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="scope-request-section">
+    <h2>Request a Quote</h2>
+    <p class="section-subtitle">Tell us about your project. We will review your configuration and respond with a tailored offer within one business day.</p>
+    <div class="scope-request-card card card-accent">
+        <form action="/api/contact" method="POST" id="scope-form">
+            <input type="hidden" name="subject" value="scope-wizard">
+            <input type="hidden" name="wizard_approach" id="form-approach" value="crystal">
+            <input type="hidden" name="wizard_scope" id="form-scope" value="5">
+            <input type="hidden" name="wizard_duration" id="form-duration" value="4">
+            <input type="hidden" name="wizard_estimate" id="form-estimate" value="5600">
+            <div class="row">
+                <div class="col-6">
+                    <label for="scope-name">Name <span class="required">*</span></label>
+                    <input type="text" id="scope-name" name="name" required>
+                </div>
+                <div class="col-6">
+                    <label for="scope-email">Email <span class="required">*</span></label>
+                    <input type="email" id="scope-email" name="email" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6">
+                    <label for="scope-company">Company</label>
+                    <input type="text" id="scope-company" name="company">
+                </div>
+                <div class="col-6">
+                    <label for="scope-phone">Phone</label>
+                    <input type="tel" id="scope-phone" name="phone">
+                </div>
+            </div>
+            <label for="scope-details">Additional Details</label>
+            <textarea id="scope-details" name="details" rows="4" placeholder="Describe the targets, any constraints, preferred testing windows, or questions you have."></textarea>
+            <div class="form-actions">
+                <button type="submit" class="button cta-button">Request Quote</button>
+            </div>
+            <p class="form-note">Already have an account? <a href="/engagements/new">Submit a scope request directly</a> from your dashboard.</p>
+        </form>
+    </div>
+</section>
+
+<section class="faq-section">
+    <h2>Scope Wizard FAQ</h2>
+    <div class="faq-grid">
+        <details class="faq-item">
+            <summary>How accurate is this price estimate?</summary>
+            <p>The estimate is a starting point based on typical engagements. Final pricing depends on target complexity (e.g. a legacy monolith vs. a modern API), specific compliance requirements, and any custom deliverables. Our team will review your configuration and provide a precise quote.</p>
+        </details>
+        <details class="faq-item">
+            <summary>What counts as a "target"?</summary>
+            <p>A target is a distinct testable unit: one web application, one API, one IP range/VLAN, one mobile app, or one code repository. A single server running multiple services may count as multiple targets depending on scope.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Can I change the scope after requesting a quote?</summary>
+            <p>Absolutely. The wizard gives you a starting configuration. During the scoping call, we refine targets, testing windows, and exclusions together. Nothing is final until you accept the formal offer in your dashboard.</p>
+        </details>
+        <details class="faq-item">
+            <summary>What is the difference between man-days and calendar days?</summary>
+            <p>Man-days represent the total testing effort. A 10 man-day engagement could be completed by 2 testers in 5 calendar days, or 1 tester in 10 calendar days. We agree on the schedule during scoping.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Do I need an account to request a quote?</summary>
+            <p>No. The form above works without an account. If you already have an account, you can submit a detailed scope request directly from your dashboard at <a href="/engagements/new">/engagements/new</a>.</p>
+        </details>
+    </div>
+</section>
+
+<section class="cta-banner">
+    <h2>Ready to Get Started?</h2>
+    <p>Configure your assessment above and request a quote, or talk to our security team directly.</p>
+    <div class="cta-group">
+        <a href="#scope-form" class="button large cta-button">Configure &amp; Quote</a>
+        <a href="/contact" class="button outline large">Talk to Our Team</a>
+    </div>
+</section>
+{% endblock content %}
+
+{% block js %}
+<script src="/static/scope-wizard.js" integrity="sha384-kpuaR7lNkhgJnbuIQAhvtl7dCkG0O79/a8kpr8V+42RHCYp7IcubCUmcgWD/0575" crossorigin="anonymous"></script>
+{% endblock js %}

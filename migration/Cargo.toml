@@ -1,0 +1,21 @@
+[package]
+name = "migration"
+description = "Database migrations for gethacked"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[lib]
+name = "migration"
+path = "src/lib.rs"
+
+[dependencies]
+loco-rs = { workspace = true }
+fracture-core-migration = { git = "https://github.com/Sp0Q1/fracture-cms" }
+
+[dependencies.sea-orm-migration]
+version = "1.1"
+features = [
+  "runtime-tokio-rustls",
+]
