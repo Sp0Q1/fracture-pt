@@ -6,45 +6,22 @@
 {% block content %}
 <section class="scope-hero">
     <h1>Configure Your <span class="gradient-text">Security Assessment</span></h1>
-    <p class="subtitle">Pick any two variables and we calculate the third. Adjust approach, scope, and duration to see how your pentest shapes up — with a live price estimate.</p>
+    <p class="subtitle">Choose your testing approach, set scope or duration, and we calculate the rest. See how your pentest shapes up — with a live price estimate.</p>
 </section>
 
 <section class="scope-wizard-section">
     <div class="scope-wizard-card card card-accent">
-        <div class="scope-lock-row">
-            <label class="scope-lock-toggle">
-                <input type="checkbox" id="lock-approach" checked>
-                <span class="scope-lock-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Approach
-                </span>
-            </label>
-            <label class="scope-lock-toggle">
-                <input type="checkbox" id="lock-scope" checked>
-                <span class="scope-lock-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Scope
-                </span>
-            </label>
-            <label class="scope-lock-toggle">
-                <input type="checkbox" id="lock-duration">
-                <span class="scope-lock-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Duration
-                </span>
-            </label>
-        </div>
 
         <div class="scope-controls">
             <div class="scope-control" id="control-approach">
                 <h3>Approach</h3>
-                <p class="scope-control-hint">How much information does the tester start with?</p>
+                <p class="scope-control-hint">How much information does the tester start with? Always your choice — we adjust duration accordingly.</p>
                 <div class="scope-approach-options">
                     <label class="scope-approach-card">
                         <input type="radio" name="approach" value="crystal" checked>
                         <span class="scope-approach-inner">
-                            <strong>Crystal-box</strong>
-                            <small>Full access: source code, credentials, architecture docs. Fastest, most thorough.</small>
+                            <strong>Crystal-box <span class="scope-recommended-badge">Recommended</span></strong>
+                            <small>Full access: source code, credentials, architecture docs. Most efficient, most thorough.</small>
                         </span>
                     </label>
                     <label class="scope-approach-card">
@@ -69,6 +46,7 @@
                         </span>
                     </label>
                 </div>
+                <p class="scope-approach-hint" id="approach-hint"></p>
             </div>
 
             <div class="scope-control" id="control-scope">
@@ -80,14 +58,23 @@
                 </div>
             </div>
 
-            <div class="scope-control derived" id="control-duration">
-                <h3>Duration <span class="scope-value-display" id="duration-value-display">4 man-days</span></h3>
+            <div class="scope-control" id="control-duration">
+                <div class="scope-duration-header">
+                    <h3>Duration <span class="scope-value-display" id="duration-value-display">4 man-days</span></h3>
+                    <label class="scope-lock-toggle" title="Unlock to override the estimated duration">
+                        <input type="checkbox" id="lock-duration" checked>
+                        <span class="scope-lock-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span id="lock-duration-text">Locked</span>
+                        </span>
+                    </label>
+                </div>
                 <p class="scope-control-hint">Estimated testing effort in man-days</p>
                 <div class="scope-slider-group">
-                    <input type="range" id="duration-range" min="3" max="40" value="4" class="scope-slider">
-                    <input type="number" id="duration-number" min="3" max="40" value="4" class="scope-number-input">
+                    <input type="range" id="duration-range" min="3" max="40" value="4" class="scope-slider" disabled>
+                    <input type="number" id="duration-number" min="3" max="40" value="4" class="scope-number-input" disabled>
                 </div>
-                <span class="scope-derived-badge">auto-calculated</span>
+                <p class="scope-duration-warning" id="duration-warning"></p>
             </div>
         </div>
 
@@ -207,5 +194,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/scope-wizard.js" integrity="sha384-kpuaR7lNkhgJnbuIQAhvtl7dCkG0O79/a8kpr8V+42RHCYp7IcubCUmcgWD/0575" crossorigin="anonymous"></script>
+<script src="/static/scope-wizard.js" integrity="sha384-MTVSg6uhNobScrw9USEa+oDaybyo876weusJh/24klOO+tSZXNLjCOYqjqZBExM2" crossorigin="anonymous"></script>
 {% endblock js %}
