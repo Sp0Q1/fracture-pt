@@ -31,6 +31,7 @@ mailer:
     secure: false
 
 settings:
+  contact_email: {{ get_env(name="CONTACT_EMAIL", default="hello@gethacked.eu") }}
   oidc:
     provider_name: zitadel
     issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="http://localhost:8080") }}

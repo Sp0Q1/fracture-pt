@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod engagement;
 pub mod finding;
+pub mod free_scan;
 pub mod home;
 pub mod invoice;
 pub mod pages;

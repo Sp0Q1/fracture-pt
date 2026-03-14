@@ -9,8 +9,16 @@ pub fn index(
     user: &users::Model,
     org_ctx: &Option<OrgContext>,
     user_orgs: &[organizations::Model],
+    scan_count: u64,
+    engagement_count: u64,
+    asm_summary: Option<&serde_json::Value>,
 ) -> Result<Response> {
-    let ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    ctx["scan_count"] = serde_json::json!(scan_count);
+    ctx["engagement_count"] = serde_json::json!(engagement_count);
+    if let Some(asm) = asm_summary {
+        ctx["asm"] = asm.clone();
+    }
     format::render().view(v, "home/index.html", data!(ctx))
 }
 

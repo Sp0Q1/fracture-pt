@@ -1,8 +1,10 @@
 pub mod admin;
 pub mod api;
+pub mod contact;
 pub mod engagement;
 pub mod fallback;
 pub mod finding;
+pub mod free_scan;
 pub mod home;
 pub mod invoice;
 pub mod pages;

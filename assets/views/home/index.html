@@ -38,6 +38,33 @@
             </div>
         </div>
 
+        {% if asm %}
+        <div class="mb-4">
+            <article class="card card-accent">
+                <header>
+                    <div class="hstack">
+                        <h3 class="m-0">Attack Surface</h3>
+                        <span class="badge success">{{ asm.status | default(value="completed") }}</span>
+                    </div>
+                </header>
+                <p class="text-muted mb-1">Latest scan for <strong>{{ asm.domain }}</strong></p>
+                <div class="asm-summary-strip">
+                    <div class="asm-stat">
+                        <span class="asm-stat-number blue">{{ asm.subdomain_count | default(value=0) }}</span>
+                        <span class="asm-stat-label">Subdomains</span>
+                    </div>
+                    <div class="asm-stat">
+                        <span class="asm-stat-number green">{{ asm.cert_count | default(value=0) }}</span>
+                        <span class="asm-stat-label">Certificates</span>
+                    </div>
+                </div>
+                <div class="form-actions mt-1">
+                    <a href="/targets" class="button outline">View Targets</a>
+                </div>
+            </article>
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-6">
                 <article class="card card-accent">
