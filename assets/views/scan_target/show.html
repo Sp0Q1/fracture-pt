@@ -32,6 +32,20 @@
         <span class="detail-label">Verified</span>
         <span class="detail-value">{% if item.verified_at %}Yes ({{ item.verification_method }}){% else %}Not yet verified{% endif %}</span>
     </div>
+    {% if scan_status %}
+    <div class="detail-row">
+        <span class="detail-label">ASM Scan</span>
+        <span class="detail-value">
+            {% if scan_status == "completed" %}
+            <span class="badge success">Completed</span>
+            {% elif scan_status == "running" %}
+            <span class="badge outline">Running&hellip;</span>
+            {% elif scan_status == "failed" %}
+            <span class="badge badge-failed">Failed</span>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
     <div class="detail-row">
         <span class="detail-label">ID</span>
         <span class="detail-value"><code>{{ item.pid }}</code></span>
@@ -46,5 +60,48 @@
         {% endif %}
     </div>
 </article>
+
+{% if asm %}
+<section class="mt-4">
+    <div class="asm-summary-strip max-w-800">
+        <div class="asm-stat">
+            <span class="asm-stat-number blue">{{ asm.subdomain_count | default(value=0) }}</span>
+            <span class="asm-stat-label">Subdomains</span>
+        </div>
+        <div class="asm-stat">
+            <span class="asm-stat-number green">{{ asm.cert_count | default(value=0) }}</span>
+            <span class="asm-stat-label">Certificates</span>
+        </div>
+    </div>
+
+    {% if asm.subdomains and asm.subdomains | length > 0 %}
+    <h3>Discovered Subdomains</h3>
+    <p class="section-subtitle">{{ asm.subdomains | length }} unique subdomain{{ asm.subdomains | length | pluralize }} found in certificate transparency logs.</p>
+    <div class="asm-subdomain-list">
+        {% for sub in asm.subdomains %}
+        <div class="asm-subdomain-item">
+            <code>{{ sub }}</code>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% elif scan_status == "running" %}
+<section class="mt-4">
+    <article class="card card-accent text-center p-2">
+        <p>ASM scan is in progress&hellip;</p>
+        <p class="text-muted text-sm">Refresh this page in a few seconds to see results.</p>
+    </article>
+</section>
+{% elif scan_status == "failed" %}
+<section class="mt-4">
+    <article class="card card-accent scan-failed-card">
+        <h3>Scan Failed</h3>
+        <p>The ASM scan could not be completed.{% if scan_error %} <strong>Reason:</strong> {{ scan_error }}{% endif %}</p>
+        <p>This can happen when upstream services (crt.sh) are temporarily unavailable. You can retry by adding the target again.</p>
+    </article>
+</section>
+{% endif %}
+
 </div>
 {% endblock content %}

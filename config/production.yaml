@@ -34,6 +34,7 @@ mailer:
       password: {{ get_env(name="MAILER_PASSWORD") }}
 
 settings:
+  contact_email: {{ get_env(name="CONTACT_EMAIL", default="hello@gethacked.eu") }}
   oidc:
     provider_name: {{ get_env(name="OIDC_PROVIDER_NAME", default="zitadel") }}
     issuer_url: {{ get_env(name="OIDC_ISSUER_URL") }}

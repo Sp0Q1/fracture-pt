@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Message Sent -- GetHacked{% endblock title %}
+
+{% block page_title_block %}{% endblock page_title_block %}
+
+{% block content %}
+<section class="contact-hero">
+    <h1>Thank You{% if name %}, {{ name }}{% endif %}</h1>
+    <p class="subtitle">{% if is_scope %}Your scope request has been received. We will review your configuration and respond with a tailored offer within one business day.{% else %}Your message has been received. We typically respond within one business day.{% endif %}</p>
+</section>
+
+<div class="row" style="justify-content:center">
+    <div class="col-6">
+        <article class="card card-accent" style="text-align:center">
+            <p>In the meantime, you can:</p>
+            <div class="form-actions">
+                {% if is_scope %}
+                <a href="/scope" class="button cta-button">Back to Scope Wizard</a>
+                {% else %}
+                <a href="/" class="button cta-button">Back to Home</a>
+                {% endif %}
+                <a href="/pricing" class="button outline">View Pricing</a>
+            </div>
+        </article>
+    </div>
+</div>
+{% endblock content %}

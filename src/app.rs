@@ -14,6 +14,8 @@ use loco_rs::{
 use migration::Migrator;
 use std::path::Path;
 
+use loco_rs::bgworker::BackgroundWorker;
+
 use crate::{
     controllers, initializers,
     models::_entities::{
@@ -21,6 +23,7 @@ use crate::{
         organizations, pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets,
         services, subscriptions, users,
     },
+    workers,
 };
 
 pub struct App;
@@ -65,6 +68,8 @@ impl Hooks for App {
             // Public pages
             .add_route(controllers::home::routes())
             .add_route(controllers::pages::routes())
+            .add_route(controllers::contact::routes())
+            .add_route(controllers::free_scan::routes())
             .add_route(controllers::service::routes())
             .add_route(controllers::subscription::routes())
             .add_route(controllers::scan_target::routes())
@@ -85,7 +90,10 @@ impl Hooks for App {
         Ok(router.fallback(controllers::fallback::not_found))
     }
 
-    async fn connect_workers(_ctx: &AppContext, _queue: &Queue) -> Result<()> {
+    async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
+        queue
+            .register(workers::asm_scan::AsmScanWorker::build(ctx))
+            .await?;
         Ok(())
     }
 

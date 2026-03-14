@@ -21,6 +21,9 @@
             <h2>Enter Your Domain</h2>
             <p>We will enumerate subdomains, discover open ports, check certificate transparency logs, and summarise your external exposure.</p>
         </div>
+        {% if error %}
+        <p class="text-error" style="margin-bottom:1rem">{{ error }}</p>
+        {% endif %}
         <form class="asm-domain-form" action="/free-scan" method="post">
             <div class="asm-domain-input-wrap">
                 <input type="text" name="domain" placeholder="example.com" class="asm-domain-input" required autocomplete="off" pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$" title="Enter a valid domain name (e.g. example.com)">

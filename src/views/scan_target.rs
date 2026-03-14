@@ -3,6 +3,13 @@ use loco_rs::prelude::*;
 use crate::controllers::middleware::OrgContext;
 use crate::models::_entities::{organizations, scan_targets, users};
 
+/// Bundled scan state for the target detail view.
+pub struct ScanState<'a> {
+    pub asm_result: Option<&'a serde_json::Value>,
+    pub status: Option<&'a str>,
+    pub error: Option<&'a str>,
+}
+
 /// Render the scan target list.
 pub fn list(
     v: &impl ViewRenderer,
@@ -34,8 +41,14 @@ pub fn show(
     org_ctx: &OrgContext,
     user_orgs: &[organizations::Model],
     item: &scan_targets::Model,
+    scan: &ScanState<'_>,
 ) -> Result<Response> {
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["item"] = serde_json::json!(item);
+    if let Some(asm) = scan.asm_result {
+        ctx["asm"] = asm.clone();
+    }
+    ctx["scan_status"] = serde_json::json!(scan.status.unwrap_or(""));
+    ctx["scan_error"] = serde_json::json!(scan.error.unwrap_or(""));
     format::render().view(v, "scan_target/show.html", data!(ctx))
 }
