@@ -1,7 +1,7 @@
 # gethacked.eu — Production multi-stage build
 #
 # Build:  podman build -f Containerfile.prod -t gethacked:latest .
-# Run:    podman run --env-file .env.prod -p 5150:5150 -v ./data:/app/data gethacked:latest
+# Run:    podman run --userns=keep-id --env-file .env.prod -p 5150:5150 -v ./data:/app/data gethacked:latest
 
 # -- Stage 1: Plan dependencies --
 FROM rust:latest AS chef
