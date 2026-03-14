@@ -151,15 +151,23 @@ The image is a multi-stage Rust build that produces a release binary in a minima
 
 ### 4. Run
 
+The container runs as `appuser` (UID 1000). When using SQLite with a bind mount, ensure the host data directory is writable by UID 1000:
+
 ```bash
+# Create the data directory with correct ownership
+mkdir -p /path/to/data && chown 1000:1000 /path/to/data
+
 podman run -d \
   --name gethacked \
   -p 5150:5150 \
   --env-file /path/to/production.env \
+  -v /path/to/data:/app/data \
   -v /path/to/config:/app/config:ro \
   -v /path/to/assets:/app/assets:ro \
   gethacked:latest
 ```
+
+> **Note:** If using PostgreSQL instead of SQLite, set `DATABASE_URL` to your Postgres connection string and omit the `/app/data` volume.
 
 Or with compose — adapt `compose.yaml` for production by:
 - Replacing the Zitadel dev instance with your production OIDC provider
