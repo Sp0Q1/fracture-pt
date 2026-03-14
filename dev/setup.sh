@@ -27,8 +27,9 @@ echo "==> Retrieving admin PAT..."
 PAT=""
 for _ in $(seq 1 10); do
     PAT=$($COMPOSE logs zitadel 2>&1 \
-        | grep -E '^[A-Za-z0-9_-]{30,}$' \
-        | head -1) || true
+        | grep -oE '^[A-Za-z0-9_-]{30,}' \
+        | head -1 \
+        | tr -d '[:space:]') || true
     if [ -n "$PAT" ]; then break; fi
     sleep 2
 done
@@ -84,7 +85,6 @@ APP_RESPONSE=$(zapi POST "/management/v1/projects/$PROJECT_ID/apps/oidc" \
         "idTokenUserinfoAssertion": true,
         "backChannelLogoutUri": "http://host.containers.internal:5150/api/auth/oidc/backchannel-logout"
     }')
-
 CLIENT_ID=$(echo "$APP_RESPONSE" | jq -r '.clientId')
 CLIENT_SECRET=$(echo "$APP_RESPONSE" | jq -r '.clientSecret')
 echo "    Client ID: $CLIENT_ID"

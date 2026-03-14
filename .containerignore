@@ -5,3 +5,10 @@ data/
 *.sqlite-journal
 .env
 .env.*
+.local/
+.cache/
+.cargo/
+.rustup/
+containers/
+*.tar
+*.tar.gz
