@@ -151,19 +151,19 @@ The image is a multi-stage Rust build that produces a release binary in a minima
 
 ### 4. Run
 
-The container runs as `appuser` (UID 1000). When using SQLite with a bind mount, ensure the host data directory is writable by UID 1000:
+Use `--userns=keep-id` so your host user maps into the container and bind-mounted directories are writable:
 
 ```bash
-# Create the data directory with correct ownership
-mkdir -p /path/to/data && chown 1000:1000 /path/to/data
+mkdir -p ./data
 
 podman run -d \
   --name gethacked \
+  --userns=keep-id \
   -p 5150:5150 \
-  --env-file /path/to/production.env \
-  -v /path/to/data:/app/data \
-  -v /path/to/config:/app/config:ro \
-  -v /path/to/assets:/app/assets:ro \
+  --env-file ./.env \
+  -v ./data:/app/data \
+  -v ./config:/app/config:ro \
+  -v ./assets:/app/assets:ro \
   gethacked:latest
 ```
 
