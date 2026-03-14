@@ -65,6 +65,22 @@ openssl rand -base64 32
 | `MAILER_HOST` | No | SMTP host. Default: `localhost` |
 | `MAILER_PORT` | No | SMTP port. Default: `1025` |
 
+### Platform Admin Access
+
+Platform admin privileges (engagement management, pentester assignment) require membership in the `gethacked-admin` org, which is seeded automatically by the database migration.
+
+After logging in as `testuser` at least once (so the user exists in the local DB), grant admin access:
+
+```bash
+podman exec gethacked_app_1 sqlite3 /app/data/gethacked_development.sqlite \
+  "INSERT INTO org_members (org_id, user_id, role, created_at, updated_at)
+   SELECT o.id, u.id, 'owner', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+   FROM organizations o, users u
+   WHERE o.slug = 'gethacked-admin' AND u.email = 'testuser@example.com';"
+```
+
+The `gethacked-admin` slug is reserved — no user can create an org with this slug (enforced by a unique database constraint).
+
 ### Rebuilding After Changes
 
 ```bash
