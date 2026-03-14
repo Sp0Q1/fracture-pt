@@ -128,10 +128,10 @@ OIDC_PROVIDER_NAME=zitadel
 ### 3. Build the Container Image
 
 ```bash
-podman build -f Containerfile.dev -t gethacked:latest .
+podman build -f Containerfile.prod -t gethacked:latest .
 ```
 
-The image is a multi-stage Rust build that produces a single statically-linked binary. The entrypoint runs database migrations automatically on startup.
+The image is a multi-stage Rust build that produces a release binary in a minimal Debian runtime image. Database migrations run automatically on startup.
 
 ### 4. Run
 
