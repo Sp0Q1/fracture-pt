@@ -14,6 +14,7 @@ mod m20260310_000008_create_scan_jobs;
 mod m20260310_000009_create_findings;
 mod m20260310_000010_create_reports;
 mod m20260310_000011_create_invoices;
+mod m20260310_000012_seed_admin_org;
 
 pub struct Migrator;
 
@@ -34,6 +35,7 @@ impl MigratorTrait for Migrator {
                 Box::new(m20260310_000009_create_findings::Migration),
                 Box::new(m20260310_000010_create_reports::Migration),
                 Box::new(m20260310_000011_create_invoices::Migration),
+                Box::new(m20260310_000012_seed_admin_org::Migration),
             ])
             .collect()
     }

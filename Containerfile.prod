@@ -21,7 +21,7 @@ COPY . /app
 RUN cargo build --release
 
 # -- Stage 3: Minimal runtime image --
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
