@@ -101,92 +101,121 @@ Runs rustfmt, clippy (pedantic + nursery), semgrep, and all tests inside contain
 
 ## Production Deployment
 
+Production uses `compose.prod.yaml` with PostgreSQL, Zitadel, and the app — all behind nginx with TLS.
+
 ### 1. Generate Secrets
 
-All secrets must be generated from a cryptographically secure source. Never reuse development values.
-
 ```bash
-# Generate JWT secret (32 bytes, base64-encoded):
-openssl rand -base64 32
-
-# Generate Zitadel master key (must be exactly 32 ASCII characters):
-openssl rand -hex 16
+# Generate all secrets at once:
+echo "JWT_SECRET=$(openssl rand -base64 32)"
+echo "APP_DB_PASSWORD=$(openssl rand -base64 24)"
+echo "ZITADEL_DB_POSTGRES_PASSWORD=$(openssl rand -base64 24)"
+echo "ZITADEL_DB_ZITADEL_PASSWORD=$(openssl rand -base64 24)"
+echo "ZITADEL_MASTERKEY=$(openssl rand -hex 16)"
 ```
 
-Store secrets in your deployment platform's secret manager (e.g. Kubernetes Secrets, Vault, cloud provider secret store). Do **not** commit secrets to the repository or store them in plain-text files on disk.
-
-### 2. Environment Variables
+### 2. Configure Environment
 
 ```bash
-# --- Required ---
-JWT_SECRET=<output of: openssl rand -base64 32>
-OIDC_CLIENT_ID=<from your identity provider>
-OIDC_CLIENT_SECRET=<from your identity provider>
-OIDC_ISSUER_URL=https://auth.example.com
-OIDC_REDIRECT_URI=https://gethacked.eu/api/auth/oidc/callback
-OIDC_POST_LOGOUT_REDIRECT_URI=https://gethacked.eu
-DATABASE_URL=postgres://user:password@db-host:5432/gethacked
-
-# --- Mail ---
-MAILER_HOST=smtp.example.com
-MAILER_PORT=587
-MAILER_USER=<smtp username>
-MAILER_PASSWORD=<smtp password>
-
-# --- Optional ---
-APP_URL=https://gethacked.eu
-PORT=5150
-SERVER_BINDING=0.0.0.0
-OIDC_PROJECT_ID=<zitadel project id>
-OIDC_PROVIDER_NAME=zitadel
+cp .env.prod.example .env.prod
+# Edit .env.prod with the generated secrets and your SMTP credentials.
+# OIDC_CLIENT_ID and OIDC_CLIENT_SECRET are filled after step 4.
 ```
 
-### 3. Build the Container Image
+See `.env.prod.example` for all variables and their descriptions.
+
+### 3. Build and Start
 
 ```bash
-podman build -f Containerfile.prod -t gethacked:latest .
+# Build the app image
+podman compose -f compose.prod.yaml build app
+
+# Start all services (PostgreSQL, Zitadel, app)
+podman compose -f compose.prod.yaml up -d
 ```
 
-The image is a multi-stage Rust build that produces a release binary in a minimal Debian runtime image. Database migrations run automatically on startup.
+### 4. Configure Zitadel
 
-### 4. Run
-
-Use `--userns=keep-id` so your host user maps into the container and bind-mounted directories are writable:
+After Zitadel is healthy, create the OIDC application:
 
 ```bash
-mkdir -p ./data
+# Wait for Zitadel to be ready
+until curl -sf http://localhost:8081/debug/ready > /dev/null; do sleep 2; done
 
-podman run -d \
-  --name gethacked \
-  --userns=keep-id \
-  -p 5150:5150 \
-  --env-file ./.env \
-  -v ./data:/app/data \
-  -v ./config:/app/config:ro \
-  -v ./assets:/app/assets:ro \
-  gethacked:latest
+# Get the admin PAT from logs
+PAT=$(podman compose -f compose.prod.yaml logs zitadel 2>&1 \
+  | grep -oE '^[A-Za-z0-9_-]{30,}' | head -1 | tr -d '[:space:]')
+
+# Create project + OIDC app (adjust domain as needed)
+DOMAIN=gethacked.eu
+AUTH_DOMAIN=auth.gethacked.eu
+ZITADEL_API=http://localhost:8081
+
+PROJECT_ID=$(curl -s -X POST "$ZITADEL_API/management/v1/projects" \
+  -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
+  -d '{"name":"GetHacked"}' | jq -r '.id')
+
+APP_RESP=$(curl -s -X POST "$ZITADEL_API/management/v1/projects/$PROJECT_ID/apps/oidc" \
+  -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"GetHacked\",
+    \"redirectUris\": [\"https://$DOMAIN/api/auth/oidc/callback\"],
+    \"responseTypes\": [\"OIDC_RESPONSE_TYPE_CODE\"],
+    \"grantTypes\": [\"OIDC_GRANT_TYPE_AUTHORIZATION_CODE\"],
+    \"appType\": \"OIDC_APP_TYPE_WEB\",
+    \"authMethodType\": \"OIDC_AUTH_METHOD_TYPE_BASIC\",
+    \"postLogoutRedirectUris\": [\"https://$DOMAIN\"],
+    \"idTokenUserinfoAssertion\": true
+  }")
+
+echo "OIDC_PROJECT_ID=$PROJECT_ID"
+echo "OIDC_CLIENT_ID=$(echo $APP_RESP | jq -r '.clientId')"
+echo "OIDC_CLIENT_SECRET=$(echo $APP_RESP | jq -r '.clientSecret')"
+# Add these to .env.prod, then restart the app:
+# podman compose -f compose.prod.yaml restart app
 ```
 
-> **Note:** If using PostgreSQL instead of SQLite, set `DATABASE_URL` to your Postgres connection string and omit the `/app/data` volume.
+### 5. Configure nginx
 
-Or with compose — adapt `compose.yaml` for production by:
-- Replacing the Zitadel dev instance with your production OIDC provider
-- Replacing MailCrab with a real SMTP relay
-- Using PostgreSQL instead of SQLite
-- Mounting secrets from your secret manager instead of `.env`
+```bash
+# Install the nginx config
+sudo cp deploy/nginx-gethacked.conf /etc/nginx/sites-available/gethacked
+sudo ln -sf /etc/nginx/sites-available/gethacked /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 
-### 5. Security Checklist
+# Obtain TLS certificates
+sudo certbot --nginx -d gethacked.eu -d auth.gethacked.eu
 
-- [ ] `JWT_SECRET` is at least 32 bytes of cryptographically random data (`openssl rand -base64 32`)
-- [ ] OIDC client secret is stored in a secret manager, not in environment files on disk
-- [ ] Database credentials are stored in a secret manager
-- [ ] SMTP credentials are stored in a secret manager
-- [ ] HTTPS is terminated at a reverse proxy (nginx, Caddy, cloud LB) in front of the app
-- [ ] `APP_URL` uses `https://`
-- [ ] `OIDC_REDIRECT_URI` and `OIDC_POST_LOGOUT_REDIRECT_URI` use `https://`
-- [ ] Database is not exposed to the public internet
-- [ ] Container runs as a non-root user in production
-- [ ] Static assets are served through a CDN or reverse proxy with caching headers
+# Uncomment the HSTS header in the nginx config after verifying TLS works
+```
+
+### Architecture
+
+```
+Internet
+  │
+  ├─ https://gethacked.eu ──► nginx :443 ──► app :5150
+  │                                            │
+  │                                            ├── app-db (PostgreSQL :5432)
+  │                                            │
+  ├─ https://auth.gethacked.eu ──► nginx :443 ──► zitadel :8081
+  │                                                  │
+  │                                                  └── zitadel-db (PostgreSQL :5432)
+```
+
+All services bind to `127.0.0.1` — nothing is exposed directly to the internet. nginx terminates TLS and proxies to the local ports.
+
+### Security Checklist
+
+- [ ] All secrets generated with `openssl rand` (never reuse dev values)
+- [ ] `.env.prod` is `chmod 600` and not committed to version control
+- [ ] TLS certificates obtained and auto-renewing (certbot)
+- [ ] HSTS header enabled after verifying TLS
+- [ ] Databases not exposed to the public internet (compose network only)
+- [ ] Container runs as non-root via `userns_mode: keep-id`
+- [ ] Firewall allows only ports 80, 443, and SSH
+- [ ] `APP_DOMAIN` and `ZITADEL_DOMAIN` use HTTPS
+- [ ] SMTP credentials are set for email verification and password resets
 
 ## Project Structure
 

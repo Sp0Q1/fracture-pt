@@ -1,8 +1,10 @@
 # Build artifacts
 /target/
 
-# Environment
+# Environment (never commit secrets)
 .env
+.env.*
+!.env.prod.example
 
 # Database
 *.db

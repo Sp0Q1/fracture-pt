@@ -1,0 +1,119 @@
+# Production compose — GetHacked.eu
+#
+# Prerequisites:
+#   1. Copy .env.prod.example to .env.prod and fill in all secrets
+#   2. Build the app image:  podman compose -f compose.prod.yaml build app
+#   3. Start everything:     podman compose -f compose.prod.yaml up -d
+#   4. Run Zitadel setup:    ./dev/setup-prod.sh
+#   5. Configure nginx (see deploy/nginx-gethacked.conf)
+#
+# All services bind to 127.0.0.1 — nginx terminates TLS on the host.
+
+services:
+  # --- PostgreSQL for the application ---
+  app-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${APP_DB_USER:-gethacked}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env.prod}
+      POSTGRES_DB: ${APP_DB_NAME:-gethacked}
+    volumes:
+      - app_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APP_DB_USER:-gethacked} -d ${APP_DB_NAME:-gethacked}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # --- PostgreSQL for Zitadel (separate DB for isolation) ---
+  zitadel-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${ZITADEL_DB_POSTGRES_PASSWORD:?Set ZITADEL_DB_POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: zitadel
+    volumes:
+      - zitadel_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zitadel"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # --- Zitadel (OIDC identity provider) ---
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    command: start-from-init --masterkey "${ZITADEL_MASTERKEY:?Set ZITADEL_MASTERKEY in .env.prod}" --tlsMode disabled
+    environment:
+      ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${ZITADEL_DB_ZITADEL_PASSWORD:?Set ZITADEL_DB_ZITADEL_PASSWORD in .env.prod}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: postgres
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${ZITADEL_DB_POSTGRES_PASSWORD}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      # TLS is terminated by nginx — Zitadel sees plain HTTP internally
+      ZITADEL_TLS_ENABLED: "false"
+      ZITADEL_EXTERNALSECURE: "true"
+      ZITADEL_EXTERNALPORT: 443
+      ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN:-auth.gethacked.eu}
+      # First-instance setup
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Admin
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: "2030-01-01T00:00:00Z"
+      ZITADEL_FIRSTINSTANCE_LOGINPOLICY_ALLOWREGISTER: "true"
+      # SMTP — Zitadel sends verification/password-reset emails
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST in .env.prod}:${SMTP_PORT:-587}
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_SMTP_USER: ${SMTP_USER:-}
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_TLS: "true"
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_FROM: noreply@${ZITADEL_DOMAIN:-auth.gethacked.eu}
+      ZITADEL_FIRSTINSTANCE_SMTPCONFIGURATION_FROMNAME: GetHacked
+      # Disable Login V2 (requires separate Next.js container)
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
+    depends_on:
+      zitadel-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ZITADEL_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "/app/zitadel ready"]
+      interval: 10s
+      timeout: 5s
+      start_period: 45s
+      retries: 5
+    restart: unless-stopped
+
+  # --- GetHacked application ---
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile.prod
+    userns_mode: keep-id
+    depends_on:
+      app-db:
+        condition: service_healthy
+      zitadel:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${APP_PORT:-5150}:5150"
+    env_file:
+      - .env.prod
+    environment:
+      LOCO_ENV: production
+      DATABASE_URL: postgres://${APP_DB_USER:-gethacked}:${APP_DB_PASSWORD}@app-db:5432/${APP_DB_NAME:-gethacked}
+      # App reaches Zitadel via compose network, not the public URL
+      OIDC_ISSUER_URL: https://${ZITADEL_DOMAIN:-auth.gethacked.eu}
+      OIDC_REDIRECT_URI: https://${APP_DOMAIN:-gethacked.eu}/api/auth/oidc/callback
+      OIDC_POST_LOGOUT_REDIRECT_URI: https://${APP_DOMAIN:-gethacked.eu}
+      APP_URL: https://${APP_DOMAIN:-gethacked.eu}
+      SERVER_BINDING: 0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  app_db_data:
+  zitadel_db_data:
