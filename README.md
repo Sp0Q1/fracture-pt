@@ -101,16 +101,14 @@ Runs rustfmt, clippy (pedantic + nursery), semgrep, and all tests inside contain
 
 ## Production Deployment
 
-See the [fracture-core deployment guide](https://github.com/Sp0Q1/fracture-cms/blob/main/docs/DEPLOYMENT.md) for `fracture-ctl` installation, configuration, and the full production workflow.
-
-Quick version:
+See the [fracture-core deployment guide](https://github.com/Sp0Q1/fracture-cms/blob/main/docs/DEPLOYMENT.md) for full instructions.
 
 ```bash
-fracture-ctl init --prod > .env.prod && chmod 600 .env.prod
-podman compose -f compose.prod.yaml up -d app
+fracture-ctl init --image ghcr.io/sp0q1/fracture-pt:latest
+fracture-ctl up
 ```
 
-This pulls a pre-built image from `ghcr.io` — no local build needed.
+No git clone needed on the production server. `fracture-ctl` generates all config files and pulls the pre-built image.
 
 For the gethacked-specific nginx config, see `deploy/nginx-gethacked.conf`.
 
