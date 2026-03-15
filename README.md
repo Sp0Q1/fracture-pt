@@ -107,9 +107,10 @@ Quick version:
 
 ```bash
 fracture-ctl init --prod > .env.prod && chmod 600 .env.prod
-podman compose -f compose.prod.yaml build app
 podman compose -f compose.prod.yaml up -d app
 ```
+
+This pulls a pre-built image from `ghcr.io` — no local build needed.
 
 For the gethacked-specific nginx config, see `deploy/nginx-gethacked.conf`.
 
