@@ -25,24 +25,24 @@ workers:
 
 mailer:
   smtp:
-    enable: true
-    host: {{ get_env(name="MAILER_HOST") }}
+    enable: {{ get_env(name="MAILER_ENABLED", default="false") }}
+    host: {{ get_env(name="MAILER_HOST", default="localhost") }}
     port: {{ get_env(name="MAILER_PORT", default="587") }}
     secure: true
     auth:
-      user: {{ get_env(name="MAILER_USER") }}
-      password: {{ get_env(name="MAILER_PASSWORD") }}
+      user: {{ get_env(name="MAILER_USER", default="") }}
+      password: {{ get_env(name="MAILER_PASSWORD", default="") }}
 
 settings:
   contact_email: {{ get_env(name="CONTACT_EMAIL", default="hello@gethacked.eu") }}
   oidc:
     provider_name: {{ get_env(name="OIDC_PROVIDER_NAME", default="zitadel") }}
-    issuer_url: {{ get_env(name="OIDC_ISSUER_URL") }}
-    client_id: "{{ get_env(name='OIDC_CLIENT_ID') }}"
-    client_secret: {{ get_env(name="OIDC_CLIENT_SECRET") }}
+    issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="") }}
+    client_id: "{{ get_env(name='OIDC_CLIENT_ID', default='') }}"
+    client_secret: {{ get_env(name="OIDC_CLIENT_SECRET", default="") }}
     project_id: "{{ get_env(name='OIDC_PROJECT_ID', default='') }}"
-    redirect_uri: {{ get_env(name="OIDC_REDIRECT_URI") }}
-    post_logout_redirect_uri: {{ get_env(name="OIDC_POST_LOGOUT_REDIRECT_URI") }}
+    redirect_uri: {{ get_env(name="OIDC_REDIRECT_URI", default="") }}
+    post_logout_redirect_uri: {{ get_env(name="OIDC_POST_LOGOUT_REDIRECT_URI", default="") }}
     scopes:
       - openid
       - email
