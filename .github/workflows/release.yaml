@@ -3,6 +3,10 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   release:
     uses: Sp0Q1/fracture-cms/.github/workflows/release-app.yaml@main
