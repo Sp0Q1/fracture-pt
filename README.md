@@ -101,121 +101,25 @@ Runs rustfmt, clippy (pedantic + nursery), semgrep, and all tests inside contain
 
 ## Production Deployment
 
-Production uses `compose.prod.yaml` with PostgreSQL, Zitadel, and the app — all behind nginx with TLS.
-
-### 1. Generate Secrets
-
 ```bash
-# Generate all secrets at once:
-echo "JWT_SECRET=$(openssl rand -base64 32)"
-echo "APP_DB_PASSWORD=$(openssl rand -base64 24)"
-echo "ZITADEL_DB_POSTGRES_PASSWORD=$(openssl rand -base64 24)"
-echo "ZITADEL_DB_ZITADEL_PASSWORD=$(openssl rand -base64 24)"
-echo "ZITADEL_MASTERKEY=$(openssl rand -hex 16)"
-```
+# 1. Generate config with secure secrets
+fracture-ctl init --prod > .env.prod && chmod 600 .env.prod
 
-### 2. Configure Environment
-
-```bash
-cp .env.prod.example .env.prod
-# Edit .env.prod with the generated secrets and your SMTP credentials.
-# OIDC_CLIENT_ID and OIDC_CLIENT_SECRET are filled after step 4.
-```
-
-See `.env.prod.example` for all variables and their descriptions.
-
-### 3. Build and Start
-
-```bash
-# Build the app image
+# 2. Build and start (SQLite by default)
 podman compose -f compose.prod.yaml build app
+podman compose -f compose.prod.yaml up -d app
 
-# Start all services (PostgreSQL, Zitadel, app)
-podman compose -f compose.prod.yaml up -d
-```
-
-### 4. Configure Zitadel
-
-After Zitadel is healthy, create the OIDC application:
-
-```bash
-# Wait for Zitadel to be ready
-until curl -sf http://localhost:8081/debug/ready > /dev/null; do sleep 2; done
-
-# Get the admin PAT from logs
-PAT=$(podman compose -f compose.prod.yaml logs zitadel 2>&1 \
-  | grep -oE '^[A-Za-z0-9_-]{30,}' | head -1 | tr -d '[:space:]')
-
-# Create project + OIDC app (adjust domain as needed)
-DOMAIN=gethacked.eu
-AUTH_DOMAIN=auth.gethacked.eu
-ZITADEL_API=http://localhost:8081
-
-PROJECT_ID=$(curl -s -X POST "$ZITADEL_API/management/v1/projects" \
-  -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
-  -d '{"name":"GetHacked"}' | jq -r '.id')
-
-APP_RESP=$(curl -s -X POST "$ZITADEL_API/management/v1/projects/$PROJECT_ID/apps/oidc" \
-  -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
-  -d "{
-    \"name\": \"GetHacked\",
-    \"redirectUris\": [\"https://$DOMAIN/api/auth/oidc/callback\"],
-    \"responseTypes\": [\"OIDC_RESPONSE_TYPE_CODE\"],
-    \"grantTypes\": [\"OIDC_GRANT_TYPE_AUTHORIZATION_CODE\"],
-    \"appType\": \"OIDC_APP_TYPE_WEB\",
-    \"authMethodType\": \"OIDC_AUTH_METHOD_TYPE_BASIC\",
-    \"postLogoutRedirectUris\": [\"https://$DOMAIN\"],
-    \"idTokenUserinfoAssertion\": true
-  }")
-
-echo "OIDC_PROJECT_ID=$PROJECT_ID"
-echo "OIDC_CLIENT_ID=$(echo $APP_RESP | jq -r '.clientId')"
-echo "OIDC_CLIENT_SECRET=$(echo $APP_RESP | jq -r '.clientSecret')"
-# Add these to .env.prod, then restart the app:
-# podman compose -f compose.prod.yaml restart app
-```
-
-### 5. Configure nginx
-
-```bash
-# Install the nginx config
+# 3. (Optional) Configure nginx reverse proxy
 sudo cp deploy/nginx-gethacked.conf /etc/nginx/sites-available/gethacked
 sudo ln -sf /etc/nginx/sites-available/gethacked /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-
-# Obtain TLS certificates
-sudo certbot --nginx -d gethacked.eu -d auth.gethacked.eu
-
-# Uncomment the HSTS header in the nginx config after verifying TLS works
 ```
 
-### Architecture
+The app boots and serves pages without OIDC or SMTP. Add identity provider and mail settings to `.env.prod` when ready, then restart.
 
-```
-Internet
-  │
-  ├─ https://gethacked.eu ──► nginx :443 ──► app :5150
-  │                                            │
-  │                                            ├── app-db (PostgreSQL :5432)
-  │                                            │
-  ├─ https://auth.gethacked.eu ──► nginx :443 ──► zitadel :8081
-  │                                                  │
-  │                                                  └── zitadel-db (PostgreSQL :5432)
-```
+For PostgreSQL instead of SQLite, uncomment the database lines in `.env.prod` and start the `db` service too.
 
-All services bind to `127.0.0.1` — nothing is exposed directly to the internet. nginx terminates TLS and proxies to the local ports.
-
-### Security Checklist
-
-- [ ] All secrets generated with `openssl rand` (never reuse dev values)
-- [ ] `.env.prod` is `chmod 600` and not committed to version control
-- [ ] TLS certificates obtained and auto-renewing (certbot)
-- [ ] HSTS header enabled after verifying TLS
-- [ ] Databases not exposed to the public internet (compose network only)
-- [ ] Container runs as non-root via `userns_mode: keep-id`
-- [ ] Firewall allows only ports 80, 443, and SSH
-- [ ] `APP_DOMAIN` and `ZITADEL_DOMAIN` use HTTPS
-- [ ] SMTP credentials are set for email verification and password resets
+See [fracture-core](https://github.com/Sp0Q1/fracture-cms) for the full deployment guide and `fracture-ctl` documentation.
 
 ## Project Structure
 
