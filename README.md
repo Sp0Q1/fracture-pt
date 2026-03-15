@@ -101,6 +101,17 @@ Runs rustfmt, clippy (pedantic + nursery), semgrep, and all tests inside contain
 
 ## Production Deployment
 
+### Install fracture-ctl
+
+Download the latest binary from [fracture-core releases](https://github.com/Sp0Q1/fracture-cms/releases):
+
+```bash
+curl -sL https://github.com/Sp0Q1/fracture-cms/releases/latest/download/fracture-ctl-linux-amd64.tar.gz \
+  | tar xz -C ~/.local/bin/
+```
+
+### Deploy
+
 ```bash
 # 1. Generate config with secure secrets
 fracture-ctl init --prod > .env.prod && chmod 600 .env.prod
