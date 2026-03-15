@@ -101,36 +101,17 @@ Runs rustfmt, clippy (pedantic + nursery), semgrep, and all tests inside contain
 
 ## Production Deployment
 
-### Install fracture-ctl
+See the [fracture-core deployment guide](https://github.com/Sp0Q1/fracture-cms/blob/main/docs/DEPLOYMENT.md) for `fracture-ctl` installation, configuration, and the full production workflow.
 
-Download the latest binary from [fracture-core releases](https://github.com/Sp0Q1/fracture-cms/releases):
-
-```bash
-curl -sL https://github.com/Sp0Q1/fracture-cms/releases/latest/download/fracture-ctl-linux-amd64.tar.gz \
-  | tar xz -C ~/.local/bin/
-```
-
-### Deploy
+Quick version:
 
 ```bash
-# 1. Generate config with secure secrets
 fracture-ctl init --prod > .env.prod && chmod 600 .env.prod
-
-# 2. Build and start (SQLite by default)
 podman compose -f compose.prod.yaml build app
 podman compose -f compose.prod.yaml up -d app
-
-# 3. (Optional) Configure nginx reverse proxy
-sudo cp deploy/nginx-gethacked.conf /etc/nginx/sites-available/gethacked
-sudo ln -sf /etc/nginx/sites-available/gethacked /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
 ```
 
-The app boots and serves pages without OIDC or SMTP. Add identity provider and mail settings to `.env.prod` when ready, then restart.
-
-For PostgreSQL instead of SQLite, uncomment the database lines in `.env.prod` and start the `db` service too.
-
-See [fracture-core](https://github.com/Sp0Q1/fracture-cms) for the full deployment guide and `fracture-ctl` documentation.
+For the gethacked-specific nginx config, see `deploy/nginx-gethacked.conf`.
 
 ## Project Structure
 
