@@ -56,6 +56,28 @@ pub async fn scope_wizard(ViewEngine(v): ViewEngine<TeraView>) -> Result<Respons
     views::pages::scope_wizard(&v)
 }
 
+/// `GET /robots.txt`
+#[debug_handler]
+pub async fn robots_txt() -> Result<Response> {
+    let content = include_str!("../../assets/static/robots.txt");
+    Ok(Response::builder()
+        .header("content-type", "text/plain")
+        .body(axum::body::Body::from(content))
+        .expect("robots.txt response")
+        .into_response())
+}
+
+/// `GET /sitemap.xml`
+#[debug_handler]
+pub async fn sitemap_xml() -> Result<Response> {
+    let content = include_str!("../../assets/static/sitemap.xml");
+    Ok(Response::builder()
+        .header("content-type", "application/xml")
+        .body(axum::body::Body::from(content))
+        .expect("sitemap.xml response")
+        .into_response())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .add("/pricing", get(pricing))
@@ -67,4 +89,6 @@ pub fn routes() -> Routes {
         .add("/incident-response", get(incident_response))
         .add("/free-scan", get(free_scan))
         .add("/scope", get(scope_wizard))
+        .add("/robots.txt", get(robots_txt))
+        .add("/sitemap.xml", get(sitemap_xml))
 }
