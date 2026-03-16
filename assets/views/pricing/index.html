@@ -1,7 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Pricing Plans | Security Testing from EUR 100/mo | GetHacked.eu{% endblock title %}
-{% block meta_description %}Transparent security testing plans for every business. From vulnerability scans to managed pentesting engagements. No hidden fees. SSO included on every plan.{% endblock meta_description %}
+{% block canonical %}<link rel="canonical" href="https://gethacked.eu/pricing" />{% endblock canonical %}
+{% block title %}Pricing Plans | Security Testing from EUR 99/mo | GetHacked.eu{% endblock title %}
+{% block meta_description %}Transparent security testing plans for every business. From vulnerability scans to managed pentesting engagements. No hidden fees. SSO included on every plan. 100% EU-hosted.{% endblock meta_description %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Can I upgrade or downgrade my plan at any time?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Upgrades take effect immediately with prorated billing. Downgrades apply at your next renewal date."}},
+    {"@type": "Question", "name": "Is there a free trial?", "acceptedAnswer": {"@type": "Answer", "text": "Recon and Strike plans include a 14-day free trial. No credit card required. Offensive plan offers a guided demo with our team."}},
+    {"@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": {"@type": "Answer", "text": "All scan data, results, and reports are stored in EU-based data centres in Germany and the Netherlands. Your data never leaves the European Union."}},
+    {"@type": "Question", "name": "What is Attack Surface Mapping?", "acceptedAnswer": {"@type": "Answer", "text": "Attack Surface Mapping continuously discovers and monitors your external-facing assets — subdomains, open ports, certificates, and exposed services. A free one-time scan is available with no account required."}},
+    {"@type": "Question", "name": "How does the managed pentest engagement work?", "acceptedAnswer": {"@type": "Answer", "text": "You define your scope, our team sends an offer with pricing and timeline. Once accepted, pentesters are assigned and findings appear in your dashboard in real time."}}
+  ]
+}
+</script>
+{% endblock structured_data %}
 
 {% block content %}
 <section class="pricing-hero">

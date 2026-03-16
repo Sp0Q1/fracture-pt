@@ -6,6 +6,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="{% block meta_description %}Europe's offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. 100% EU-hosted. Data never leaves the EU.{% endblock meta_description %}">
   <title>{% block title %}GetHacked.eu | EU-Based Penetration Testing & Security Platform{% endblock title %}</title>
+  {% block canonical %}<link rel="canonical" href="https://gethacked.eu/" />{% endblock canonical %}
+  <link rel="alternate" hreflang="en" href="https://gethacked.eu/" />
+  <link rel="alternate" hreflang="x-default" href="https://gethacked.eu/" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}" />
+  <meta property="og:site_name" content="GetHacked.eu" />
+  <meta property="og:title" content="{% block og_title %}{% endblock og_title %}" />
+  <meta property="og:description" content="{% block og_description %}{% endblock og_description %}" />
+  <meta property="og:locale" content="en_GB" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "GetHacked.eu",
+    "url": "https://gethacked.eu",
+    "description": "EU-based offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping.",
+    "areaServed": "EU",
+    "knowsAbout": ["Penetration Testing", "Vulnerability Scanning", "Red Teaming", "Attack Surface Management", "Incident Response"]
+  }
+  </script>
+  {% block structured_data %}{% endblock structured_data %}
   <link rel="stylesheet" href="/static/oat.min.css" integrity="sha384-Q7tDn81qF6GoBv+Rdj5l6JFr2qaiXG01Z5dT8jRpp5lE+6IZx8as9X/Igi7ISdBP" crossorigin="anonymous">
   <link rel="stylesheet" href="/static/app.css?v=7" integrity="sha384-XGrsX8oOh1aWeMI7D7/LdXsZE3LVIXYYC6Rf/durxtVsQF4zNrKojoZMqZmlSCii" crossorigin="anonymous">
   {% block head %}

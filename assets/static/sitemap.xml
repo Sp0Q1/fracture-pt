@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://gethacked.eu/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://gethacked.eu/pricing</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/free-scan</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/scope</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/services/pentesting</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/services/scanning</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/services/red-team</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/services/attack-surface-mapping</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/incident-response</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/about</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/contact</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://gethacked.eu/legal/privacy</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
+  <url><loc>https://gethacked.eu/legal/terms</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
+  <url><loc>https://gethacked.eu/legal/imprint</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
+</urlset>
