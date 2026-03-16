@@ -32,7 +32,8 @@ WORKDIR /app
 # Copy binary
 COPY --from=builder /app/target/release/gethacked-cli ./gethacked-cli
 
-# Copy runtime assets
+# Copy runtime assets (ARG busts cache on each build)
+ARG CACHE_BUST
 COPY config/ ./config/
 COPY assets/ ./assets/
 
