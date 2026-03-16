@@ -6,8 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="{% block meta_description %}Europe's offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. 100% EU-hosted. Data never leaves the EU.{% endblock meta_description %}">
   <title>{% block title %}GetHacked.eu | EU-Based Penetration Testing & Security Platform{% endblock title %}</title>
+  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
   {% block canonical %}<link rel="canonical" href="https://gethacked.eu/" />{% endblock canonical %}
+  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
   <link rel="alternate" hreflang="en" href="https://gethacked.eu/" />
+  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
   <link rel="alternate" hreflang="x-default" href="https://gethacked.eu/" />
   <!-- Open Graph -->
   <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}" />
@@ -17,7 +20,8 @@
   <meta property="og:locale" content="en_GB" />
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
-  <!-- Structured Data -->
+  <!-- Structured Data (inline JSON-LD, not executable — SRI not applicable) -->
+  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",

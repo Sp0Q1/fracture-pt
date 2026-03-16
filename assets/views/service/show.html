@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
+<!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 {% block canonical %}<link rel="canonical" href="https://gethacked.eu/services/{{ service.slug }}" />{% endblock canonical %}
 {% block title %}{{ service.name }} | EU-Based Security Services | GetHacked.eu{% endblock title %}
 
 {% block meta_description %}{{ service.description | truncate(length=160, end="...") }}{% endblock meta_description %}
 
 {% block structured_data %}
+<!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -21,6 +23,7 @@
   "url": "https://gethacked.eu/services/{{ service.slug }}"
 }
 </script>
+<!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
