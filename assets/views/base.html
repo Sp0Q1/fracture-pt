@@ -35,7 +35,7 @@
   </script>
   {% block structured_data %}{% endblock structured_data %}
   <link rel="stylesheet" href="/static/oat.min.css" integrity="sha384-Q7tDn81qF6GoBv+Rdj5l6JFr2qaiXG01Z5dT8jRpp5lE+6IZx8as9X/Igi7ISdBP" crossorigin="anonymous">
-  <link rel="stylesheet" href="/static/app.css?v=8" integrity="sha384-vkqWjdevcNgfnFro/dVA/OscEyXEH0K2ISTjzVzmg0O+m2as6trraLhuw4dGH/Md" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/app.css?v=9" integrity="sha384-hjmVumVavTCanaPeUBN1+AhOz5b2NNrMkabdk2D3Ufjl44xhoUkSk7aRDgURyJha" crossorigin="anonymous">
   {% block head %}
   {% endblock head %}
 </head>
@@ -51,6 +51,9 @@
                 <strong class="gradient-text">GetHacked.eu</strong>
             </a>
         </span>
+        <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded',this.getAttribute('aria-expanded')==='false'?'true':'false');this.closest('nav').classList.toggle('nav-open')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         {% if user_name %}
         <ot-dropdown class="org-switcher-nav">
             <button class="org-badge" popovertarget="org-switcher" aria-label="Switch organisation">
