@@ -50,11 +50,17 @@
             </div>
 
             <div class="scope-control" id="control-scope">
-                <h3>Scope <span class="scope-value-display" id="scope-value-display">5 targets</span></h3>
-                <p class="scope-control-hint">IP addresses, VLANs, web apps, APIs, mobile apps, or code repos</p>
-                <div class="scope-slider-group">
-                    <input type="range" id="scope-range" min="1" max="50" value="5" class="scope-slider">
-                    <input type="number" id="scope-number" min="1" max="50" value="5" class="scope-number-input">
+                <h3>Complexity <span class="scope-value-display" id="scope-value-display">Medium</span></h3>
+                <p class="scope-control-hint">How large and complex is the environment to be tested?</p>
+                <div class="scope-complexity-options">
+                    <input type="range" id="scope-range" min="1" max="5" value="3" class="scope-slider">
+                    <div class="scope-complexity-labels">
+                        <span>Minimal</span>
+                        <span>Small</span>
+                        <span>Medium</span>
+                        <span>Large</span>
+                        <span>Enterprise</span>
+                    </div>
                 </div>
             </div>
 
@@ -124,7 +130,7 @@
         <form action="/api/contact" method="POST" id="scope-form">
             <input type="hidden" name="subject" value="scope-wizard">
             <input type="hidden" name="wizard_approach" id="form-approach" value="crystal">
-            <input type="hidden" name="wizard_scope" id="form-scope" value="5">
+            <input type="hidden" name="wizard_scope" id="form-scope" value="Medium">
             <input type="hidden" name="wizard_duration" id="form-duration" value="4">
             <input type="hidden" name="wizard_estimate" id="form-estimate" value="5600">
             <div class="row">
@@ -194,5 +200,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/scope-wizard.js" integrity="sha384-MTVSg6uhNobScrw9USEa+oDaybyo876weusJh/24klOO+tSZXNLjCOYqjqZBExM2" crossorigin="anonymous"></script>
+<script src="/static/scope-wizard.js" integrity="sha384-5iFO4dvp9mX0l7g5jUcyGV4fC7s8q6tSnIH9hackNg3bd0SIk0Fg1MnbWDOJtUMa" crossorigin="anonymous"></script>
 {% endblock js %}

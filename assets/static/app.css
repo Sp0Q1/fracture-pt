@@ -475,6 +475,8 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
 .scope-approach-hint { font-size:.8rem; color:#f59e0b; margin:.5rem 0 0; line-height:1.5; display:none }
 .scope-approach-hint.visible { display:block }
 .scope-lock-hint { font-size:.75rem; color:var(--muted-foreground); margin-right:auto }
+.scope-complexity-options { display:flex; flex-direction:column; gap:.25rem }
+.scope-complexity-labels { display:flex; justify-content:space-between; font-size:.75rem; color:var(--muted-foreground); padding:0 .25rem }
 .scope-duration-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem }
 .scope-duration-header h3 { margin:0 }
 .scope-duration-warning { font-size:.8rem; color:#f59e0b; margin:.5rem 0 0; line-height:1.5; display:none }
