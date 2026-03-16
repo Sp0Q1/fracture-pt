@@ -19,9 +19,9 @@
   var BASE_DAYS_PER_TARGET = 0.8;
 
   var EFFICIENCY = {
-    crystal: 1.0,
+    crystal: 1.35,
     grey: 1.15,
-    black: 1.35,
+    black: 1.0,
     redteam: 2.0,
   };
 
@@ -108,20 +108,15 @@
     if (approach === "redteam") return "";
 
     var ratio = getCoverageRatio(approach, complexity, duration);
-    var label = COMPLEXITY[complexity].label.toLowerCase();
 
-    if (approach === "crystal" && ratio < 0.7) {
-      return "With " + duration + " day" + (duration === 1 ? "" : "s") +
-        " for a " + label + " environment, crystal-box may not achieve full coverage. Consider reducing complexity or adding more days \u2014 or switch to grey-box for faster reconnaissance.";
+    if (ratio < 0.7) {
+      return "The allocated duration may not provide full coverage for this approach and complexity. Consider adding more days or reducing complexity.";
     }
-    if (approach === "crystal" && ratio < 0.9) {
-      return "Tight schedule for crystal-box \u2014 coverage will be good but not exhaustive. Adding a few more days would allow deeper analysis.";
+    if (ratio < 0.9) {
+      return "Tight schedule \u2014 coverage will be good but not exhaustive. A few more days would allow deeper analysis.";
     }
     if (approach === "black" && duration >= calcDuration("crystal", complexity)) {
-      return "You have enough days for a crystal-box assessment, which would provide significantly deeper coverage at the same cost.";
-    }
-    if (approach === "grey" && duration >= calcDuration("crystal", complexity) * 1.2) {
-      return "With this many days, crystal-box would provide the most thorough results \u2014 worth considering if you can share source access.";
+      return "With this budget, a crystal-box assessment would provide the deepest coverage \u2014 worth considering if you can share source access.";
     }
     return "";
   }
