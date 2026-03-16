@@ -51,7 +51,7 @@
                 <strong class="gradient-text">GetHacked.eu</strong>
             </a>
         </span>
-        <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="this.setAttribute('aria-expanded',this.getAttribute('aria-expanded')==='false'?'true':'false');this.closest('nav').classList.toggle('nav-open')">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         {% if user_name %}
@@ -175,7 +175,7 @@
         </div>
     </footer>
   <script src="/static/oat.min.js" integrity="sha384-/Trl5iuXWQS6d7T9TWGsfbC7cIDm88CDZc+BdI3LCdclFglQVOz7AmU+M7R5IQE/" crossorigin="anonymous"></script>
-  <script src="/static/app.js?v=1" integrity="sha384-0xY0UW6T1dhzP8EPiKtvMs+jibPzw5afOdeZoBpGEoM+olcSt2Np/xAs+L2vIWT+" crossorigin="anonymous"></script>
+  <script src="/static/app.js?v=2" integrity="sha384-NhDWf/eg2gFEwsQofxLsIXDEoN2PrZyJATca2zMdANyq2tpZhy2QOO+GMUKsTAZ7" crossorigin="anonymous"></script>
   {% block js %}
   {% endblock js %}
 </body>
