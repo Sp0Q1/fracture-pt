@@ -177,8 +177,10 @@
       approachRadios[j].disabled = false;
     }
 
-    // Approach coverage hint
-    var hint = getApproachHint(currentApproach, currentComplexity, currentDuration);
+    // Approach coverage hint — only when duration is manually set.
+    // When locked, the system auto-calculates the right duration for the
+    // chosen approach, so suggesting a different approach is circular.
+    var hint = durationLocked ? "" : getApproachHint(currentApproach, currentComplexity, currentDuration);
     approachHint.textContent = hint;
     approachHint.classList.toggle("visible", !!hint);
 
