@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gethacked.eu/static/sitemap.xml
+
+# Authenticated areas
+Disallow: /targets
+Disallow: /engagements
+Disallow: /reports
+Disallow: /invoices
+Disallow: /subscriptions
+Disallow: /orgs
+Disallow: /admin
+Disallow: /pentester
+Disallow: /api/
