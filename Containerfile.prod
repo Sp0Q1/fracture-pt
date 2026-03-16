@@ -29,12 +29,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd --uid 1000 --create-home --shell /bin/bash appuser
 WORKDIR /app
 
-# Copy binary
+# Copy binary and config (assets are volume-mounted in production)
 COPY --from=builder /app/target/release/gethacked-cli ./gethacked-cli
-
-# Copy runtime assets (ARG busts cache on each build)
-ARG CACHE_BUST
 COPY config/ ./config/
+
+# Bake assets as fallback (overridden by volume mount in production)
 COPY assets/ ./assets/
 
 # Data directory for SQLite
