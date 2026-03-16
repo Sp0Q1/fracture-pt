@@ -1,15 +1,16 @@
 User-agent: *
-Allow: /
+Disallow: /
 
-Sitemap: https://gethacked.eu/static/sitemap.xml
+Allow: /$
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /free-scan
+Allow: /scope
+Allow: /services/
+Allow: /incident-response
+Allow: /legal/
+Allow: /sitemap.xml
+Allow: /robots.txt
 
-# Authenticated areas
-Disallow: /targets
-Disallow: /engagements
-Disallow: /reports
-Disallow: /invoices
-Disallow: /subscriptions
-Disallow: /orgs
-Disallow: /admin
-Disallow: /pentester
-Disallow: /api/
+Sitemap: https://gethacked.eu/sitemap.xml
