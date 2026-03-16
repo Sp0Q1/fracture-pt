@@ -14,7 +14,7 @@
   "mainEntity": [
     {"@type": "Question", "name": "Can I upgrade or downgrade my plan at any time?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Upgrades take effect immediately with prorated billing. Downgrades apply at your next renewal date."}},
     {"@type": "Question", "name": "Is there a free trial?", "acceptedAnswer": {"@type": "Answer", "text": "Recon and Strike plans include a 14-day free trial. No credit card required. Offensive plan offers a guided demo with our team."}},
-    {"@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": {"@type": "Answer", "text": "All scan data, results, and reports are stored in EU-based data centres in Germany and the Netherlands. Your data never leaves the European Union."}},
+    {"@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": {"@type": "Answer", "text": "All scan data, results, and reports are stored in EU-based data centres in Germany and the Netherlands. We aim to keep all data within the EU."}},
     {"@type": "Question", "name": "What is Attack Surface Mapping?", "acceptedAnswer": {"@type": "Answer", "text": "Attack Surface Mapping continuously discovers and monitors your external-facing assets — subdomains, open ports, certificates, and exposed services. A free one-time scan is available with no account required."}},
     {"@type": "Question", "name": "How does the managed pentest engagement work?", "acceptedAnswer": {"@type": "Answer", "text": "You define your scope, our team sends an offer with pricing and timeline. Once accepted, pentesters are assigned and findings appear in your dashboard in real time."}}
   ]
@@ -77,7 +77,7 @@
             <ul class="tier-features">
                 <li>Everything in Recon, plus:</li>
                 <li>Weekly automated scanning</li>
-                <li>2 hours manual testing/month</li>
+                <li>1 hour manual testing/month</li>
                 <li>Vulnerability trending and history</li>
                 <li>Scheduled scans</li>
                 <li>API access for CI/CD</li>
@@ -95,11 +95,11 @@
             <ul class="tier-features">
                 <li>Everything in Strike, plus:</li>
                 <li>Multi-domain coverage</li>
-                <li>4 hours manual pentesting/month</li>
+                <li>2 hours manual pentesting/month</li>
                 <li>Source code review</li>
                 <li>Custom scan profiles</li>
                 <li>Remediation tracking &amp; verification re-scans</li>
-                <li>Priority support (24h SLA)</li>
+                <li>Priority email support</li>
             </ul>
             <a href="/api/auth/oidc/authorize" class="button w-100 cta-button tier-cta">Go Offensive</a>
         </div>
@@ -118,7 +118,7 @@
                 <li>Dedicated scanning infrastructure</li>
                 <li>On-premises deployment</li>
                 <li>Isolated tenant environments</li>
-                <li>SLA-backed support (4h response)</li>
+                <li>Dedicated support</li>
             </ul>
             <a href="/contact" class="button outline w-100 tier-cta">Contact Sales</a>
         </div>
@@ -208,8 +208,8 @@
                 <tr>
                     <td>Included manual testing</td>
                     <td>&mdash;</td>
-                    <td>2 hrs/month</td>
-                    <td class="featured-col">4 hrs/month</td>
+                    <td>1 hr/month</td>
+                    <td class="featured-col">2 hrs/month</td>
                     <td>Bundled days</td>
                 </tr>
                 <tr>
@@ -311,8 +311,8 @@
                     <td>Support</td>
                     <td>Community</td>
                     <td>Priority email</td>
-                    <td class="featured-col">Priority (24h SLA)</td>
-                    <td>Dedicated (4h SLA)</td>
+                    <td class="featured-col">Priority email</td>
+                    <td>Dedicated</td>
                 </tr>
                 <tr>
                     <td>Dedicated account manager</td>
@@ -347,7 +347,7 @@
             <div class="include-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/></svg>
                 <h4>EU-hosted infrastructure</h4>
-                <p>All data processed and stored in EU data centres. Data never leaves the European Union.</p>
+                <p>All data processed and stored in EU data centres. We aim to keep all data within the EU.</p>
             </div>
         </div>
         <div class="col-4">
@@ -380,7 +380,7 @@
         </details>
         <details class="faq-item">
             <summary>Where is my data stored?</summary>
-            <p>All scan data, results, and reports are stored in EU-based data centres. We use infrastructure located in Germany and the Netherlands. Your data never leaves the European Union.</p>
+            <p>All scan data, results, and reports are stored in EU-based data centres. We use infrastructure located in Germany and the Netherlands. We aim to keep all data within the EU.</p>
         </details>
         <details class="faq-item">
             <summary>Do you offer discounts for annual billing?</summary>
@@ -392,7 +392,7 @@
         </details>
         <details class="faq-item">
             <summary>How experienced are your testers?</summary>
-            <p>Our security team consists of seasoned offensive security professionals with deep expertise in web application testing, network penetration, and adversary simulation. Enterprise engagements are led by senior testers with extensive real-world experience.</p>
+            <p>Our security team has hands-on experience in web application testing, network penetration, and adversary simulation.</p>
         </details>
         <details class="faq-item">
             <summary>How does the managed pentest engagement work?</summary>
@@ -404,7 +404,7 @@
         </details>
         <details class="faq-item">
             <summary>Who can see my pentest data?</summary>
-            <p>Only users within your organisation and the pentesters specifically assigned to your engagement. Our platform enforces strict tenant isolation and least-privilege access controls. Administrators manage engagements but cannot access other organisations' data.</p>
+            <p>Only users within your organisation and the pentesters specifically assigned to your engagement. Data is separated at the application level. Each organisation's data is only accessible to its members and assigned pentesters.</p>
         </details>
         <details class="faq-item">
             <summary>How are managed pentest engagements priced?</summary>
