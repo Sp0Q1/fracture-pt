@@ -417,7 +417,19 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
     .asm-featured-content { flex-direction:column; align-items:center }
     .asm-featured-cta { justify-content:center }
 }
+/* --- Mobile navigation --- */
+.mobile-menu-toggle { display:none; background:none; border:none; color:var(--foreground); cursor:pointer; padding:.25rem; margin-left:auto }
+
 @media (max-width:768px) {
+    .mobile-menu-toggle { display:inline-flex; align-items:center }
+    nav[data-topnav] { flex-wrap:wrap }
+    nav[data-topnav] > span:not(:first-child),
+    nav[data-topnav] > ot-dropdown:not(.nav-end) { display:none; width:100%; padding:.5rem 0 }
+    nav[data-topnav] > .nav-end { display:none; width:100%; padding:.5rem 0 }
+    nav[data-topnav].nav-open > span:not(:first-child),
+    nav[data-topnav].nav-open > ot-dropdown:not(.nav-end) { display:flex; flex-direction:column }
+    nav[data-topnav].nav-open > .nav-end { display:flex; justify-content:flex-start }
+    nav[data-topnav].nav-open .nav-auth-buttons { flex-direction:row; gap:.5rem }
     .hero h1,.pricing-hero h1,.asm-hero h1 { font-size:2rem }
     .hero { padding:4rem 1rem 3rem }
     .asm-hero { padding:3rem 1rem 2rem }
