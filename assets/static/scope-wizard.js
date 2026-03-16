@@ -20,9 +20,9 @@
 
   var EFFICIENCY = {
     crystal: 1.0,
-    grey: 1.3,
-    black: 1.8,
-    redteam: 2.5,
+    grey: 1.15,
+    black: 1.35,
+    redteam: 2.0,
   };
 
   var APPROACH_COLORS = {
