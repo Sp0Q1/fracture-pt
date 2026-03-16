@@ -306,7 +306,6 @@ dependencies = [
  "axum-core",
  "bytes",
  "cookie",
- "form_urlencoded",
  "futures-util",
  "http",
  "http-body",
@@ -314,6 +313,30 @@ dependencies = [
  "mime",
  "pin-project-lite",
  "rustversion",
+ "serde_core",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "axum-extra"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fef252edff26ddba56bbcdf2ee3307b8129acb86f5749b68990c168a6fcc9c76"
+dependencies = [
+ "axum",
+ "axum-core",
+ "bytes",
+ "cookie",
+ "form_urlencoded",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
  "serde_core",
  "serde_html_form",
  "serde_path_to_error",
@@ -1522,16 +1545,16 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#aa4e61cbd8c99c1350d704369ae730af0a004670"
+source = "git+https://github.com/Sp0Q1/fracture-cms#f585dbf2481dc9744cf5f7c64f5d7e8704310c53"
 dependencies = [
  "async-trait",
  "axum",
- "axum-extra",
+ "axum-extra 0.12.5",
  "chrono",
  "form_urlencoded",
  "fracture-core-migration",
  "include_dir",
- "jsonwebtoken",
+ "jsonwebtoken 10.3.0",
  "loco-rs",
  "openidconnect",
  "reqwest",
@@ -1549,7 +1572,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#aa4e61cbd8c99c1350d704369ae730af0a004670"
+source = "git+https://github.com/Sp0Q1/fracture-cms#f585dbf2481dc9744cf5f7c64f5d7e8704310c53"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
@@ -1719,7 +1742,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
- "axum-extra",
+ "axum-extra 0.12.5",
  "chrono",
  "fluent-templates",
  "fracture-core",
@@ -2424,6 +2447,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonwebtoken"
+version = "10.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0529410abe238729a60b108898784df8984c87f6054c9c4fcacc47e4803c1ce1"
+dependencies = [
+ "base64 0.22.1",
+ "getrandom 0.2.17",
+ "js-sys",
+ "pem",
+ "serde",
+ "serde_json",
+ "signature",
+ "simple_asn1",
+]
+
+[[package]]
 name = "kqueue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2574,7 +2613,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "axum",
- "axum-extra",
+ "axum-extra 0.10.3",
  "axum-test",
  "backtrace_printer",
  "byte-unit",
@@ -2591,7 +2630,7 @@ dependencies = [
  "heck 0.4.1",
  "include_dir",
  "ipnetwork",
- "jsonwebtoken",
+ "jsonwebtoken 9.3.1",
  "lettre",
  "loco-gen",
  "moka",
@@ -5252,9 +5291,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.10.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa"
+checksum = "3e61e67053d25a4e82c844e8424039d9745781b3fc4f32b8d55ed50f5f667ef3"
 dependencies = [
  "tinyvec_macros",
 ]
