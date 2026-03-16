@@ -207,6 +207,7 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
 /* --- Contact --- */
 .contact-hero { text-align:center; padding:4rem 1rem 2rem; max-width:700px; margin:0 auto }
 .contact-hero .subtitle { font-size:1.05rem; color:var(--muted-foreground); line-height:1.7; margin-top:1rem }
+.contact-success-card { max-width:500px; margin:0 auto; padding:0 1rem }
 .contact-grid { max-width:1100px; margin:0 auto; padding:0 1rem }
 .contact-form label { display:block; font-size:.9rem; font-weight:500; margin-bottom:.35rem }
 .contact-form .required { color:#ef4444 }
