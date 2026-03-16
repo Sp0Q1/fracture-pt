@@ -4,38 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="{% block meta_description %}Europe's offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. 100% EU-hosted. Data never leaves the EU.{% endblock meta_description %}">
-  <title>{% block title %}GetHacked.eu | EU-Based Penetration Testing & Security Platform{% endblock title %}</title>
-  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
-  {% block canonical %}<link rel="canonical" href="https://gethacked.eu/" />{% endblock canonical %}
-  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
-  <link rel="alternate" hreflang="en" href="https://gethacked.eu/" />
-  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
-  <link rel="alternate" hreflang="x-default" href="https://gethacked.eu/" />
-  <!-- Open Graph -->
-  <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}" />
-  <meta property="og:site_name" content="GetHacked.eu" />
-  <meta property="og:title" content="{% block og_title %}GetHacked.eu | EU-Based Penetration Testing & Security Platform{% endblock og_title %}" />
-  <meta property="og:description" content="{% block og_description %}Europe's offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. 100% EU-hosted.{% endblock og_description %}" />
-  <meta property="og:locale" content="en_GB" />
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <!-- Structured Data (inline JSON-LD, not executable — SRI not applicable) -->
-  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "GetHacked.eu",
-    "url": "https://gethacked.eu",
-    "description": "EU-based offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping.",
-    "areaServed": "EU",
-    "knowsAbout": ["Penetration Testing", "Vulnerability Scanning", "Red Teaming", "Attack Surface Management", "Incident Response"]
-  }
-  </script>
+  <meta name="description" content="{% block meta_description %}{% endblock meta_description %}">
+  <title>{% block title %}{% endblock title %}</title>
+  {% block canonical %}{% endblock canonical %}
+  {% block og_tags %}{% endblock og_tags %}
   {% block structured_data %}{% endblock structured_data %}
   <link rel="stylesheet" href="/static/oat.min.css" integrity="sha384-Q7tDn81qF6GoBv+Rdj5l6JFr2qaiXG01Z5dT8jRpp5lE+6IZx8as9X/Igi7ISdBP" crossorigin="anonymous">
-  <link rel="stylesheet" href="/static/app.css?v=9" integrity="sha384-hjmVumVavTCanaPeUBN1+AhOz5b2NNrMkabdk2D3Ufjl44xhoUkSk7aRDgURyJha" crossorigin="anonymous">
+  {% block stylesheets %}
+  <link rel="stylesheet" href="/static/app.css">
+  {% endblock stylesheets %}
   {% block head %}
   {% endblock head %}
 </head>
@@ -45,10 +22,12 @@
     <nav data-topnav aria-label="Main navigation">
         <span>
             <a href="/" class="brand">
+                {% block brand_icon %}
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-shield">
                     <path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/>
                 </svg>
-                <strong class="gradient-text">GetHacked.eu</strong>
+                {% endblock brand_icon %}
+                <strong class="gradient-text">{% block brand_name %}Fracture CMS{% endblock brand_name %}</strong>
             </a>
         </span>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
@@ -56,7 +35,7 @@
         </button>
         {% if user_name %}
         <ot-dropdown class="org-switcher-nav">
-            <button class="org-badge" popovertarget="org-switcher" aria-label="Switch organisation">
+            <button class="org-badge" popovertarget="org-switcher" aria-label="Switch organization">
                 {{ org_name | default(value="No Org") | truncate(length=20, end="...") }}
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
@@ -69,32 +48,15 @@
                 {% endfor %}
                 <hr>
                 {% endif %}
-                <a href="/orgs/new" role="menuitem">Create Organisation</a>
-                <a href="/orgs" role="menuitem">Manage Organisations</a>
+                <a href="/orgs/new" role="menuitem">Create Organization</a>
+                <a href="/orgs" role="menuitem">Manage Organizations</a>
             </div>
         </ot-dropdown>
-        <span><a href="/">Dashboard</a></span>
-        <span><a href="/targets">Scans</a></span>
-        <span><a href="/engagements">Pentests</a></span>
-        <span><a href="/reports">Reports</a></span>
+        {% block nav_authenticated %}
+        {% endblock nav_authenticated %}
         {% else %}
-        <ot-dropdown>
-            <button class="ghost" popovertarget="services-menu">Services
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div id="services-menu" popover>
-                <a href="/services/pentesting" role="menuitem">Penetration Testing</a>
-                <a href="/services/scanning" role="menuitem">Vulnerability Scanning</a>
-                <a href="/services/red-team" role="menuitem">Red Teaming</a>
-                <a href="/services/attack-surface-mapping" role="menuitem">Attack Surface Mapping</a>
-                <a href="/incident-response" role="menuitem">Incident Response</a>
-            </div>
-        </ot-dropdown>
-        <span><a href="/pricing">Pricing</a></span>
-        <span><a href="/scope">Scope Your Pentest</a></span>
-        <span><a href="/about">About</a></span>
-        <span><a href="/contact">Contact</a></span>
-        <span><a href="/free-scan" class="nav-free-scan">Free Scan</a></span>
+        {% block nav_guest %}
+        {% endblock nav_guest %}
         {% endif %}
         <ot-dropdown class="nav-end">
             {% if user_name %}
@@ -102,21 +64,25 @@
                 <span class="user-avatar">{{ user_name | truncate(length=1, end="") | upper }}</span>
             </button>
             {% else %}
-            <span class="nav-auth-buttons">
-                <a href="/api/auth/oidc/authorize" class="button ghost small">Log In</a>
-                <a href="/api/auth/oidc/authorize" class="button small cta-button">Get Started</a>
-            </span>
+            {% block nav_auth_buttons %}
+            <button class="icon ghost" popovertarget="account-menu" aria-label="Account menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+                </svg>
+            </button>
+            {% endblock nav_auth_buttons %}
             {% endif %}
             <div id="account-menu" popover>
                 {% if user_name %}
                 <span role="menuitem">{{ user_name }}</span>
                 <hr>
-                <a href="/" role="menuitem">Dashboard</a>
-                <a href="/subscriptions" role="menuitem">Subscriptions</a>
-                <a href="/invoices" role="menuitem">Invoices</a>
-                <a href="/orgs" role="menuitem">Organisations</a>
-                <hr>
+                {% block account_menu_items %}
+                <a href="/orgs" role="menuitem">Organizations</a>
+                {% endblock account_menu_items %}
                 <a href="/api/auth/oidc/logout" role="menuitem">Sign out</a>
+                {% else %}
+                <a href="/api/auth/oidc/authorize" role="menuitem">Sign in / Create account</a>
                 {% endif %}
             </div>
         </ot-dropdown>
@@ -126,56 +92,24 @@
         {% endblock content %}
     </main>
     <footer class="site-footer" role="contentinfo">
+        {% block footer %}
         <div class="footer-grid">
             <div class="footer-brand">
-                <strong class="gradient-text">GetHacked.eu</strong>
-                <p>Offensive Security, European Standards.</p>
-                <div class="footer-eu-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003399" stroke-width="2"><path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/></svg>
-                    <small>100% EU-hosted infrastructure</small>
-                </div>
+                <strong class="gradient-text">{% block footer_brand %}Fracture CMS{% endblock footer_brand %}</strong>
+                <p>{% block footer_tagline %}Secure content management built with Rust.{% endblock footer_tagline %}</p>
             </div>
-            <div class="footer-col">
-                <h4>Services</h4>
-                <ul>
-                    <li><a href="/services/pentesting">Penetration Testing</a></li>
-                    <li><a href="/services/scanning">Vulnerability Scanning</a></li>
-                    <li><a href="/services/red-team">Red Teaming</a></li>
-                    <li><a href="/services/attack-surface-mapping">Attack Surface Mapping</a></li>
-                    <li><a href="/free-scan">Free ASM Scan</a></li>
-                    <li><a href="/scope">Scope Wizard</a></li>
-                    <li><a href="/incident-response">Incident Response</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Company</h4>
-                <ul>
-                    <li><a href="/about">About</a></li>
-                    <li><a href="/contact">Contact</a></li>
-                    <li><a href="/pricing">Pricing</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Legal</h4>
-                <ul>
-                    <li><a href="/legal/privacy">Privacy Policy</a></li>
-                    <li><a href="/legal/terms">Terms of Service</a></li>
-                    <li><a href="/legal/imprint">Impressum</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-trust-row">
-            <span class="badge outline">100% EU-Hosted</span>
-            <span class="badge outline">Offensive Security Experts</span>
-            <span class="badge outline">Real-Time Findings</span>
-            <span class="badge outline">Encrypted at Rest &amp; In Transit</span>
+            {% block footer_columns %}
+            {% endblock footer_columns %}
         </div>
         <div class="footer-bottom">
-            &copy; 2026 GetHacked.eu &mdash; Registered in the European Union
+            {% block footer_bottom %}{% endblock footer_bottom %}
         </div>
+        {% endblock footer %}
     </footer>
   <script src="/static/oat.min.js" integrity="sha384-/Trl5iuXWQS6d7T9TWGsfbC7cIDm88CDZc+BdI3LCdclFglQVOz7AmU+M7R5IQE/" crossorigin="anonymous"></script>
-  <script src="/static/app.js?v=2" integrity="sha384-NhDWf/eg2gFEwsQofxLsIXDEoN2PrZyJATca2zMdANyq2tpZhy2QOO+GMUKsTAZ7" crossorigin="anonymous"></script>
+  {% block scripts %}
+  <script src="/static/app.js"></script>
+  {% endblock scripts %}
   {% block js %}
   {% endblock js %}
 </body>
