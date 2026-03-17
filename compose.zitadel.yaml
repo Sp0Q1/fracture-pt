@@ -1,0 +1,55 @@
+# Zitadel IdP — Production compose
+#
+# Setup:
+#   1. Create .env.zitadel with:
+#      POSTGRES_PASSWORD, ZITADEL_MASTERKEY, ZITADEL_DOMAIN,
+#      ZITADEL_DATABASE_POSTGRES_* (see Zitadel docs for all vars)
+#      chmod 600 .env.zitadel
+#
+#   2. Start:
+#      podman compose -f compose.zitadel.yaml up -d
+#
+#   3. Wait for healthy, then get admin PAT:
+#      podman compose -f compose.zitadel.yaml logs zitadel | grep -oE '^[A-Za-z0-9_-]{30,}' | head -1
+#
+#   4. Create OIDC app with the PAT (see docs).
+#
+# Listens on 127.0.0.1:8080 — proxy via nginx with TLS.
+
+services:
+  zitadel-db:
+    image: docker.io/library/postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.zitadel
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: zitadel
+    volumes:
+      - zitadel_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zitadel"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    restart: unless-stopped
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
+    env_file:
+      - .env.zitadel
+    depends_on:
+      zitadel-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "/app/zitadel ready"]
+      interval: 10s
+      timeout: 5s
+      start_period: 45s
+      retries: 5
+
+volumes:
+  zitadel_db_data:
