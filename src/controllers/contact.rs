@@ -84,8 +84,18 @@ pub async fn submit(
 
     let body_html = body_text.replace('\n', "<br>");
 
+    let from = ctx
+        .config
+        .settings
+        .as_ref()
+        .and_then(|s| s.get("mailer_from"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("noreply@gethacked.eu")
+        .to_string();
+
     if let Some(ref mailer) = ctx.mailer {
         let email = Email {
+            from: Some(from),
             to,
             subject,
             text: body_text,
