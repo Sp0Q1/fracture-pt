@@ -2,10 +2,13 @@ use sea_orm::entity::prelude::*;
 
 use crate::models::_entities::{org_members, organizations, pentester_assignments};
 
-/// Check if a user is a platform admin (member of the gethacked-admin org).
+/// The platform admin org has a well-known UUID, seeded by migration.
+/// Membership in this org grants platform admin access.
+const ADMIN_ORG_PID: &str = "00000000-0000-0000-0000-000000000001";
+
 pub async fn is_platform_admin(db: &DatabaseConnection, user_id: i32) -> bool {
     if let Some(admin_org) = organizations::Entity::find()
-        .filter(organizations::Column::Slug.eq("gethacked-admin"))
+        .filter(organizations::Column::Pid.eq(ADMIN_ORG_PID))
         .one(db)
         .await
         .ok()
