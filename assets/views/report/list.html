@@ -3,7 +3,6 @@
 {% block title %}Reports -- GetHacked{% endblock title %}
 
 {% block content %}
-<div class="container">
     <div class="page-header">
         <h1>Reports <span class="badge secondary">{{ items | length }}</span></h1>
         <p class="page-subtitle">{{ org_name | default(value="") }}</p>
@@ -36,5 +35,4 @@
             <p>Reports will be generated after scans or engagements are completed.</p>
         </article>
     {% endif %}
-</div>
 {% endblock content %}
