@@ -1,19 +1,14 @@
 use sea_orm::entity::prelude::*;
 
-use crate::models::_entities::{org_members, organizations, pentester_assignments};
+use crate::models::_entities::{org_members, pentester_assignments};
+use crate::models::organizations as org_model;
 
 /// The platform admin org has a well-known UUID, seeded by migration.
 /// Membership in this org grants platform admin access.
 const ADMIN_ORG_PID: &str = "00000000-0000-0000-0000-000000000001";
 
 pub async fn is_platform_admin(db: &DatabaseConnection, user_id: i32) -> bool {
-    if let Some(admin_org) = organizations::Entity::find()
-        .filter(organizations::Column::Pid.eq(ADMIN_ORG_PID))
-        .one(db)
-        .await
-        .ok()
-        .flatten()
-    {
+    if let Some(admin_org) = org_model::Model::find_by_pid(db, ADMIN_ORG_PID).await {
         org_members::Entity::find()
             .filter(org_members::Column::OrgId.eq(admin_org.id))
             .filter(org_members::Column::UserId.eq(user_id))
