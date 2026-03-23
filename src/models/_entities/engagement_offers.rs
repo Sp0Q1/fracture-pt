@@ -8,8 +8,8 @@ pub struct Model {
     pub updated_at: DateTimeWithTimeZone,
     #[sea_orm(primary_key)]
     pub id: i32,
-    #[sea_orm(unique)]
-    pub pid: Uuid,
+    #[sea_orm(column_type = "Text", unique)]
+    pub pid: String,
     pub engagement_id: i32,
     pub created_by_user_id: Option<i32>,
     pub amount_cents: i32,
