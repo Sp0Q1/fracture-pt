@@ -1,10 +1,12 @@
 use super::*;
-use sea_orm_migration::sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait, QueryFilter};
+use sea_orm_migration::sea_orm::{
+    entity::prelude::*, ActiveModelTrait, ActiveValue::Set, EntityTrait, QueryFilter,
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
-/// Minimal entity definition for seeding — avoids depending on the full app models.
+/// Minimal entity for seeding — avoids depending on the full app models.
 mod organizations {
     use sea_orm::entity::prelude::*;
 
@@ -34,16 +36,15 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         let db = manager.get_connection();
 
-        // Only insert if no org with this slug exists
         let exists = organizations::Entity::find()
             .filter(organizations::Column::Slug.eq("gethacked-admin"))
             .one(db)
             .await?;
 
         if exists.is_none() {
-            let pid =
-                uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000001").expect("valid UUID");
-            let now = chrono::Utc::now().into();
+            let pid = Uuid::parse_str("00000000-0000-0000-0000-000000000001")
+                .map_err(|e| DbErr::Custom(e.to_string()))?;
+            let now: DateTimeWithTimeZone = chrono::Utc::now().into();
             organizations::ActiveModel {
                 pid: Set(pid),
                 name: Set("GetHacked Platform".to_string()),
