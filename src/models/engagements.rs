@@ -15,7 +15,7 @@ impl ActiveModelBehavior for ActiveModel {
     {
         let mut this = self;
         if insert {
-            this.pid = sea_orm::ActiveValue::Set(Uuid::new_v4().to_string());
+            this.pid = sea_orm::ActiveValue::Set(Uuid::new_v4());
         } else if this.updated_at.is_unchanged() {
             this.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().into());
         }
@@ -40,9 +40,9 @@ impl Model {
         pid: &str,
         org_id: i32,
     ) -> Option<Self> {
-        let _uuid = Uuid::parse_str(pid).ok()?;
+        let uuid = Uuid::parse_str(pid).ok()?;
         Entity::find()
-            .filter(Column::Pid.eq(pid))
+            .filter(Column::Pid.eq(uuid))
             .filter(Column::OrgId.eq(org_id))
             .one(db)
             .await
@@ -52,9 +52,9 @@ impl Model {
 
     /// Finds an engagement by pid (admin use -- cross-org).
     pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> Option<Self> {
-        let _uuid = Uuid::parse_str(pid).ok()?;
+        let uuid = Uuid::parse_str(pid).ok()?;
         Entity::find()
-            .filter(Column::Pid.eq(pid))
+            .filter(Column::Pid.eq(uuid))
             .one(db)
             .await
             .ok()
