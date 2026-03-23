@@ -3,7 +3,6 @@
 {% block title %}Invoices -- GetHacked{% endblock title %}
 
 {% block content %}
-<div class="container">
     <div class="page-header">
         <h1>Invoices <span class="badge secondary">{{ items | length }}</span></h1>
         <p class="page-subtitle">{{ org_name | default(value="") }}</p>
@@ -55,5 +54,4 @@
         <p>Invoices will appear here when you have active subscriptions or completed engagements.</p>
     </article>
     {% endif %}
-</div>
 {% endblock content %}

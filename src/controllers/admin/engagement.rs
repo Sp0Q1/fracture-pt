@@ -11,6 +11,7 @@ use crate::models::_entities::pentester_assignments::ActiveModel as AssignmentAc
 use crate::models::engagement_offers;
 use crate::models::engagements;
 use crate::models::findings;
+use crate::models::organizations as org_model;
 use crate::models::pentester_assignments;
 use crate::{require_platform_admin, require_user, views};
 
@@ -46,8 +47,10 @@ pub async fn list(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     require_platform_admin!(&ctx.db, &user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = engagements::Model::find_all_pending(&ctx.db).await;
-    views::admin::engagement::list(&v, &user, &items)
+    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 
 /// `GET /admin/engagements/all` -- list all engagements across all statuses.
@@ -60,13 +63,14 @@ pub async fn list_all(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     require_platform_admin!(&ctx.db, &user);
-    // Get all engagements across all orgs and statuses
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = engagements::Entity::find()
         .order_by(engagements::Column::Id, Order::Desc)
         .all(&ctx.db)
         .await
         .unwrap_or_default();
-    views::admin::engagement::list(&v, &user, &items)
+    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 
 /// `GET /admin/engagements/:pid` -- show engagement detail (admin view).
@@ -80,6 +84,8 @@ pub async fn show(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     require_platform_admin!(&ctx.db, &user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
@@ -89,6 +95,8 @@ pub async fn show(
     views::admin::engagement::show(
         &v,
         &user,
+        &org_ctx,
+        &user_orgs,
         &item,
         &offers,
         &assignments,
