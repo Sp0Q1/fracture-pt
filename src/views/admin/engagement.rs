@@ -18,21 +18,25 @@ pub fn list(
     format::render().view(v, "admin/engagement/list.html", data!(ctx))
 }
 
+pub struct ShowViewData<'a> {
+    pub item: &'a engagements::Model,
+    pub offers: &'a [engagement_offers::Model],
+    pub assignments: &'a [pentester_assignments::Model],
+    pub findings: &'a [findings::Model],
+}
+
 /// Render the admin engagement detail.
 pub fn show(
     v: &impl ViewRenderer,
     user: &users::Model,
     org_ctx: &Option<OrgContext>,
     user_orgs: &[organizations::Model],
-    item: &engagements::Model,
-    offers: &[engagement_offers::Model],
-    assignments: &[pentester_assignments::Model],
-    engagement_findings: &[findings::Model],
+    data: &ShowViewData<'_>,
 ) -> Result<Response> {
     let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
-    ctx["item"] = serde_json::json!(item);
-    ctx["offers"] = serde_json::json!(offers);
-    ctx["assignments"] = serde_json::json!(assignments);
-    ctx["findings"] = serde_json::json!(engagement_findings);
+    ctx["item"] = serde_json::json!(data.item);
+    ctx["offers"] = serde_json::json!(data.offers);
+    ctx["assignments"] = serde_json::json!(data.assignments);
+    ctx["findings"] = serde_json::json!(data.findings);
     format::render().view(v, "admin/engagement/show.html", data!(ctx))
 }

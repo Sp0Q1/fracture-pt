@@ -97,10 +97,12 @@ pub async fn show(
         &user,
         &org_ctx,
         &user_orgs,
-        &item,
-        &offers,
-        &assignments,
-        &engagement_findings,
+        &views::admin::engagement::ShowViewData {
+            item: &item,
+            offers: &offers,
+            assignments: &assignments,
+            findings: &engagement_findings,
+        },
     )
 }
 
