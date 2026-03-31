@@ -15,4 +15,6 @@ pub mod scan_target;
 pub mod service;
 pub mod subscription;
 
-pub use fracture_core::controllers::{admin as core_admin, blog, jobs, middleware, oidc, oidc_state, org};
+pub use fracture_core::controllers::{
+    admin as core_admin, blog, jobs, middleware, oidc, oidc_state, org,
+};
