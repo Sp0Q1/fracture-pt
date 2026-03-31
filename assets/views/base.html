@@ -23,11 +23,11 @@
         <span>
             <a href="/" class="brand">
                 {% block brand_icon %}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-shield">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 26" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-shield">
                     <path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/>
                 </svg>
                 {% endblock brand_icon %}
-                <strong class="gradient-text">{% block brand_name %}Fracture CMS{% endblock brand_name %}</strong>
+                <strong class="gradient-text">{% block brand_name %}GetHacked.eu{% endblock brand_name %}</strong>
             </a>
         </span>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
@@ -58,6 +58,12 @@
         {% block nav_guest %}
         {% endblock nav_guest %}
         {% endif %}
+        {% block nav_public %}
+        <a href="/blog">Blog</a>
+        {% endblock nav_public %}
+        {% if is_platform_admin %}
+        <a href="/admin">Admin</a>
+        {% endif %}
         <ot-dropdown class="nav-end">
             {% if user_name %}
             <button class="icon ghost" popovertarget="account-menu" aria-label="Account menu">
@@ -79,6 +85,10 @@
                 <hr>
                 {% block account_menu_items %}
                 <a href="/orgs" role="menuitem">Organizations</a>
+                {% if is_platform_admin %}
+                <hr>
+                <a href="/admin" role="menuitem">Platform Admin</a>
+                {% endif %}
                 {% endblock account_menu_items %}
                 <a href="/api/auth/oidc/logout" role="menuitem">Sign out</a>
                 {% else %}
@@ -95,7 +105,7 @@
         {% block footer %}
         <div class="footer-grid">
             <div class="footer-brand">
-                <strong class="gradient-text">{% block footer_brand %}Fracture CMS{% endblock footer_brand %}</strong>
+                <strong class="gradient-text">{% block footer_brand %}GetHacked.eu{% endblock footer_brand %}</strong>
                 <p>{% block footer_tagline %}Secure content management built with Rust.{% endblock footer_tagline %}</p>
             </div>
             {% block footer_columns %}
