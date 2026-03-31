@@ -21,6 +21,7 @@ mod organizations {
         #[sea_orm(unique)]
         pub slug: String,
         pub is_personal: bool,
+        pub is_platform_admin: bool,
         pub created_at: DateTimeWithTimeZone,
         pub updated_at: DateTimeWithTimeZone,
     }
@@ -50,6 +51,7 @@ impl MigrationTrait for Migration {
                 name: Set("GetHacked Platform".to_string()),
                 slug: Set("gethacked-admin".to_string()),
                 is_personal: Set(false),
+                is_platform_admin: Set(true),
                 created_at: Set(now),
                 updated_at: Set(now),
                 ..Default::default()
