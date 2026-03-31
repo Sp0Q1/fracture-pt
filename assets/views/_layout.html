@@ -66,8 +66,12 @@
 <span><a href="/scope">Scope Your Pentest</a></span>
 <span><a href="/about">About</a></span>
 <span><a href="/contact">Contact</a></span>
-<span><a href="/free-scan" class="nav-free-scan">Free Scan</a></span>
 {% endblock nav_guest %}
+
+{% block nav_public %}
+<a href="/blog">Blog</a>
+<a href="/free-scan" class="nav-free-scan">Free Scan</a>
+{% endblock nav_public %}
 
 {% block nav_auth_buttons %}
 <span class="nav-auth-buttons">
