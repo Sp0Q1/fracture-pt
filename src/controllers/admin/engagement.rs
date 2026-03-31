@@ -13,7 +13,7 @@ use crate::models::engagements;
 use crate::models::findings;
 use crate::models::organizations as org_model;
 use crate::models::pentester_assignments;
-use crate::{require_platform_admin, require_user, views};
+use crate::{require_user, views};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OfferParams {
@@ -46,8 +46,8 @@ pub async fn list(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = engagements::Model::find_all_pending(&ctx.db).await;
     views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
@@ -62,8 +62,8 @@ pub async fn list_all(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = engagements::Entity::find()
         .order_by(engagements::Column::Id, Order::Desc)
@@ -83,8 +83,8 @@ pub async fn show(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
@@ -116,7 +116,8 @@ pub async fn create_offer(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
@@ -175,7 +176,8 @@ pub async fn assign_pentester(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
@@ -246,7 +248,8 @@ pub async fn update_status(
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
-    require_platform_admin!(&ctx.db, &user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;

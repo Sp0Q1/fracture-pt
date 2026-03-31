@@ -12,6 +12,7 @@ use loco_rs::{
     Result,
 };
 use migration::Migrator;
+use sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait};
 use std::path::Path;
 
 use loco_rs::bgworker::BackgroundWorker;
@@ -19,12 +20,156 @@ use loco_rs::bgworker::BackgroundWorker;
 use crate::{
     controllers, initializers,
     models::_entities::{
-        engagement_offers, engagements, findings, invoices, org_invites, org_members,
-        organizations, pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets,
-        services, subscriptions, users,
+        blog_posts, engagement_offers, engagements, findings, invoices, job_definitions,
+        job_run_diffs, job_runs, org_invites, org_members, organizations, pentester_assignments,
+        pricing_tiers, reports, scan_jobs, scan_targets, services, subscriptions, users,
     },
     workers,
 };
+
+use fracture_core::entity_registry::{AdminEntity, EntityRegistry};
+
+// ---------------------------------------------------------------------------
+// Gethacked-specific admin entity implementations
+// ---------------------------------------------------------------------------
+
+struct EngagementsEntity;
+
+#[async_trait]
+impl AdminEntity for EngagementsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Engagements"
+    }
+    fn url_prefix(&self) -> &'static str {
+        "/admin/engagements"
+    }
+    fn description(&self) -> &'static str {
+        "Manage engagement requests"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        engagements::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct ScanTargetsEntity;
+
+#[async_trait]
+impl AdminEntity for ScanTargetsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Scan Targets"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Monitored targets across organizations"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        scan_targets::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct ScanJobsEntity;
+
+#[async_trait]
+impl AdminEntity for ScanJobsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Scan Jobs"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Scan execution history"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        scan_jobs::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct FindingsEntity;
+
+#[async_trait]
+impl AdminEntity for FindingsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Findings"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Security findings across engagements"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        findings::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct ReportsEntity;
+
+#[async_trait]
+impl AdminEntity for ReportsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Reports"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Generated reports"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        reports::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct InvoicesEntity;
+
+#[async_trait]
+impl AdminEntity for InvoicesEntity {
+    fn entity_name(&self) -> &'static str {
+        "Invoices"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Billing invoices"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        invoices::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+struct SubscriptionsEntity;
+
+#[async_trait]
+impl AdminEntity for SubscriptionsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Subscriptions"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Active subscriptions"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        subscriptions::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
+fn build_entity_registry() -> EntityRegistry {
+    let mut registry = fracture_core::entity_registry::default_entity_registry();
+    registry.register(Box::new(EngagementsEntity));
+    registry.register(Box::new(ScanTargetsEntity));
+    registry.register(Box::new(ScanJobsEntity));
+    registry.register(Box::new(FindingsEntity));
+    registry.register(Box::new(ReportsEntity));
+    registry.register(Box::new(InvoicesEntity));
+    registry.register(Box::new(SubscriptionsEntity));
+    registry
+}
 
 pub struct App;
 #[async_trait]
@@ -60,11 +205,19 @@ impl Hooks for App {
     }
 
     fn routes(_ctx: &AppContext) -> AppRoutes {
+        // Initialise the entity registry with gethacked-specific entities
+        fracture_core::entity_registry::init_entity_registry(build_entity_registry());
+
         AppRoutes::with_default_routes()
-            // Core routes
+            // Core routes (fracture-core)
             .add_route(controllers::org::routes())
             .add_route(controllers::org::invite_routes())
             .add_route(controllers::oidc::routes())
+            .add_route(controllers::blog::public_routes())
+            .add_route(controllers::blog::admin_routes())
+            .add_route(controllers::jobs::org_routes())
+            .add_route(controllers::jobs::admin_routes())
+            .add_route(fracture_core::controllers::admin::routes())
             // Public pages
             .add_route(controllers::home::routes())
             .add_route(controllers::pages::routes())
@@ -78,7 +231,7 @@ impl Hooks for App {
             .add_route(controllers::engagement::routes())
             .add_route(controllers::report::routes())
             .add_route(controllers::invoice::routes())
-            // Admin routes
+            // Admin routes (gethacked-specific)
             .add_route(controllers::admin::routes())
             // Pentester routes
             .add_route(controllers::pentester::routes())
@@ -112,6 +265,11 @@ impl Hooks for App {
         truncate_table(&ctx.db, scan_targets::Entity).await?;
         truncate_table(&ctx.db, pricing_tiers::Entity).await?;
         truncate_table(&ctx.db, services::Entity).await?;
+        // Blog & job tables
+        truncate_table(&ctx.db, blog_posts::Entity).await?;
+        truncate_table(&ctx.db, job_run_diffs::Entity).await?;
+        truncate_table(&ctx.db, job_runs::Entity).await?;
+        truncate_table(&ctx.db, job_definitions::Entity).await?;
         // Core tables
         truncate_table(&ctx.db, org_invites::Entity).await?;
         truncate_table(&ctx.db, org_members::Entity).await?;

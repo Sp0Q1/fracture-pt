@@ -15,4 +15,4 @@ pub mod services;
 pub mod views;
 pub mod workers;
 
-pub use fracture_core::{require_role, require_user};
+pub use fracture_core::{require_platform_admin, require_role, require_user};
