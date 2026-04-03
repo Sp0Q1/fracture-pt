@@ -18,20 +18,13 @@ enum JobRuns {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // SQLite cannot add FK constraints via ALTER TABLE.
+        // Add the column without FK — integrity is enforced at the app level.
         manager
             .alter_table(
                 Table::alter()
                     .table(Findings::Table)
                     .add_column(ColumnDef::new(Findings::JobRunId).integer().null())
-                    .add_foreign_key(
-                        TableForeignKey::new()
-                            .name("fk-findings-job_run_id")
-                            .from_tbl(Findings::Table)
-                            .from_col(Findings::JobRunId)
-                            .to_tbl(JobRuns::Table)
-                            .to_col(JobRuns::Id)
-                            .on_delete(ForeignKeyAction::SetNull),
-                    )
                     .to_owned(),
             )
             .await?;
