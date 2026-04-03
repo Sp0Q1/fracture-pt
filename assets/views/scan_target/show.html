@@ -2,12 +2,12 @@
 
 {% block title %}Target -- GetHacked{% endblock title %}
 
-{% if scan_status == "running" %}
 {% block head %}
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+{% if scan_status == "running" %}
 <meta http-equiv="refresh" content="5">
-{% endblock head %}
 {% endif %}
+{% endblock head %}
 
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb">
