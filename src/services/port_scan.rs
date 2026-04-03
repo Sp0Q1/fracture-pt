@@ -92,6 +92,7 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     let handle = tokio::task::spawn_blocking(move || {
         Command::new("nmap")
             .args([
+                "--unprivileged",
                 "-sT",
                 "-sV",
                 "-T4",
