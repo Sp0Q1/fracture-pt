@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
 
-exec ./target/release/gethacked-cli start
+exec ./target/release/fracture-pt-cli start

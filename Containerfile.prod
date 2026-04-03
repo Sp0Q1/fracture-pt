@@ -1,7 +1,7 @@
-# gethacked.eu — Production multi-stage build
+# fracture-pt — Production multi-stage build
 #
-# Build:  podman build -f Containerfile.prod -t gethacked:latest .
-# Run:    podman run --userns=keep-id --env-file .env.prod -p 5150:5150 -v ./data:/app/data gethacked:latest
+# Build:  podman build -f Containerfile.prod -t fracture-pt:latest .
+# Run:    podman run --userns=keep-id --env-file .env.prod -p 5150:5150 -v ./data:/app/data fracture-pt:latest
 
 # -- Stage 1: Plan dependencies --
 FROM rust:latest AS chef
@@ -30,7 +30,7 @@ RUN useradd --uid 1000 --create-home --shell /bin/bash appuser
 WORKDIR /app
 
 # Copy binary and config (assets are volume-mounted in production)
-COPY --from=builder /app/target/release/gethacked-cli ./gethacked-cli
+COPY --from=builder /app/target/release/fracture-pt-cli ./fracture-pt-cli
 COPY config/ ./config/
 
 # Bake assets as fallback (overridden by volume mount in production)
@@ -46,4 +46,4 @@ EXPOSE 5150
 ENV LOCO_ENV=production
 ENV DATABASE_URL=sqlite:///app/data/gethacked.sqlite?mode=rwc
 
-CMD ["./gethacked-cli", "start"]
+CMD ["./fracture-pt-cli", "start"]
