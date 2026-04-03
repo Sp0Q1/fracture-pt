@@ -19,7 +19,7 @@ use loco_rs::bgworker::BackgroundWorker;
 
 use crate::{
     controllers, initializers,
-    jobs::asm_scan::AsmScanExecutor,
+    jobs::{asm_scan::AsmScanExecutor, report_build::ReportBuildExecutor},
     models::_entities::{
         blog_posts, engagement_offers, engagements, findings, invoices, job_definitions,
         job_run_diffs, job_runs, non_findings, org_invites, org_members, organizations,
@@ -233,6 +233,7 @@ impl Hooks for App {
         // Initialise the job registry with gethacked-specific executors
         let mut job_reg = JobRegistry::new();
         job_reg.register(Box::new(AsmScanExecutor));
+        job_reg.register(Box::new(ReportBuildExecutor));
         init_job_registry(job_reg);
 
         AppRoutes::with_default_routes()
