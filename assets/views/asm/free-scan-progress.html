@@ -1,0 +1,134 @@
+{% extends "_layout.html" %}
+
+{% block title %}
+{% if scan_status == "completed" %}Scan Results for {{ domain }} | GetHacked.eu
+{% elif scan_status == "failed" %}Scan Failed | GetHacked.eu
+{% else %}Scan in Progress | GetHacked.eu
+{% endif %}
+{% endblock title %}
+
+{% block meta_description %}
+{% if scan_status == "completed" %}Certificate transparency and subdomain discovery results for {{ domain }}.
+{% else %}Your free attack surface scan is being processed.
+{% endif %}
+{% endblock meta_description %}
+
+{% block head %}
+{% if scan_status == "queued" or scan_status == "running" %}
+<meta http-equiv="refresh" content="5">
+{% endif %}
+{% endblock head %}
+
+{% block content %}
+
+{% if scan_status == "queued" or scan_status == "running" %}
+<section class="asm-hero">
+    <span class="badge outline asm-free-badge">Free Scan</span>
+    <h1>Scanning <span class="gradient-text">{{ domain }}</span></h1>
+    <p class="subtitle">We are querying certificate transparency logs and enumerating subdomains. This usually takes 15-30 seconds.</p>
+</section>
+
+<section class="asm-input-section">
+    <article class="card card-accent scan-progress-card">
+        <div class="scan-spinner"></div>
+        <h3>Scan in Progress</h3>
+        <p>Querying certificate transparency logs and enumerating subdomains&hellip;</p>
+        <p class="text-muted text-sm">This page refreshes automatically.</p>
+    </article>
+</section>
+
+{% elif scan_status == "failed" %}
+<section class="asm-hero">
+    <span class="badge outline asm-free-badge">Free Scan</span>
+    <h1>Scan <span class="gradient-text">Failed</span></h1>
+    <p class="subtitle">We were unable to complete the scan for <strong>{{ domain }}</strong>.</p>
+</section>
+
+<section class="asm-input-section">
+    <div class="card card-accent text-center p-2">
+        <p class="text-error">{% if error_message %}{{ error_message }}{% else %}The scan could not be completed.{% endif %}</p>
+        <p>This can happen when upstream services (crt.sh) are temporarily unavailable. Please try again in a few minutes.</p>
+        <a href="/free-scan" class="button cta-button mt-1">Try Again</a>
+    </div>
+</section>
+
+{% elif scan_status == "completed" %}
+<section class="asm-hero">
+    <span class="badge success asm-free-badge">Free Scan Results</span>
+    <h1>Results for <span class="gradient-text">{{ domain }}</span></h1>
+    <p class="subtitle">Certificate transparency data and subdomain enumeration from public sources. This is what anyone can discover about your domain.</p>
+</section>
+
+{% if has_error %}
+<section class="asm-input-section">
+    <div class="card card-accent text-center p-2">
+        <p class="text-error">{{ error_message }}</p>
+        <p>Try again or check that the domain is correct.</p>
+        <a href="/free-scan" class="button cta-button mt-1">Try Another Domain</a>
+    </div>
+</section>
+{% else %}
+
+<section class="asm-input-section max-w-800">
+    <div class="asm-summary-strip">
+        <div class="asm-stat">
+            <span class="asm-stat-number blue">{{ subdomain_count }}</span>
+            <span class="asm-stat-label">Subdomains</span>
+        </div>
+        <div class="asm-stat">
+            <span class="asm-stat-number green">{{ cert_count }}</span>
+            <span class="asm-stat-label">Certificates</span>
+        </div>
+    </div>
+</section>
+
+{% if subdomain_count > 0 %}
+<section class="asm-results-section">
+    <h2>Discovered Subdomains</h2>
+    <p class="section-subtitle">{{ subdomain_count }} unique subdomain{{ subdomain_count | pluralize }} found in certificate transparency logs.</p>
+    <div class="asm-subdomain-list">
+        {% for sub in subdomains %}
+        <div class="asm-subdomain-item">
+            <code>{{ sub }}</code>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if subdomain_count == 0 and cert_count == 0 %}
+<section class="asm-input-section">
+    <div class="card card-accent text-center p-2">
+        <p>No certificate transparency data found for <strong>{{ domain }}</strong>.</p>
+        <p class="text-muted text-sm">This domain may not have any publicly issued TLS certificates, or it may be very new.</p>
+    </div>
+</section>
+{% endif %}
+
+<section class="asm-results-section text-center">
+    <div class="form-actions justify-center">
+        <a href="/free-scan" class="button outline">Scan Another Domain</a>
+        <a href="/services/attack-surface-mapping" class="button cta-button">Get Continuous Monitoring</a>
+    </div>
+</section>
+
+{% endif %}
+
+<div class="urgency-banner">
+    <h3>This Is Just the Beginning</h3>
+    <p>Certificate transparency shows what certificates have been issued — but your attack surface includes open ports, running services, shadow IT, and more. Continuous ASM monitoring tracks all of it, in real time.</p>
+    <a href="/services/attack-surface-mapping" class="button outline">See Continuous Monitoring Plans</a>
+</div>
+
+<section class="cta-banner">
+    <h2>Want a Deeper Look?</h2>
+    <p>Our penetration testing team goes far beyond automated scanning. Discover vulnerabilities that scanners miss.</p>
+    <div class="cta-group">
+        <a href="/scope" class="button large cta-button">Scope a Pentest</a>
+        <a href="/contact" class="button outline large">Talk to Our Team</a>
+    </div>
+</section>
+
+{% endif %}
+
+{% endblock content %}
