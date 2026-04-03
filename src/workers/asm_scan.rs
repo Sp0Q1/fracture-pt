@@ -92,6 +92,9 @@ impl BackgroundWorker<AsmScanArgs> for AsmScanWorker {
     }
 
     async fn perform(&self, args: AsmScanArgs) -> Result<()> {
+        const MAX_RETRIES: u32 = 3;
+        const RETRY_DELAY_SECS: u64 = 10;
+
         let db = &self.ctx.db;
         tracing::info!(
             target_id = args.target_id,
@@ -109,62 +112,86 @@ impl BackgroundWorker<AsmScanArgs> for AsmScanWorker {
         };
         job.update(db).await?;
 
-        // Run the crt.sh scan
-        match asm::query_crtsh(&args.hostname).await {
-            Ok(entries) => {
-                let result = asm::process_results(&args.hostname, &entries);
-                let finding_count =
-                    create_cert_findings(db, &result, args.org_id, args.job_id, &args.hostname)
-                        .await?;
+        // Run the crt.sh scan with retries
+        let mut last_error = String::new();
+        for attempt in 1..=MAX_RETRIES {
+            match asm::query_crtsh(&args.hostname).await {
+                Ok(entries) => {
+                    let result = asm::process_results(&args.hostname, &entries);
+                    let finding_count = create_cert_findings(
+                        db,
+                        &result,
+                        args.org_id,
+                        args.job_id,
+                        &args.hostname,
+                    )
+                    .await?;
 
-                // Store summary as JSON
-                let summary = serde_json::json!({
-                    "domain": result.domain,
-                    "subdomain_count": result.subdomain_count,
-                    "cert_count": result.cert_count,
-                    "expired_count": result.expired_count,
-                    "wildcard_count": result.wildcard_count,
-                    "subdomains": result.subdomains,
-                    "certs": result.certs,
-                });
+                    let summary = serde_json::json!({
+                        "domain": result.domain,
+                        "subdomain_count": result.subdomain_count,
+                        "cert_count": result.cert_count,
+                        "expired_count": result.expired_count,
+                        "wildcard_count": result.wildcard_count,
+                        "subdomains": result.subdomains,
+                        "certs": result.certs,
+                    });
 
-                // Mark job as completed
-                let job = scan_jobs::ActiveModel {
-                    id: Set(args.job_id),
-                    status: Set("completed".to_string()),
-                    finding_count: Set(finding_count),
-                    result_summary: Set(Some(summary.to_string())),
-                    completed_at: Set(Some(chrono::Utc::now().into())),
-                    updated_at: Set(chrono::Utc::now().into()),
-                    ..Default::default()
-                };
-                job.update(db).await?;
+                    let job = scan_jobs::ActiveModel {
+                        id: Set(args.job_id),
+                        status: Set("completed".to_string()),
+                        finding_count: Set(finding_count),
+                        result_summary: Set(Some(summary.to_string())),
+                        completed_at: Set(Some(chrono::Utc::now().into())),
+                        updated_at: Set(chrono::Utc::now().into()),
+                        ..Default::default()
+                    };
+                    job.update(db).await?;
 
-                tracing::info!(
-                    target_id = args.target_id,
-                    subdomains = result.subdomain_count,
-                    certs = result.cert_count,
-                    findings = finding_count,
-                    "ASM scan completed"
-                );
-            }
-            Err(e) => {
-                tracing::error!(
-                    target_id = args.target_id,
-                    error = %e,
-                    "ASM scan failed"
-                );
-                let job = scan_jobs::ActiveModel {
-                    id: Set(args.job_id),
-                    status: Set("failed".to_string()),
-                    error_message: Set(Some(e)),
-                    completed_at: Set(Some(chrono::Utc::now().into())),
-                    updated_at: Set(chrono::Utc::now().into()),
-                    ..Default::default()
-                };
-                job.update(db).await?;
+                    tracing::info!(
+                        target_id = args.target_id,
+                        subdomains = result.subdomain_count,
+                        certs = result.cert_count,
+                        findings = finding_count,
+                        attempt,
+                        "ASM scan completed"
+                    );
+                    return Ok(());
+                }
+                Err(e) => {
+                    last_error = e;
+                    if attempt < MAX_RETRIES {
+                        tracing::warn!(
+                            target_id = args.target_id,
+                            error = %last_error,
+                            attempt,
+                            max_retries = MAX_RETRIES,
+                            "ASM scan failed, retrying"
+                        );
+                        tokio::time::sleep(std::time::Duration::from_secs(
+                            RETRY_DELAY_SECS * u64::from(attempt),
+                        ))
+                        .await;
+                    }
+                }
             }
         }
+
+        // All retries exhausted
+        tracing::error!(
+            target_id = args.target_id,
+            error = %last_error,
+            "ASM scan failed after {MAX_RETRIES} attempts"
+        );
+        let job = scan_jobs::ActiveModel {
+            id: Set(args.job_id),
+            status: Set("failed".to_string()),
+            error_message: Set(Some(last_error)),
+            completed_at: Set(Some(chrono::Utc::now().into())),
+            updated_at: Set(chrono::Utc::now().into()),
+            ..Default::default()
+        };
+        job.update(db).await?;
 
         Ok(())
     }
