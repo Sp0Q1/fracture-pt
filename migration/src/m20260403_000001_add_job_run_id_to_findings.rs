@@ -9,12 +9,6 @@ enum Findings {
     JobRunId,
 }
 
-#[derive(DeriveIden)]
-enum JobRuns {
-    Table,
-    Id,
-}
-
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {

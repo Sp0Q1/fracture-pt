@@ -61,7 +61,9 @@ impl JobExecutor for AsmScanExecutor {
                     }
                 }
             }
-            result.ok_or_else(|| format!("crt.sh query failed after {MAX_RETRIES} attempts: {last_error}"))?
+            result.ok_or_else(|| {
+                format!("crt.sh query failed after {MAX_RETRIES} attempts: {last_error}")
+            })?
         };
 
         let scan_result = asm::process_results(&hostname, &entries);
@@ -88,20 +90,17 @@ impl JobExecutor for AsmScanExecutor {
 }
 
 fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) -> Vec<JobDiff> {
-    let current_subdomains: BTreeSet<&str> =
-        result.subdomains.iter().map(String::as_str).collect();
+    let current_subdomains: BTreeSet<&str> = result.subdomains.iter().map(String::as_str).collect();
 
     let previous_subdomains: BTreeSet<String> = previous_run
         .and_then(|run| run.result_summary.as_deref())
         .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
         .and_then(|v| {
-            v["subdomains"]
-                .as_array()
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()
-                })
+            v["subdomains"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            })
         })
         .unwrap_or_default();
 
