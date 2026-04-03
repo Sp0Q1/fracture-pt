@@ -145,4 +145,26 @@
     </tbody>
 </table>
 {% endif %}
+
+{% if non_findings | length > 0 %}
+<div class="page-header mt-6">
+    <h2>Non-Findings <span class="badge secondary">{{ non_findings | length }}</span></h2>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for nf in non_findings %}
+        <tr>
+            <td>{{ nf.title }}</td>
+            <td>{{ nf.content | truncate(length=120) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 {% endblock content %}

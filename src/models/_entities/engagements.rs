@@ -61,6 +61,8 @@ pub enum Relation {
     PentesterAssignments,
     #[sea_orm(has_many = "super::findings::Entity")]
     Findings,
+    #[sea_orm(has_many = "super::non_findings::Entity")]
+    NonFindings,
     #[sea_orm(has_many = "super::reports::Entity")]
     Reports,
     #[sea_orm(has_many = "super::invoices::Entity")]
@@ -94,6 +96,12 @@ impl Related<super::pentester_assignments::Entity> for Entity {
 impl Related<super::findings::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Findings.def()
+    }
+}
+
+impl Related<super::non_findings::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::NonFindings.def()
     }
 }
 

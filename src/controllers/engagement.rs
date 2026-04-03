@@ -127,8 +127,19 @@ pub async fn show(
         .ok_or_else(|| Error::NotFound)?;
     let offers = engagement_offers::Model::find_by_engagement(&ctx.db, item.id).await;
     let findings = crate::models::findings::Model::find_by_engagement(&ctx.db, item.id).await;
+    let non_findings =
+        crate::models::non_findings::Model::find_by_engagement(&ctx.db, item.id).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
-    views::engagement::show(&v, &user, &org_ctx, &user_orgs, &item, &offers, &findings)
+    views::engagement::show(
+        &v,
+        &user,
+        &org_ctx,
+        &user_orgs,
+        &item,
+        &offers,
+        &findings,
+        &non_findings,
+    )
 }
 
 /// `POST /engagements/:pid/respond` -- accept or negotiate an offer.

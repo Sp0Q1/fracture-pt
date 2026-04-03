@@ -3,6 +3,7 @@ pub mod prelude;
 pub mod engagement_offers;
 pub mod engagements;
 pub mod findings;
+pub mod non_findings;
 pub mod invoices;
 pub mod pentester_assignments;
 pub mod pricing_tiers;
