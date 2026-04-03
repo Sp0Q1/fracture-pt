@@ -78,16 +78,25 @@ pub async fn submit(
         "org_id": admin_org.id,
     });
 
-    let definition = job_definitions::ActiveModel {
-        org_id: Set(admin_org.id),
-        name: Set(def_name),
-        job_type: Set("asm_scan".to_string()),
-        config: Set(config.to_string()),
-        enabled: Set(true),
-        ..Default::default()
-    }
-    .insert(&ctx.db)
-    .await?;
+    let definition = if let Some(existing) = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(admin_org.id))
+        .filter(job_definitions::Column::Name.eq(&def_name))
+        .one(&ctx.db)
+        .await?
+    {
+        existing
+    } else {
+        job_definitions::ActiveModel {
+            org_id: Set(admin_org.id),
+            name: Set(def_name),
+            job_type: Set("asm_scan".to_string()),
+            config: Set(config.to_string()),
+            enabled: Set(true),
+            ..Default::default()
+        }
+        .insert(&ctx.db)
+        .await?
+    };
 
     let run = job_runs::Model::create_queued(&ctx.db, definition.id, admin_org.id).await?;
 
