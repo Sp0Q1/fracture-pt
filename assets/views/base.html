@@ -87,7 +87,7 @@
         {% endif %}
         {% block nav_public %}
         <a href="/blog">Blog</a>
-        <a href="/free-scan" class="nav-free-scan">Free Scan</a>
+        {% if not user_name %}<a href="/free-scan" class="nav-free-scan">Free Scan</a>{% endif %}
         {% endblock nav_public %}
         {% if is_platform_admin %}
         <a href="/admin">Admin</a>
