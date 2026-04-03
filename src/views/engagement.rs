@@ -2,7 +2,7 @@ use loco_rs::prelude::*;
 
 use crate::controllers::middleware::OrgContext;
 use crate::models::_entities::{
-    engagement_offers, engagements, findings, organizations, services, users,
+    engagement_offers, engagements, findings, non_findings, organizations, services, users,
 };
 
 /// Render the engagement list.
@@ -40,10 +40,12 @@ pub fn show(
     item: &engagements::Model,
     offers: &[engagement_offers::Model],
     engagement_findings: &[findings::Model],
+    engagement_non_findings: &[non_findings::Model],
 ) -> Result<Response> {
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["item"] = serde_json::json!(item);
     ctx["offers"] = serde_json::json!(offers);
     ctx["findings"] = serde_json::json!(engagement_findings);
+    ctx["non_findings"] = serde_json::json!(engagement_non_findings);
     format::render().view(v, "engagement/show.html", data!(ctx))
 }

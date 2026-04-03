@@ -1,6 +1,7 @@
 pub use super::engagement_offers::Entity as EngagementOffers;
 pub use super::engagements::Entity as Engagements;
 pub use super::findings::Entity as Findings;
+pub use super::non_findings::Entity as NonFindings;
 pub use super::invoices::Entity as Invoices;
 pub use super::pentester_assignments::Entity as PentesterAssignments;
 pub use super::pricing_tiers::Entity as PricingTiers;

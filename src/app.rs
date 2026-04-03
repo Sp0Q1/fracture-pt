@@ -22,8 +22,9 @@ use crate::{
     jobs::asm_scan::AsmScanExecutor,
     models::_entities::{
         blog_posts, engagement_offers, engagements, findings, invoices, job_definitions,
-        job_run_diffs, job_runs, org_invites, org_members, organizations, pentester_assignments,
-        pricing_tiers, reports, scan_jobs, scan_targets, services, subscriptions, users,
+        job_run_diffs, job_runs, non_findings, org_invites, org_members, organizations,
+        pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets, services,
+        subscriptions, users,
     },
     workers,
 };
@@ -107,6 +108,24 @@ impl AdminEntity for FindingsEntity {
     }
 }
 
+struct NonFindingsEntity;
+
+#[async_trait]
+impl AdminEntity for NonFindingsEntity {
+    fn entity_name(&self) -> &'static str {
+        "Non-Findings"
+    }
+    fn url_prefix(&self) -> &'static str {
+        ""
+    }
+    fn description(&self) -> &'static str {
+        "Secure areas documented during engagements"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        non_findings::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
 struct ReportsEntity;
 
 #[async_trait]
@@ -167,6 +186,7 @@ fn build_entity_registry() -> EntityRegistry {
     registry.register(Box::new(ScanTargetsEntity));
     registry.register(Box::new(ScanJobsEntity));
     registry.register(Box::new(FindingsEntity));
+    registry.register(Box::new(NonFindingsEntity));
     registry.register(Box::new(ReportsEntity));
     registry.register(Box::new(InvoicesEntity));
     registry.register(Box::new(SubscriptionsEntity));
@@ -261,6 +281,7 @@ impl Hooks for App {
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         // Children first (reverse FK dependency order)
+        truncate_table(&ctx.db, non_findings::Entity).await?;
         truncate_table(&ctx.db, findings::Entity).await?;
         truncate_table(&ctx.db, reports::Entity).await?;
         truncate_table(&ctx.db, pentester_assignments::Entity).await?;
