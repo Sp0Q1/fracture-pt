@@ -103,11 +103,17 @@
 {% if item.status == "accepted" or item.status == "in_progress" %}
 <article class="card form-card mt-6">
     <h3>Assign Pentester</h3>
+    {% if available_users | length > 0 %}
     <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
     <form action="/admin/engagements/{{ item.pid }}/assign" method="post">
         <div data-field>
-            <label for="user_id">User ID</label>
-            <input id="user_id" name="user_id" type="number" min="1" placeholder="Pentester user ID" required />
+            <label for="user_id">Pentester</label>
+            <select id="user_id" name="user_id" required>
+                <option value="">-- Select a user --</option>
+                {% for u in available_users %}
+                <option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>
+                {% endfor %}
+            </select>
         </div>
         <div data-field>
             <label for="role">Role</label>
@@ -120,6 +126,9 @@
             <button type="submit">Assign</button>
         </div>
     </form>
+    {% else %}
+    <p>All users are already assigned to this engagement.</p>
+    {% endif %}
 </article>
 {% endif %}
 

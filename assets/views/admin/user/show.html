@@ -1,0 +1,72 @@
+{% extends "_layout.html" %}
+
+{% block title %}Admin: {{ target_user.name }} -- GetHacked{% endblock title %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/users">Users</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ target_user.name }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header>
+        <h2>{{ target_user.name }}</h2>
+    </header>
+
+    <div class="detail-row">
+        <span class="detail-label">Email</span>
+        <span class="detail-value">{{ target_user.email }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">PID</span>
+        <span class="detail-value"><code>{{ target_user.pid }}</code></span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Created</span>
+        <span class="detail-value">{{ target_user.created_at | date(format="%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% if target_user.email_verified_at %}
+    <div class="detail-row">
+        <span class="detail-label">Email Verified</span>
+        <span class="detail-value">{{ target_user.email_verified_at | date(format="%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% endif %}
+    {% if target_user.oidc_provider %}
+    <div class="detail-row">
+        <span class="detail-label">OIDC Provider</span>
+        <span class="detail-value">{{ target_user.oidc_provider }}</span>
+    </div>
+    {% endif %}
+</article>
+
+<div class="page-header mt-6">
+    <h2>Organization Memberships <span class="badge secondary">{{ memberships | length }}</span></h2>
+</div>
+
+{% if memberships | length > 0 %}
+<table>
+    <thead>
+        <tr>
+            <th>Organization</th>
+            <th>Role</th>
+            <th>Joined</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in memberships %}
+        <tr>
+            <td>{{ m.org_name }}</td>
+            <td><span class="badge secondary">{{ m.role }}</span></td>
+            <td>{{ m.joined_at | date(format="%Y-%m-%d") }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<article class="card empty-state">
+    <h3>No Memberships</h3>
+    <p>This user is not a member of any organization.</p>
+</article>
+{% endif %}
+{% endblock content %}
