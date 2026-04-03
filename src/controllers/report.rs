@@ -77,7 +77,7 @@ pub async fn download(
         .header("content-type", "application/pdf")
         .header(
             "content-disposition",
-            format!("attachment; filename=\"{}\"", filename),
+            format!("attachment; filename=\"{filename}\""),
         )
         .body(axum::body::Body::from(bytes))
         .unwrap()
