@@ -2,13 +2,13 @@
 members = [".", "migration"]
 
 [package]
-name = "gethacked"
-description = "EU-focused pentesting and security services portal"
-version = "0.1.0"
+name = "fracture-pt"
+description = "Penetration testing platform built on fracture-core"
+version = "0.3.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 publish = false
-default-run = "gethacked-cli"
+default-run = "fracture-pt-cli"
 
 [workspace.dependencies]
 loco-rs = { version = "0.16" }
@@ -42,7 +42,7 @@ slug = { version = "0.1" }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
 [[bin]]
-name = "gethacked-cli"
+name = "fracture-pt-cli"
 path = "src/bin/main.rs"
 required-features = []
 
