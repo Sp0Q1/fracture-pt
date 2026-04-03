@@ -15,6 +15,9 @@
         <span class="badge {% if item.severity == 'extreme' %}danger{% elif item.severity == 'high' %}warning{% elif item.severity == 'elevated' %}primary{% elif item.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
             {{ item.severity }}
         </span>
+        <span class="badge {% if item.status == 'resolved' %}success{% elif item.status == 'unresolved' %}danger{% elif item.status == 'new' %}primary{% else %}secondary{% endif %}">
+            {{ item.status | replace(from="_", to=" ") }}
+        </span>
     </header>
 
     <div class="detail-row">
