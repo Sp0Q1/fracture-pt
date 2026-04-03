@@ -253,8 +253,7 @@ pub async fn generate_report(
 ) -> std::result::Result<String, String> {
     let temp_dir = std::env::temp_dir().join(format!("pentext-report-{}", engagement.pid));
     if temp_dir.exists() {
-        std::fs::remove_dir_all(&temp_dir)
-            .map_err(|e| format!("Failed to clean temp dir: {e}"))?;
+        std::fs::remove_dir_all(&temp_dir).map_err(|e| format!("Failed to clean temp dir: {e}"))?;
     }
 
     generate_pentext_xml(engagement, findings_list, non_findings_list, &temp_dir)?;
@@ -267,8 +266,7 @@ pub async fn generate_report(
 
     let pdf_filename = format!("report-{}.pdf", engagement.pid);
     let final_path = storage_dir.join(&pdf_filename);
-    std::fs::copy(&pdf_path, &final_path)
-        .map_err(|e| format!("Failed to copy PDF: {e}"))?;
+    std::fs::copy(&pdf_path, &final_path).map_err(|e| format!("Failed to copy PDF: {e}"))?;
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 
