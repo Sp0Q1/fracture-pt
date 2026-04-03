@@ -19,6 +19,7 @@ use loco_rs::bgworker::BackgroundWorker;
 
 use crate::{
     controllers, initializers,
+    jobs::asm_scan::AsmScanExecutor,
     models::_entities::{
         blog_posts, engagement_offers, engagements, findings, invoices, job_definitions,
         job_run_diffs, job_runs, org_invites, org_members, organizations, pentester_assignments,
@@ -28,6 +29,7 @@ use crate::{
 };
 
 use fracture_core::entity_registry::{AdminEntity, EntityRegistry};
+use fracture_core::jobs::{init_job_registry, JobRegistry};
 
 // ---------------------------------------------------------------------------
 // Gethacked-specific admin entity implementations
@@ -208,6 +210,11 @@ impl Hooks for App {
         // Initialise the entity registry with gethacked-specific entities
         fracture_core::entity_registry::init_entity_registry(build_entity_registry());
 
+        // Initialise the job registry with gethacked-specific executors
+        let mut job_reg = JobRegistry::new();
+        job_reg.register(Box::new(AsmScanExecutor));
+        init_job_registry(job_reg);
+
         AppRoutes::with_default_routes()
             // Core routes (fracture-core)
             .add_route(controllers::org::routes())
@@ -245,7 +252,7 @@ impl Hooks for App {
 
     async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
         queue
-            .register(workers::asm_scan::AsmScanWorker::build(ctx))
+            .register(workers::job_dispatcher::JobDispatchWorker::build(ctx))
             .await?;
         Ok(())
     }

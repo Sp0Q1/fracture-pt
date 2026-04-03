@@ -14,6 +14,7 @@ pub struct Model {
     // Source: exactly one of these must be set
     pub engagement_id: Option<i32>,
     pub job_id: Option<i32>,
+    pub job_run_id: Option<i32>,
     // Who created it
     pub created_by_user_id: Option<i32>,
     // Finding content
@@ -59,6 +60,12 @@ pub enum Relation {
     )]
     ScanJobs,
     #[sea_orm(
+        belongs_to = "super::job_runs::Entity",
+        from = "Column::JobRunId",
+        to = "super::job_runs::Column::Id"
+    )]
+    JobRuns,
+    #[sea_orm(
         belongs_to = "super::users::Entity",
         from = "Column::CreatedByUserId",
         to = "super::users::Column::Id"
@@ -81,6 +88,12 @@ impl Related<super::engagements::Entity> for Entity {
 impl Related<super::scan_jobs::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ScanJobs.def()
+    }
+}
+
+impl Related<super::job_runs::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::JobRuns.def()
     }
 }
 

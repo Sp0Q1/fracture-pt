@@ -6,12 +6,11 @@ use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
 use super::middleware;
-use crate::models::_entities::{scan_jobs, scan_targets::ActiveModel};
+use crate::models::_entities::{job_definitions, job_runs, scan_targets::ActiveModel};
 use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
 use crate::models::scan_targets;
-use crate::models::services;
-use crate::workers::asm_scan::{AsmScanArgs, AsmScanWorker};
+use crate::workers::job_dispatcher::{JobDispatchArgs, JobDispatchWorker};
 use crate::{require_role, require_user, views};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -97,35 +96,36 @@ pub async fn add(
     item.label = Set(params.label);
     let target = item.insert(&ctx.db).await?;
 
-    // If the target has a hostname, enqueue an ASM scan
+    // If the target has a hostname, enqueue an ASM scan via the jobs system
     if let Some(ref hostname) = params.hostname {
         let hostname = hostname.trim().to_lowercase();
         if !hostname.is_empty() {
-            if let Some(asm_service) =
-                services::Model::find_by_slug(&ctx.db, "attack-surface-mapping").await
-            {
-                // Create a scan job row
-                let job = scan_jobs::ActiveModel {
-                    org_id: Set(org_ctx.org.id),
-                    target_id: Set(target.id),
-                    service_id: Set(asm_service.id),
-                    status: Set("queued".to_string()),
-                    ..Default::default()
-                };
-                let job = job.insert(&ctx.db).await?;
+            let config = serde_json::json!({
+                "target_id": target.id,
+                "hostname": hostname,
+                "org_id": org_ctx.org.id,
+            });
+            let definition = job_definitions::ActiveModel {
+                org_id: Set(org_ctx.org.id),
+                name: Set(format!("ASM: {hostname}")),
+                job_type: Set("asm_scan".to_string()),
+                config: Set(config.to_string()),
+                enabled: Set(true),
+                ..Default::default()
+            };
+            let definition = definition.insert(&ctx.db).await?;
 
-                // Enqueue the background worker
-                AsmScanWorker::perform_later(
-                    &ctx,
-                    AsmScanArgs {
-                        target_id: target.id,
-                        org_id: org_ctx.org.id,
-                        hostname,
-                        job_id: job.id,
-                    },
-                )
-                .await?;
-            }
+            let run =
+                job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
+
+            JobDispatchWorker::perform_later(
+                &ctx,
+                JobDispatchArgs {
+                    job_run_id: run.id,
+                    job_definition_id: definition.id,
+                },
+            )
+            .await?;
         }
     }
 
@@ -151,68 +151,75 @@ pub async fn show(
         .ok_or_else(|| Error::NotFound)?;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
 
-    // Get the latest completed ASM scan job for this target
-    let latest_job = scan_jobs::Entity::find()
-        .filter(scan_jobs::Column::TargetId.eq(item.id))
-        .filter(scan_jobs::Column::OrgId.eq(org_ctx.org.id))
-        .filter(scan_jobs::Column::Status.eq("completed"))
-        .filter(scan_jobs::Column::ResultSummary.is_not_null())
-        .order_by_desc(scan_jobs::Column::CompletedAt)
-        .one(&ctx.db)
-        .await
-        .ok()
-        .flatten();
+    // Find the ASM scan job definition for this target
+    let mut asm_result: Option<serde_json::Value> = None;
+    let mut scan_status: Option<&str> = None;
+    let mut error_message: Option<String> = None;
 
-    let asm_result = latest_job.and_then(|job| {
-        job.result_summary
-            .as_deref()
-            .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
-    });
-
-    // Also check if there's a running/queued scan
-    let pending_job = scan_jobs::Entity::find()
-        .filter(scan_jobs::Column::TargetId.eq(item.id))
-        .filter(scan_jobs::Column::OrgId.eq(org_ctx.org.id))
-        .filter(
-            scan_jobs::Column::Status
-                .eq("queued")
-                .or(scan_jobs::Column::Status.eq("running")),
-        )
-        .one(&ctx.db)
-        .await
-        .ok()
-        .flatten();
-
-    // Check for latest failed job if no completed result
-    let failed_job = if asm_result.is_none() {
-        scan_jobs::Entity::find()
-            .filter(scan_jobs::Column::TargetId.eq(item.id))
-            .filter(scan_jobs::Column::OrgId.eq(org_ctx.org.id))
-            .filter(scan_jobs::Column::Status.eq("failed"))
-            .order_by_desc(scan_jobs::Column::CompletedAt)
-            .one(&ctx.db)
+    if let Some(ref hostname) = item.hostname {
+        let asm_defs = job_definitions::Entity::find()
+            .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+            .filter(job_definitions::Column::JobType.eq("asm_scan"))
+            .all(&ctx.db)
             .await
-            .ok()
-            .flatten()
-    } else {
-        None
-    };
-    let failed_message = failed_job.as_ref().and_then(|j| j.error_message.clone());
+            .unwrap_or_default();
 
-    let scan_status = if pending_job.is_some() {
-        Some("running")
-    } else if asm_result.is_some() {
-        Some("completed")
-    } else if failed_job.is_some() {
-        Some("failed")
-    } else {
-        None
-    };
+        let matching_def = asm_defs.into_iter().find(|d| {
+            serde_json::from_str::<serde_json::Value>(&d.config)
+                .ok()
+                .and_then(|v| v["hostname"].as_str().map(|h| h == hostname.as_str()))
+                .unwrap_or(false)
+        });
+
+        if let Some(def) = matching_def {
+            // Check for pending (queued/running) run first
+            let pending = job_runs::Entity::find()
+                .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+                .filter(
+                    job_runs::Column::Status
+                        .eq("queued")
+                        .or(job_runs::Column::Status.eq("running")),
+                )
+                .one(&ctx.db)
+                .await
+                .ok()
+                .flatten();
+
+            if pending.is_some() {
+                scan_status = Some("running");
+            } else {
+                // Check for latest completed run
+                let completed =
+                    job_runs::Model::find_latest_completed_by_definition(&ctx.db, def.id).await;
+                if let Some(run) = completed {
+                    asm_result = run
+                        .result_summary
+                        .as_deref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
+                    scan_status = Some("completed");
+                } else {
+                    // Check for failed run
+                    let failed = job_runs::Entity::find()
+                        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+                        .filter(job_runs::Column::Status.eq("failed"))
+                        .order_by_desc(job_runs::Column::CompletedAt)
+                        .one(&ctx.db)
+                        .await
+                        .ok()
+                        .flatten();
+                    if let Some(run) = failed {
+                        error_message = run.error_message;
+                        scan_status = Some("failed");
+                    }
+                }
+            }
+        }
+    }
 
     let scan = views::scan_target::ScanState {
         asm_result: asm_result.as_ref(),
         status: scan_status,
-        error: failed_message.as_deref(),
+        error: error_message.as_deref(),
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
 }
