@@ -139,7 +139,8 @@
 <table>
     <thead>
         <tr>
-            <th>User ID</th>
+            <th>Name</th>
+            <th>Email</th>
             <th>Role</th>
             <th>Assigned</th>
         </tr>
@@ -147,9 +148,10 @@
     <tbody>
         {% for a in assignments %}
         <tr>
-            <td>{{ a.user_id }}</td>
+            <td>{{ a.user_name }}</td>
+            <td>{{ a.user_email }}</td>
             <td><span class="badge secondary">{{ a.role }}</span></td>
-            <td>{{ a.created_at | date(format="%Y-%m-%d") }}</td>
+            <td>{{ a.created_at }}</td>
         </tr>
         {% endfor %}
     </tbody>
