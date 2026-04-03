@@ -65,6 +65,50 @@
     </div>
 </article>
 
+{% if linked_targets | length > 0 or unlinked_targets | length > 0 %}
+<div class="page-header mt-6">
+    <h2>Linked Targets <span class="badge secondary">{{ linked_targets | length }}</span></h2>
+</div>
+{% if linked_targets | length > 0 %}
+<table>
+    <thead>
+        <tr>
+            <th>Label / Hostname</th>
+            <th>IP Address</th>
+            <th>Type</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for target in linked_targets %}
+        <tr>
+            <td>{{ target.label | default(value=target.hostname) | default(value="-") }}</td>
+            <td>{{ target.ip_address | default(value="-") }}</td>
+            <td><span class="badge secondary">{{ target.target_type }}</span></td>
+            <td>
+                <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+                <form action="/engagements/{{ item.pid }}/targets/{{ target.pid }}/remove" method="post" class="d-inline">
+                    <button type="submit" class="outline small" data-variant="danger">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% if unlinked_targets | length > 0 %}
+<!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+<form action="/engagements/{{ item.pid }}/targets" method="post" class="form-actions">
+    <select name="scan_target_id">
+        {% for target in unlinked_targets %}
+        <option value="{{ target.id }}">{{ target.label | default(value=target.hostname) | default(value=target.ip_address) }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Add Target</button>
+</form>
+{% endif %}
+{% endif %}
+
 {% if offers | length > 0 %}
 <div class="page-header mt-6">
     <h2>Offers</h2>

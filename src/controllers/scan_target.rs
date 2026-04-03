@@ -229,10 +229,86 @@ pub async fn show(
         }
     }
 
+    // Look up port scan results
+    let mut port_scan_result: Option<serde_json::Value> = None;
+    let mut port_scan_status: Option<&str> = None;
+    let mut port_scan_error: Option<String> = None;
+
+    let scan_target_name = item
+        .hostname
+        .as_deref()
+        .or(item.ip_address.as_deref())
+        .unwrap_or("");
+
+    if !scan_target_name.is_empty() {
+        let port_defs = job_definitions::Entity::find()
+            .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+            .filter(job_definitions::Column::JobType.eq("port_scan"))
+            .all(&ctx.db)
+            .await
+            .unwrap_or_default();
+
+        let matching_def = port_defs.into_iter().find(|d| {
+            serde_json::from_str::<serde_json::Value>(&d.config)
+                .ok()
+                .map(|v| {
+                    v["target_id"]
+                        .as_i64()
+                        .map(|id| id == i64::from(item.id))
+                        .unwrap_or(false)
+                })
+                .unwrap_or(false)
+        });
+
+        if let Some(def) = matching_def {
+            let pending = job_runs::Entity::find()
+                .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+                .filter(
+                    job_runs::Column::Status
+                        .eq("queued")
+                        .or(job_runs::Column::Status.eq("running")),
+                )
+                .one(&ctx.db)
+                .await
+                .ok()
+                .flatten();
+
+            if pending.is_some() {
+                port_scan_status = Some("running");
+            } else {
+                let completed =
+                    job_runs::Model::find_latest_completed_by_definition(&ctx.db, def.id).await;
+                if let Some(run) = completed {
+                    port_scan_result = run
+                        .result_summary
+                        .as_deref()
+                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
+                    port_scan_status = Some("completed");
+                } else {
+                    let failed = job_runs::Entity::find()
+                        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+                        .filter(job_runs::Column::Status.eq("failed"))
+                        .order_by_desc(job_runs::Column::CompletedAt)
+                        .one(&ctx.db)
+                        .await
+                        .ok()
+                        .flatten();
+                    if let Some(run) = failed {
+                        port_scan_error = run.error_message;
+                        port_scan_status = Some("failed");
+                    }
+                }
+            }
+        }
+    }
+
     let scan = views::scan_target::ScanState {
         asm_result: asm_result.as_ref(),
         status: scan_status,
         error: error_message.as_deref(),
+        port_scan_result: port_scan_result.as_ref(),
+        port_scan_status,
+        port_scan_error: port_scan_error.as_deref(),
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
 }
@@ -351,6 +427,73 @@ fn validate_ip_address(ip_str: &str) -> Result<()> {
     Ok(())
 }
 
+/// `POST /targets/:pid/port-scan` -- trigger a port scan.
+#[debug_handler]
+pub async fn trigger_port_scan(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+    let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let scan_target_name = item
+        .hostname
+        .as_deref()
+        .or(item.ip_address.as_deref())
+        .ok_or_else(|| Error::BadRequest("Target has no hostname or IP".into()))?
+        .to_string();
+
+    let def_name = format!("Port Scan: {scan_target_name}");
+
+    // Find existing definition or create a new one
+    let definition = if let Some(existing) = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+        .filter(job_definitions::Column::Name.eq(&def_name))
+        .one(&ctx.db)
+        .await?
+    {
+        existing
+    } else {
+        let config = serde_json::json!({
+            "target_id": item.id,
+            "hostname": item.hostname,
+            "ip_address": item.ip_address,
+            "org_id": org_ctx.org.id,
+        });
+        job_definitions::ActiveModel {
+            org_id: Set(org_ctx.org.id),
+            name: Set(def_name),
+            job_type: Set("port_scan".to_string()),
+            config: Set(config.to_string()),
+            enabled: Set(true),
+            ..Default::default()
+        }
+        .insert(&ctx.db)
+        .await?
+    };
+
+    let run = job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
+
+    JobDispatchWorker::perform_later(
+        &ctx,
+        JobDispatchArgs {
+            job_run_id: run.id,
+            job_definition_id: definition.id,
+        },
+    )
+    .await?;
+
+    Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/targets")
@@ -359,4 +502,5 @@ pub fn routes() -> Routes {
         .add("/new", get(new))
         .add("/{pid}", get(show))
         .add("/{pid}", delete(remove))
+        .add("/{pid}/port-scan", post(trigger_port_scan))
 }

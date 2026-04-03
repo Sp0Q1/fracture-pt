@@ -19,12 +19,12 @@ use loco_rs::bgworker::BackgroundWorker;
 
 use crate::{
     controllers, initializers,
-    jobs::{asm_scan::AsmScanExecutor, report_build::ReportBuildExecutor},
+    jobs::{asm_scan::AsmScanExecutor, port_scan::PortScanExecutor, report_build::ReportBuildExecutor},
     models::_entities::{
-        blog_posts, engagement_offers, engagements, findings, invoices, job_definitions,
-        job_run_diffs, job_runs, non_findings, org_invites, org_members, organizations,
-        pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets, services,
-        subscriptions, users,
+        blog_posts, engagement_offers, engagement_targets, engagements, findings, invoices,
+        job_definitions, job_run_diffs, job_runs, non_findings, org_invites, org_members,
+        organizations, pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets,
+        services, subscriptions, users,
     },
     workers,
 };
@@ -233,6 +233,7 @@ impl Hooks for App {
         // Initialise the job registry with gethacked-specific executors
         let mut job_reg = JobRegistry::new();
         job_reg.register(Box::new(AsmScanExecutor));
+        job_reg.register(Box::new(PortScanExecutor));
         job_reg.register(Box::new(ReportBuildExecutor));
         init_job_registry(job_reg);
 
@@ -287,6 +288,7 @@ impl Hooks for App {
         truncate_table(&ctx.db, reports::Entity).await?;
         truncate_table(&ctx.db, pentester_assignments::Entity).await?;
         truncate_table(&ctx.db, engagement_offers::Entity).await?;
+        truncate_table(&ctx.db, engagement_targets::Entity).await?;
         truncate_table(&ctx.db, scan_jobs::Entity).await?;
         truncate_table(&ctx.db, invoices::Entity).await?;
         truncate_table(&ctx.db, engagements::Entity).await?;

@@ -8,6 +8,9 @@ pub struct ScanState<'a> {
     pub asm_result: Option<&'a serde_json::Value>,
     pub status: Option<&'a str>,
     pub error: Option<&'a str>,
+    pub port_scan_result: Option<&'a serde_json::Value>,
+    pub port_scan_status: Option<&'a str>,
+    pub port_scan_error: Option<&'a str>,
 }
 
 /// Render the scan target list.
@@ -50,5 +53,10 @@ pub fn show(
     }
     ctx["scan_status"] = serde_json::json!(scan.status.unwrap_or(""));
     ctx["scan_error"] = serde_json::json!(scan.error.unwrap_or(""));
+    if let Some(port_scan) = scan.port_scan_result {
+        ctx["port_scan"] = port_scan.clone();
+    }
+    ctx["port_scan_status"] = serde_json::json!(scan.port_scan_status.unwrap_or(""));
+    ctx["port_scan_error"] = serde_json::json!(scan.port_scan_error.unwrap_or(""));
     format::render().view(v, "scan_target/show.html", data!(ctx))
 }
