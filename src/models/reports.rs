@@ -57,6 +57,26 @@ impl Model {
             .await
             .unwrap_or_default()
     }
+
+    /// Finds all reports cross-org (admin use).
+    pub async fn find_all(db: &DatabaseConnection) -> Vec<Self> {
+        Entity::find()
+            .order_by(Column::Id, Order::Desc)
+            .all(db)
+            .await
+            .unwrap_or_default()
+    }
+
+    /// Finds a report by pid (admin use -- cross-org).
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> Option<Self> {
+        let uuid = Uuid::parse_str(pid).ok()?;
+        Entity::find()
+            .filter(Column::Pid.eq(uuid))
+            .one(db)
+            .await
+            .ok()
+            .flatten()
+    }
 }
 
 impl ActiveModel {}

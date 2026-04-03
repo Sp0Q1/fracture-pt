@@ -1,0 +1,47 @@
+{% extends "_layout.html" %}
+
+{% block title %}Admin: Reports -- GetHacked{% endblock title %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Admin: Reports <span class="badge secondary">{{ items | length }}</span></h1>
+    </div>
+
+    {% if items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Org</th>
+                    <th>Type</th>
+                    <th>Format</th>
+                    <th>Generated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+               {% for item in items %}
+                <tr>
+                    <td>{{ item.title }}</td>
+                    <td>Org #{{ item.org_id }}</td>
+                    <td><span class="badge secondary">{{ item.report_type | replace(from="_", to=" ") }}</span></td>
+                    <td>{{ item.format | upper }}</td>
+                    <td>{% if item.generated_at %}{{ item.generated_at | date(format="%Y-%m-%d") }}{% else %}Pending{% endif %}</td>
+                    <td>
+                        {% if item.storage_path %}
+                        <a href="/reports/{{ item.pid }}/download" class="button" data-variant="secondary" data-size="sm">Download</a>
+                        {% else %}
+                        <span class="badge secondary">No file</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <article class="card empty-state">
+            <h3>No Reports</h3>
+            <p>No reports have been generated yet.</p>
+        </article>
+    {% endif %}
+{% endblock content %}

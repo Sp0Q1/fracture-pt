@@ -1,0 +1,92 @@
+{% extends "_layout.html" %}
+
+{% block title %}Admin: Finding -- {{ item.title }} -- GetHacked{% endblock title %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/findings">Findings</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">{{ item.title }}</span>
+</nav>
+
+<article class="card detail-card">
+    <header>
+        <h2>{{ item.title }}</h2>
+        <span class="badge {% if item.severity == 'extreme' %}danger{% elif item.severity == 'high' %}warning{% elif item.severity == 'elevated' %}primary{% elif item.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
+            {{ item.severity }}
+        </span>
+    </header>
+
+    <div class="detail-row">
+        <span class="detail-label">Organization</span>
+        <span class="detail-value">Org #{{ item.org_id }}</span>
+    </div>
+    {% if item.engagement_id %}
+    <div class="detail-row">
+        <span class="detail-label">Engagement</span>
+        <span class="detail-value">Engagement #{{ item.engagement_id }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+        <span class="detail-label">Category</span>
+        <span class="detail-value">{{ item.category | replace(from="_", to=" ") }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+            <span class="badge {% if item.status == 'resolved' %}success{% elif item.status == 'unresolved' %}danger{% elif item.status == 'new' %}primary{% else %}secondary{% endif %}">
+                {{ item.status | replace(from="_", to=" ") }}
+            </span>
+        </span>
+    </div>
+    {% if item.cve_id %}
+    <div class="detail-row">
+        <span class="detail-label">CVE ID</span>
+        <span class="detail-value">{{ item.cve_id }}</span>
+    </div>
+    {% endif %}
+    {% if item.affected_asset %}
+    <div class="detail-row">
+        <span class="detail-label">Affected Asset</span>
+        <span class="detail-value">{{ item.affected_asset }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+        <span class="detail-label">Created</span>
+        <span class="detail-value">{{ item.created_at | date(format="%Y-%m-%d %H:%M") }}</span>
+    </div>
+</article>
+
+<article class="card mt-4">
+    <h3>Description</h3>
+    <div class="prose">{{ item.description }}</div>
+</article>
+
+{% if item.technical_description %}
+<article class="card mt-4">
+    <h3>Technical Description</h3>
+    <div class="prose">{{ item.technical_description }}</div>
+</article>
+{% endif %}
+
+{% if item.impact %}
+<article class="card mt-4">
+    <h3>Impact</h3>
+    <div class="prose">{{ item.impact }}</div>
+</article>
+{% endif %}
+
+{% if item.recommendation %}
+<article class="card mt-4">
+    <h3>Recommendation</h3>
+    <div class="prose">{{ item.recommendation }}</div>
+</article>
+{% endif %}
+
+{% if item.evidence %}
+<article class="card mt-4">
+    <h3>Evidence</h3>
+    <div class="prose"><pre>{{ item.evidence }}</pre></div>
+</article>
+{% endif %}
+{% endblock content %}
