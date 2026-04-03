@@ -75,14 +75,21 @@ pub async fn show(
             .flatten();
         membership_details.push(serde_json::json!({
             "org_id": m.org_id,
-            "org_name": org.as_ref().map(|o| o.name.as_str()).unwrap_or("Unknown"),
-            "org_slug": org.as_ref().map(|o| o.slug.as_str()).unwrap_or(""),
+            "org_name": org.as_ref().map_or("Unknown", |o| o.name.as_str()),
+            "org_slug": org.as_ref().map_or("", |o| o.slug.as_str()),
             "role": m.role,
             "joined_at": m.created_at,
         }));
     }
 
-    views::admin::user::show(&v, &user, &org_ctx, &user_orgs, &target_user, &membership_details)
+    views::admin::user::show(
+        &v,
+        &user,
+        &org_ctx,
+        &user_orgs,
+        &target_user,
+        &membership_details,
+    )
 }
 
 pub fn route_list() -> Vec<(String, axum::routing::MethodRouter<AppContext>)> {

@@ -275,7 +275,7 @@ pub async fn unlink_target(
 
     engagement_targets::Model::unlink(&ctx.db, item.id, target.id)
         .await
-        .map_err(|e| Error::BadRequest(e.to_string().into()))?;
+        .map_err(|e| Error::BadRequest(e.to_string()))?;
 
     Ok(Redirect::to(&format!("/engagements/{pid}")).into_response())
 }
