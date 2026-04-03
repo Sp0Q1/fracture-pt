@@ -118,14 +118,9 @@ impl BackgroundWorker<AsmScanArgs> for AsmScanWorker {
             match asm::query_crtsh(&args.hostname).await {
                 Ok(entries) => {
                     let result = asm::process_results(&args.hostname, &entries);
-                    let finding_count = create_cert_findings(
-                        db,
-                        &result,
-                        args.org_id,
-                        args.job_id,
-                        &args.hostname,
-                    )
-                    .await?;
+                    let finding_count =
+                        create_cert_findings(db, &result, args.org_id, args.job_id, &args.hostname)
+                            .await?;
 
                     let summary = serde_json::json!({
                         "domain": result.domain,
