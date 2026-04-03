@@ -38,15 +38,19 @@ pub fn show(
     let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
     ctx["item"] = serde_json::json!(data.item);
     ctx["offers"] = serde_json::json!(data.offers);
-    ctx["assignments"] = serde_json::json!(data.assignment_users.iter().map(|(a, name, email)| {
-        serde_json::json!({
-            "user_id": a.user_id,
-            "user_name": name,
-            "user_email": email,
-            "role": a.role,
-            "created_at": a.created_at.to_rfc3339(),
+    ctx["assignments"] = serde_json::json!(data
+        .assignment_users
+        .iter()
+        .map(|(a, name, email)| {
+            serde_json::json!({
+                "user_id": a.user_id,
+                "user_name": name,
+                "user_email": email,
+                "role": a.role,
+                "created_at": a.created_at.to_rfc3339(),
+            })
         })
-    }).collect::<Vec<_>>());
+        .collect::<Vec<_>>());
     ctx["findings"] = serde_json::json!(data.findings);
     let available_users_json: Vec<serde_json::Value> = data
         .available_users
