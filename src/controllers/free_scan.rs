@@ -1,19 +1,19 @@
-use axum::extract::State;
-use axum_extra::extract::Form;
+use axum::response::Redirect;
+use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::extract::{CookieJar, Form};
 use loco_rs::prelude::*;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
-use crate::services::asm::{self, ScanResult};
+use crate::controllers::middleware;
+use crate::models::_entities::{job_definitions, job_runs, organizations};
 use crate::views;
-
-// ---------- form ----------
+use crate::workers::job_dispatcher::{JobDispatchArgs, JobDispatchWorker};
 
 #[derive(Debug, Deserialize)]
 pub struct ScanForm {
     pub domain: String,
 }
-
-// ---------- domain validation ----------
 
 fn is_valid_domain(domain: &str) -> bool {
     if domain.is_empty() || domain.len() > 253 {
@@ -45,12 +45,14 @@ fn is_valid_domain(domain: &str) -> bool {
     })
 }
 
-// ---------- handlers ----------
-
-/// `POST /free-scan` -- run a free certificate transparency scan.
+/// `POST /free-scan` — validate domain, create a job, redirect to progress page.
+///
+/// # Errors
+///
+/// Returns an error if the domain is invalid or the platform admin org is not configured.
 #[debug_handler]
 pub async fn submit(
-    State(_ctx): State<AppContext>,
+    State(ctx): State<AppContext>,
     ViewEngine(v): ViewEngine<TeraView>,
     Form(form): Form<ScanForm>,
 ) -> Result<Response> {
@@ -64,23 +66,117 @@ pub async fn submit(
         );
     }
 
-    let result = match asm::query_crtsh(&domain).await {
-        Ok(entries) => asm::process_results(&domain, &entries),
-        Err(e) => ScanResult {
-            domain: domain.clone(),
-            subdomains: vec![],
-            subdomain_count: 0,
-            certs: vec![],
-            cert_count: 0,
-            expired_count: 0,
-            wildcard_count: 0,
-            error: Some(e),
+    let admin_org = organizations::Entity::find()
+        .filter(organizations::Column::IsPlatformAdmin.eq(true))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::BadRequest("Platform admin org not configured".into()))?;
+
+    let def_name = format!("Free scan: {domain}");
+    let config = serde_json::json!({
+        "hostname": domain,
+        "org_id": admin_org.id,
+    });
+
+    let definition = job_definitions::ActiveModel {
+        org_id: Set(admin_org.id),
+        name: Set(def_name),
+        job_type: Set("asm_scan".to_string()),
+        config: Set(config.to_string()),
+        enabled: Set(true),
+        ..Default::default()
+    }
+    .insert(&ctx.db)
+    .await?;
+
+    let run = job_runs::Model::create_queued(&ctx.db, definition.id, admin_org.id).await?;
+
+    JobDispatchWorker::perform_later(
+        &ctx,
+        JobDispatchArgs {
+            job_run_id: run.id,
+            job_definition_id: definition.id,
         },
+    )
+    .await?;
+
+    // Set access cookie so only the requester can view results
+    let run_pid = run.pid.to_string();
+    let mut cookie = Cookie::new("free_scan_token", run_pid.clone());
+    cookie.set_path(format!("/free-scan/{run_pid}"));
+    cookie.set_http_only(true);
+    cookie.set_same_site(SameSite::Lax);
+    cookie.set_secure(true);
+
+    let mut response = Redirect::to(&format!("/free-scan/{run_pid}")).into_response();
+    response.headers_mut().insert(
+        axum::http::header::SET_COOKIE,
+        cookie.to_string().parse().expect("cookie is valid ASCII"),
+    );
+    Ok(response)
+}
+
+/// `GET /free-scan/:run_pid` — show scan progress / results.
+///
+/// # Errors
+///
+/// Returns an error if the scan is not found or the user is not authorised to view it.
+#[debug_handler]
+pub async fn results_page(
+    Path(run_pid): Path<String>,
+    ViewEngine(v): ViewEngine<TeraView>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    // Access control: allow if the user has the cookie OR is a platform admin
+    let has_cookie = jar
+        .get("free_scan_token")
+        .is_some_and(|c| c.value() == run_pid);
+    let is_admin = if let Some(user) = middleware::get_current_user(&jar, &ctx).await {
+        let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+        org_ctx.is_some_and(|o| o.is_platform_admin)
+    } else {
+        false
     };
 
-    views::free_scan::results(&v, &result)
+    if !has_cookie && !is_admin {
+        return Err(Error::Unauthorized("Access denied".into()));
+    }
+
+    let run = job_runs::Model::find_by_pid(&ctx.db, &run_pid)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let definition = job_definitions::Entity::find_by_id(run.job_definition_id)
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    let config: serde_json::Value = serde_json::from_str(&definition.config)
+        .map_err(|_| Error::BadRequest("Invalid job config".into()))?;
+    let domain = config["hostname"]
+        .as_str()
+        .unwrap_or("unknown")
+        .to_string();
+
+    match run.status.as_str() {
+        "queued" | "running" => {
+            views::free_scan::progress(&v, &domain, &run.status, None, None)
+        }
+        "completed" => {
+            let asm_result = run
+                .result_summary
+                .as_deref()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
+            views::free_scan::progress(&v, &domain, "completed", asm_result.as_ref(), None)
+        }
+        "failed" => views::free_scan::progress(&v, &domain, "failed", None, run.error_message.as_deref()),
+        _ => views::free_scan::progress(&v, &domain, &run.status, None, None),
+    }
 }
 
 pub fn routes() -> Routes {
-    Routes::new().add("/free-scan", post(submit))
+    Routes::new()
+        .add("/free-scan", post(submit))
+        .add("/free-scan/{run_pid}", get(results_page))
 }
