@@ -103,30 +103,29 @@ pub async fn add(
             let def_name = format!("ASM: {hostname}");
 
             // Find existing definition or create a new one
-            let definition = match job_definitions::Entity::find()
+            let definition = if let Some(existing) = job_definitions::Entity::find()
                 .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
                 .filter(job_definitions::Column::Name.eq(&def_name))
                 .one(&ctx.db)
                 .await?
             {
-                Some(existing) => existing,
-                None => {
-                    let config = serde_json::json!({
-                        "target_id": target.id,
-                        "hostname": hostname,
-                        "org_id": org_ctx.org.id,
-                    });
-                    job_definitions::ActiveModel {
-                        org_id: Set(org_ctx.org.id),
-                        name: Set(def_name),
-                        job_type: Set("asm_scan".to_string()),
-                        config: Set(config.to_string()),
-                        enabled: Set(true),
-                        ..Default::default()
-                    }
-                    .insert(&ctx.db)
-                    .await?
+                existing
+            } else {
+                let config = serde_json::json!({
+                    "target_id": target.id,
+                    "hostname": hostname,
+                    "org_id": org_ctx.org.id,
+                });
+                job_definitions::ActiveModel {
+                    org_id: Set(org_ctx.org.id),
+                    name: Set(def_name),
+                    job_type: Set("asm_scan".to_string()),
+                    config: Set(config.to_string()),
+                    enabled: Set(true),
+                    ..Default::default()
                 }
+                .insert(&ctx.db)
+                .await?
             };
 
             let run =
