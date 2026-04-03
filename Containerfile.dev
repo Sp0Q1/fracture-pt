@@ -1,6 +1,6 @@
 FROM rust:latest AS chef
 RUN cargo install cargo-chef
-RUN apt-get update && apt-get install -y libsqlite3-dev ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libsqlite3-dev ca-certificates nmap && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM chef AS planner
@@ -10,9 +10,9 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM chef AS builder
 RUN rustup component add rustfmt clippy
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --recipe-path recipe.json
 COPY . /app
-RUN cargo build --release
+RUN cargo build
 
 COPY dev/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
