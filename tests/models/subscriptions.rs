@@ -1,5 +1,5 @@
-use gethacked::app::App;
-use gethacked::models::{
+use fracture_pt::app::App;
+use fracture_pt::models::{
     organizations, pricing_tiers, services, subscriptions,
     users::{self, OidcUserInfo},
 };

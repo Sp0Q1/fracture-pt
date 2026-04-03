@@ -116,11 +116,11 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     }
 
     let xml = String::from_utf8_lossy(&result.stdout);
-    parse_nmap_xml(&xml, &validated)
+    Ok(parse_nmap_xml(&xml, &validated))
 }
 
 /// Parses nmap XML output using simple string matching.
-fn parse_nmap_xml(xml: &str, target: &str) -> Result<PortScanResult, String> {
+fn parse_nmap_xml(xml: &str, target: &str) -> PortScanResult {
     let mut ports = Vec::new();
     let mut ip = String::new();
     let mut os_guess = String::new();
@@ -155,15 +155,14 @@ fn parse_nmap_xml(xml: &str, target: &str) -> Result<PortScanResult, String> {
     while let Some(port_start) = xml[search_from..].find("<port ") {
         let abs_start = search_from + port_start;
         // Find the closing </port> or end of self-closing port block
-        let block_end = xml[abs_start..]
-            .find("</port>")
-            .map(|e| abs_start + e + 7)
-            .unwrap_or_else(|| {
+        let block_end = xml[abs_start..].find("</port>").map_or_else(
+            || {
                 xml[abs_start..]
                     .find("/>")
-                    .map(|e| abs_start + e + 2)
-                    .unwrap_or(xml.len())
-            });
+                    .map_or(xml.len(), |e| abs_start + e + 2)
+            },
+            |e| abs_start + e + 7,
+        );
 
         let block = &xml[abs_start..block_end];
 
@@ -172,28 +171,29 @@ fn parse_nmap_xml(xml: &str, target: &str) -> Result<PortScanResult, String> {
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
 
-        let state = if let Some(state_start) = block.find("<state ") {
-            extract_attr(&block[state_start..], "state").unwrap_or_default()
-        } else {
-            String::new()
-        };
+        let state = block
+            .find("<state ")
+            .map_or_else(String::new, |state_start| {
+                extract_attr(&block[state_start..], "state").unwrap_or_default()
+            });
 
-        let (service, version) = if let Some(svc_start) = block.find("<service ") {
-            let svc_block = &block[svc_start..];
-            let svc_name = extract_attr(svc_block, "name").unwrap_or_default();
-            let svc_product = extract_attr(svc_block, "product").unwrap_or_default();
-            let svc_version = extract_attr(svc_block, "version").unwrap_or_default();
-            let version_str = if svc_version.is_empty() {
-                svc_product
-            } else if svc_product.is_empty() {
-                svc_version
-            } else {
-                format!("{svc_product} {svc_version}")
-            };
-            (svc_name, version_str)
-        } else {
-            (String::new(), String::new())
-        };
+        let (service, version) = block.find("<service ").map_or_else(
+            || (String::new(), String::new()),
+            |svc_start| {
+                let svc_block = &block[svc_start..];
+                let svc_name = extract_attr(svc_block, "name").unwrap_or_default();
+                let svc_product = extract_attr(svc_block, "product").unwrap_or_default();
+                let svc_version = extract_attr(svc_block, "version").unwrap_or_default();
+                let version_str = if svc_version.is_empty() {
+                    svc_product
+                } else if svc_product.is_empty() {
+                    svc_version
+                } else {
+                    format!("{svc_product} {svc_version}")
+                };
+                (svc_name, version_str)
+            },
+        );
 
         if port_num > 0 {
             ports.push(PortInfo {
@@ -210,14 +210,14 @@ fn parse_nmap_xml(xml: &str, target: &str) -> Result<PortScanResult, String> {
 
     let total_open = ports.iter().filter(|p| p.state == "open").count();
 
-    Ok(PortScanResult {
+    PortScanResult {
         target: target.to_string(),
         ip,
         ports,
         os_guess,
         scan_time,
         total_open,
-    })
+    }
 }
 
 /// Extracts an XML attribute value by name from a tag string.

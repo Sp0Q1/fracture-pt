@@ -1,5 +1,5 @@
-use gethacked::app::App;
-use gethacked::models::{pricing_tiers, services};
+use fracture_pt::app::App;
+use fracture_pt::models::{pricing_tiers, services};
 use loco_rs::testing::prelude::*;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use serial_test::serial;

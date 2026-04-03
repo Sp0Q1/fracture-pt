@@ -10,8 +10,8 @@
 //! require a running OIDC provider and are tested via `dev/ci.sh`.
 //! These tests cover the data-layer security guarantees.
 
-use gethacked::app::App;
-use gethacked::models::{
+use fracture_pt::app::App;
+use fracture_pt::models::{
     engagements, findings, organizations, pentester_assignments, pricing_tiers, reports,
     scan_targets, services, subscriptions,
     users::{self, OidcUserInfo},

@@ -145,6 +145,139 @@ pub async fn add(
     Ok(Redirect::to(&format!("/targets/{}", target.pid)).into_response())
 }
 
+/// Status of a job-based scan lookup.
+struct JobScanStatus {
+    result: Option<serde_json::Value>,
+    status: Option<String>,
+    error: Option<String>,
+}
+
+/// Looks up the latest run status for a given job definition.
+async fn lookup_job_run_status(
+    db: &sea_orm::DatabaseConnection,
+    def: &job_definitions::Model,
+) -> JobScanStatus {
+    // Check for pending (queued/running) run first
+    let pending = job_runs::Entity::find()
+        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+        .filter(
+            job_runs::Column::Status
+                .eq("queued")
+                .or(job_runs::Column::Status.eq("running")),
+        )
+        .one(db)
+        .await
+        .ok()
+        .flatten();
+
+    if pending.is_some() {
+        return JobScanStatus {
+            result: None,
+            status: Some("running".to_string()),
+            error: None,
+        };
+    }
+
+    // Check for latest completed run
+    let completed = job_runs::Model::find_latest_completed_by_definition(db, def.id).await;
+    if let Some(run) = completed {
+        let result = run
+            .result_summary
+            .as_deref()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
+        return JobScanStatus {
+            result,
+            status: Some("completed".to_string()),
+            error: None,
+        };
+    }
+
+    // Check for failed run
+    let failed = job_runs::Entity::find()
+        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+        .filter(job_runs::Column::Status.eq("failed"))
+        .order_by_desc(job_runs::Column::CompletedAt)
+        .one(db)
+        .await
+        .ok()
+        .flatten();
+    if let Some(run) = failed {
+        return JobScanStatus {
+            result: None,
+            status: Some("failed".to_string()),
+            error: run.error_message,
+        };
+    }
+
+    JobScanStatus {
+        result: None,
+        status: None,
+        error: None,
+    }
+}
+
+/// Looks up ASM scan status for a target by hostname.
+async fn lookup_asm_status(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    hostname: &str,
+) -> JobScanStatus {
+    let asm_defs = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_id))
+        .filter(job_definitions::Column::JobType.eq("asm_scan"))
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    let matching_def = asm_defs.into_iter().find(|d| {
+        serde_json::from_str::<serde_json::Value>(&d.config)
+            .ok()
+            .is_some_and(|v| v["hostname"].as_str().is_some_and(|h| h == hostname))
+    });
+
+    match matching_def {
+        Some(def) => lookup_job_run_status(db, &def).await,
+        None => JobScanStatus {
+            result: None,
+            status: None,
+            error: None,
+        },
+    }
+}
+
+/// Looks up port scan status for a target by target ID.
+async fn lookup_port_scan_status(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    target_id: i32,
+) -> JobScanStatus {
+    let port_defs = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_id))
+        .filter(job_definitions::Column::JobType.eq("port_scan"))
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    let matching_def = port_defs.into_iter().find(|d| {
+        serde_json::from_str::<serde_json::Value>(&d.config)
+            .ok()
+            .is_some_and(|v| {
+                v["target_id"]
+                    .as_i64()
+                    .is_some_and(|id| id == i64::from(target_id))
+            })
+    });
+
+    match matching_def {
+        Some(def) => lookup_job_run_status(db, &def).await,
+        None => JobScanStatus {
+            result: None,
+            status: None,
+            error: None,
+        },
+    }
+}
+
 /// `GET /targets/:pid` -- target detail + verification status.
 #[debug_handler]
 pub async fn show(
@@ -164,151 +297,33 @@ pub async fn show(
         .ok_or_else(|| Error::NotFound)?;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
 
-    // Find the ASM scan job definition for this target
-    let mut asm_result: Option<serde_json::Value> = None;
-    let mut scan_status: Option<&str> = None;
-    let mut error_message: Option<String> = None;
+    let asm = match item.hostname.as_deref() {
+        Some(hostname) => lookup_asm_status(&ctx.db, org_ctx.org.id, hostname).await,
+        None => JobScanStatus {
+            result: None,
+            status: None,
+            error: None,
+        },
+    };
 
-    if let Some(ref hostname) = item.hostname {
-        let asm_defs = job_definitions::Entity::find()
-            .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
-            .filter(job_definitions::Column::JobType.eq("asm_scan"))
-            .all(&ctx.db)
-            .await
-            .unwrap_or_default();
-
-        let matching_def = asm_defs.into_iter().find(|d| {
-            serde_json::from_str::<serde_json::Value>(&d.config)
-                .ok()
-                .and_then(|v| v["hostname"].as_str().map(|h| h == hostname.as_str()))
-                .unwrap_or(false)
-        });
-
-        if let Some(def) = matching_def {
-            // Check for pending (queued/running) run first
-            let pending = job_runs::Entity::find()
-                .filter(job_runs::Column::JobDefinitionId.eq(def.id))
-                .filter(
-                    job_runs::Column::Status
-                        .eq("queued")
-                        .or(job_runs::Column::Status.eq("running")),
-                )
-                .one(&ctx.db)
-                .await
-                .ok()
-                .flatten();
-
-            if pending.is_some() {
-                scan_status = Some("running");
-            } else {
-                // Check for latest completed run
-                let completed =
-                    job_runs::Model::find_latest_completed_by_definition(&ctx.db, def.id).await;
-                if let Some(run) = completed {
-                    asm_result = run
-                        .result_summary
-                        .as_deref()
-                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
-                    scan_status = Some("completed");
-                } else {
-                    // Check for failed run
-                    let failed = job_runs::Entity::find()
-                        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
-                        .filter(job_runs::Column::Status.eq("failed"))
-                        .order_by_desc(job_runs::Column::CompletedAt)
-                        .one(&ctx.db)
-                        .await
-                        .ok()
-                        .flatten();
-                    if let Some(run) = failed {
-                        error_message = run.error_message;
-                        scan_status = Some("failed");
-                    }
-                }
-            }
+    let has_target = item.hostname.is_some() || item.ip_address.is_some();
+    let port = if has_target {
+        lookup_port_scan_status(&ctx.db, org_ctx.org.id, item.id).await
+    } else {
+        JobScanStatus {
+            result: None,
+            status: None,
+            error: None,
         }
-    }
-
-    // Look up port scan results
-    let mut port_scan_result: Option<serde_json::Value> = None;
-    let mut port_scan_status: Option<&str> = None;
-    let mut port_scan_error: Option<String> = None;
-
-    let scan_target_name = item
-        .hostname
-        .as_deref()
-        .or(item.ip_address.as_deref())
-        .unwrap_or("");
-
-    if !scan_target_name.is_empty() {
-        let port_defs = job_definitions::Entity::find()
-            .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
-            .filter(job_definitions::Column::JobType.eq("port_scan"))
-            .all(&ctx.db)
-            .await
-            .unwrap_or_default();
-
-        let matching_def = port_defs.into_iter().find(|d| {
-            serde_json::from_str::<serde_json::Value>(&d.config)
-                .ok()
-                .map(|v| {
-                    v["target_id"]
-                        .as_i64()
-                        .map(|id| id == i64::from(item.id))
-                        .unwrap_or(false)
-                })
-                .unwrap_or(false)
-        });
-
-        if let Some(def) = matching_def {
-            let pending = job_runs::Entity::find()
-                .filter(job_runs::Column::JobDefinitionId.eq(def.id))
-                .filter(
-                    job_runs::Column::Status
-                        .eq("queued")
-                        .or(job_runs::Column::Status.eq("running")),
-                )
-                .one(&ctx.db)
-                .await
-                .ok()
-                .flatten();
-
-            if pending.is_some() {
-                port_scan_status = Some("running");
-            } else {
-                let completed =
-                    job_runs::Model::find_latest_completed_by_definition(&ctx.db, def.id).await;
-                if let Some(run) = completed {
-                    port_scan_result = run
-                        .result_summary
-                        .as_deref()
-                        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
-                    port_scan_status = Some("completed");
-                } else {
-                    let failed = job_runs::Entity::find()
-                        .filter(job_runs::Column::JobDefinitionId.eq(def.id))
-                        .filter(job_runs::Column::Status.eq("failed"))
-                        .order_by_desc(job_runs::Column::CompletedAt)
-                        .one(&ctx.db)
-                        .await
-                        .ok()
-                        .flatten();
-                    if let Some(run) = failed {
-                        port_scan_error = run.error_message;
-                        port_scan_status = Some("failed");
-                    }
-                }
-            }
-        }
-    }
+    };
 
     let scan = views::scan_target::ScanState {
-        asm_result: asm_result.as_ref(),
-        status: scan_status,
-        error: error_message.as_deref(),
-        port_scan_result: port_scan_result.as_ref(),
-        port_scan_status,
-        port_scan_error: port_scan_error.as_deref(),
+        asm_result: asm.result.as_ref(),
+        status: asm.status.as_deref(),
+        error: asm.error.as_deref(),
+        port_scan_result: port.result.as_ref(),
+        port_scan_status: port.status.as_deref(),
+        port_scan_error: port.error.as_deref(),
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
 }
