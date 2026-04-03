@@ -2,6 +2,13 @@
 
 {% block title %}Target -- GetHacked{% endblock title %}
 
+{% if scan_status == "running" %}
+{% block head %}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<meta http-equiv="refresh" content="5">
+{% endblock head %}
+{% endif %}
+
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/targets">Targets</a>
@@ -87,9 +94,11 @@
 </section>
 {% elif scan_status == "running" %}
 <section class="mt-4">
-    <article class="card card-accent text-center p-2">
-        <p>ASM scan is in progress&hellip;</p>
-        <p class="text-muted text-sm">Refresh this page in a few seconds to see results.</p>
+    <article class="card card-accent scan-progress-card">
+        <div class="scan-spinner"></div>
+        <h3>ASM Scan in Progress</h3>
+        <p>Querying certificate transparency logs and enumerating subdomains&hellip;</p>
+        <p class="text-muted text-sm">This page refreshes automatically.</p>
     </article>
 </section>
 {% elif scan_status == "failed" %}
