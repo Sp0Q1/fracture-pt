@@ -14,7 +14,7 @@ pub struct AsmScanExecutor;
 
 #[async_trait::async_trait]
 impl JobExecutor for AsmScanExecutor {
-    #[allow(clippy::needless_lifetimes)]
+    #[allow(clippy::unnecessary_literal_bound)]
     fn job_type(&self) -> &str {
         "asm_scan"
     }
