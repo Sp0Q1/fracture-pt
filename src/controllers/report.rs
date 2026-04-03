@@ -46,9 +46,48 @@ pub async fn show(
     views::report::show(&v, &user, &org_ctx, &user_orgs, &item)
 }
 
+/// `GET /reports/:pid/download` -- download a report PDF file.
+#[debug_handler]
+pub async fn download(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Viewer);
+    let item = reports::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let storage_path = item
+        .storage_path
+        .as_deref()
+        .ok_or_else(|| Error::NotFound)?;
+
+    let bytes = tokio::fs::read(storage_path)
+        .await
+        .map_err(|_| Error::NotFound)?;
+
+    let filename = format!("report-{}.pdf", item.pid);
+    Ok(axum::response::Response::builder()
+        .header("content-type", "application/pdf")
+        .header(
+            "content-disposition",
+            format!("attachment; filename=\"{}\"", filename),
+        )
+        .body(axum::body::Body::from(bytes))
+        .unwrap()
+        .into_response())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/reports")
         .add("/", get(list))
         .add("/{pid}", get(show))
+        .add("/{pid}/download", get(download))
 }

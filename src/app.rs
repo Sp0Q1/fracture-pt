@@ -98,7 +98,7 @@ impl AdminEntity for FindingsEntity {
         "Findings"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/findings"
     }
     fn description(&self) -> &'static str {
         "Security findings across engagements"
@@ -134,7 +134,7 @@ impl AdminEntity for ReportsEntity {
         "Reports"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/reports"
     }
     fn description(&self) -> &'static str {
         "Generated reports"
