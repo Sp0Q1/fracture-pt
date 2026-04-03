@@ -134,8 +134,17 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
 .org-switcher-nav { display:inline-flex; align-items:center }
 #org-switcher[popover] a.active { color:#2563eb; font-weight:600 }
 
+/* --- Admin Stats Grid --- */
+.admin-stats.row {
+    --grid-gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    margin-bottom: 2rem;
+}
+
 /* --- Stat Cards --- */
 .stat-card { text-align:center; padding:1.5rem }
+.stat-card h3 { font-size:2rem; font-weight:700; color:#2563eb; line-height:1; margin-bottom:.25rem }
+.stat-card p { font-size:.875rem; color:var(--muted-foreground,#a1a1aa); margin:0 }
 .stat-card .stat-number { font-size:2rem; font-weight:700; color:#2563eb; line-height:1; margin-bottom:.25rem }
 .stat-card .stat-label { font-size:.875rem; color:var(--muted-foreground,#a1a1aa) }
 
