@@ -94,6 +94,14 @@ pub async fn show(
     let assignments = pentester_assignments::Model::find_by_engagement(&ctx.db, item.id).await;
     let engagement_findings = findings::Model::find_by_engagement(&ctx.db, item.id).await;
 
+    // Resolve user names for assigned pentesters
+    let mut assignment_users: Vec<(pentester_assignments::Model, String, String)> = Vec::new();
+    for a in &assignments {
+        if let Ok(Some(u)) = users::Entity::find_by_id(a.user_id).one(&ctx.db).await {
+            assignment_users.push((a.clone(), u.name.clone(), u.email.clone()));
+        }
+    }
+
     // Load all users for pentester assignment dropdown, filtering out already-assigned
     let assigned_user_ids: Vec<i32> = assignments.iter().map(|a| a.user_id).collect();
     let all_users = users::Entity::find()
@@ -115,6 +123,7 @@ pub async fn show(
             item: &item,
             offers: &offers,
             assignments: &assignments,
+            assignment_users: &assignment_users,
             findings: &engagement_findings,
             available_users: &available_users,
         },
