@@ -143,7 +143,7 @@ pub async fn add(
         }
     }
 
-    Ok(Redirect::to("/targets").into_response())
+    Ok(Redirect::to(&format!("/targets/{}", target.pid)).into_response())
 }
 
 /// `GET /targets/:pid` -- target detail + verification status.
