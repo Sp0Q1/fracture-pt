@@ -8,10 +8,13 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
 use crate::models::_entities::findings;
 use crate::services::asm::{self, ScanResult};
 
+const MAX_RETRIES: u32 = 3;
+
 pub struct AsmScanExecutor;
 
 #[async_trait::async_trait]
 impl JobExecutor for AsmScanExecutor {
+    #[allow(clippy::needless_lifetimes)]
     fn job_type(&self) -> &str {
         "asm_scan"
     }
@@ -22,59 +25,53 @@ impl JobExecutor for AsmScanExecutor {
         definition: &job_definitions::Model,
         previous_run: Option<&job_runs::Model>,
     ) -> Result<JobResult, Box<dyn std::error::Error + Send + Sync>> {
-        // Parse config
         let config: serde_json::Value = serde_json::from_str(&definition.config)?;
         let hostname = config["hostname"]
             .as_str()
             .ok_or("missing hostname in config")?
             .to_string();
-        let org_id = config["org_id"]
-            .as_i64()
-            .ok_or("missing org_id in config")? as i32;
+        let org_id = i32::try_from(
+            config["org_id"]
+                .as_i64()
+                .ok_or("missing org_id in config")?,
+        )?;
 
         // Query crt.sh with retry logic
-        const MAX_RETRIES: u32 = 3;
         let mut last_error = String::new();
-
-        let entries = {
-            let mut result = None;
-            for attempt in 1..=MAX_RETRIES {
-                match asm::query_crtsh(&hostname).await {
-                    Ok(entries) => {
-                        result = Some(entries);
-                        break;
-                    }
-                    Err(e) => {
-                        last_error = e;
-                        if attempt < MAX_RETRIES {
-                            tracing::warn!(
-                                hostname = %hostname,
-                                error = %last_error,
-                                attempt,
-                                "ASM scan failed, retrying"
-                            );
-                            tokio::time::sleep(std::time::Duration::from_secs(
-                                10 * u64::from(attempt),
-                            ))
-                            .await;
-                        }
+        let mut result_entries = None;
+        for attempt in 1..=MAX_RETRIES {
+            match asm::query_crtsh(&hostname).await {
+                Ok(entries) => {
+                    result_entries = Some(entries);
+                    break;
+                }
+                Err(e) => {
+                    last_error = e;
+                    if attempt < MAX_RETRIES {
+                        tracing::warn!(
+                            hostname = %hostname,
+                            error = %last_error,
+                            attempt,
+                            "ASM scan failed, retrying"
+                        );
+                        tokio::time::sleep(std::time::Duration::from_secs(
+                            10 * u64::from(attempt),
+                        ))
+                        .await;
                     }
                 }
             }
-            result.ok_or_else(|| {
-                format!("crt.sh query failed after {MAX_RETRIES} attempts: {last_error}")
-            })?
-        };
+        }
+        let entries = result_entries.ok_or_else(|| {
+            format!("crt.sh query failed after {MAX_RETRIES} attempts: {last_error}")
+        })?;
 
         let scan_result = asm::process_results(&hostname, &entries);
 
-        // Create cert findings
         create_cert_findings(db, &scan_result, org_id, definition.id, &hostname).await?;
 
-        // Compute diffs against previous run
         let diffs = compute_diffs(&scan_result, previous_run);
 
-        // Build summary JSON (same format as scan_jobs.result_summary)
         let summary = serde_json::json!({
             "domain": scan_result.domain,
             "subdomain_count": scan_result.subdomain_count,
@@ -90,7 +87,8 @@ impl JobExecutor for AsmScanExecutor {
 }
 
 fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) -> Vec<JobDiff> {
-    let current_subdomains: BTreeSet<&str> = result.subdomains.iter().map(String::as_str).collect();
+    let current_subdomains: BTreeSet<&str> =
+        result.subdomains.iter().map(String::as_str).collect();
 
     let previous_subdomains: BTreeSet<String> = previous_run
         .and_then(|run| run.result_summary.as_deref())
@@ -106,19 +104,17 @@ fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) ->
 
     let mut diffs = Vec::new();
 
-    // Added subdomains
     for sub in &current_subdomains {
         if !previous_subdomains.contains(*sub) {
             diffs.push(JobDiff {
                 diff_type: "added".to_string(),
-                entity_key: sub.to_string(),
+                entity_key: (*sub).to_string(),
                 old_value: None,
                 new_value: None,
             });
         }
     }
 
-    // Removed subdomains
     for sub in &previous_subdomains {
         if !current_subdomains.contains(sub.as_str()) {
             diffs.push(JobDiff {
@@ -133,7 +129,6 @@ fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) ->
     diffs
 }
 
-/// Create aggregated findings for wildcard certificates.
 async fn create_cert_findings(
     db: &DatabaseConnection,
     result: &ScanResult,
@@ -172,7 +167,7 @@ async fn create_cert_findings(
             );
         }
 
-        let finding = findings::ActiveModel {
+        findings::ActiveModel {
             org_id: Set(org_id),
             job_id: Set(Some(job_id)),
             title: Set(format!(
@@ -186,8 +181,9 @@ async fn create_cert_findings(
             affected_asset: Set(Some(hostname.to_string())),
             status: Set("open".to_string()),
             ..Default::default()
-        };
-        finding.insert(db).await?;
+        }
+        .insert(db)
+        .await?;
         count += 1;
     }
 

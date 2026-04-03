@@ -70,8 +70,8 @@ impl BackgroundWorker<JobDispatchArgs> for JobDispatchWorker {
                         job_run_id: Set(args.job_run_id),
                         diff_type: Set(diff.diff_type.clone()),
                         entity_key: Set(diff.entity_key.clone()),
-                        old_value: Set(diff.old_value.as_ref().map(|v| v.to_string())),
-                        new_value: Set(diff.new_value.as_ref().map(|v| v.to_string())),
+                        old_value: Set(diff.old_value.as_ref().map(ToString::to_string)),
+                        new_value: Set(diff.new_value.as_ref().map(ToString::to_string)),
                         ..Default::default()
                     };
                     diff_model.insert(db).await?;
