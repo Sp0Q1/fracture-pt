@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
 
-exec ./target/release/fracture-pt-cli start
+exec ./target/debug/fracture-pt-cli start
