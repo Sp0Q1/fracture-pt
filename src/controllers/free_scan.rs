@@ -157,7 +157,6 @@ pub async fn results_page(
     let domain = config["hostname"].as_str().unwrap_or("unknown").to_string();
 
     match run.status.as_str() {
-        "queued" | "running" => views::free_scan::progress(&v, &domain, &run.status, None, None),
         "completed" => {
             let asm_result = run
                 .result_summary
