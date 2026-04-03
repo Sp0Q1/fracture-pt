@@ -2,12 +2,13 @@ use axum::response::Redirect;
 use axum_extra::extract::{CookieJar, Form};
 use loco_rs::prelude::*;
 use sea_orm::sea_query::Order;
-use sea_orm::QueryOrder;
+use sea_orm::{EntityTrait, QueryOrder};
 use serde::{Deserialize, Serialize};
 
 use crate::controllers::middleware;
 use crate::models::_entities::engagement_offers::ActiveModel as OfferActiveModel;
 use crate::models::_entities::pentester_assignments::ActiveModel as AssignmentActiveModel;
+use crate::models::_entities::users;
 use crate::models::engagement_offers;
 use crate::models::engagements;
 use crate::models::findings;
@@ -92,6 +93,19 @@ pub async fn show(
     let offers = engagement_offers::Model::find_by_engagement(&ctx.db, item.id).await;
     let assignments = pentester_assignments::Model::find_by_engagement(&ctx.db, item.id).await;
     let engagement_findings = findings::Model::find_by_engagement(&ctx.db, item.id).await;
+
+    // Load all users for pentester assignment dropdown, filtering out already-assigned
+    let assigned_user_ids: Vec<i32> = assignments.iter().map(|a| a.user_id).collect();
+    let all_users = users::Entity::find()
+        .order_by_asc(users::Column::Name)
+        .all(&ctx.db)
+        .await
+        .unwrap_or_default();
+    let available_users: Vec<users::Model> = all_users
+        .into_iter()
+        .filter(|u| !assigned_user_ids.contains(&u.id))
+        .collect();
+
     views::admin::engagement::show(
         &v,
         &user,
@@ -102,6 +116,7 @@ pub async fn show(
             offers: &offers,
             assignments: &assignments,
             findings: &engagement_findings,
+            available_users: &available_users,
         },
     )
 }

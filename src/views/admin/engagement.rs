@@ -23,6 +23,7 @@ pub struct ShowViewData<'a> {
     pub offers: &'a [engagement_offers::Model],
     pub assignments: &'a [pentester_assignments::Model],
     pub findings: &'a [findings::Model],
+    pub available_users: &'a [users::Model],
 }
 
 /// Render the admin engagement detail.
@@ -38,5 +39,17 @@ pub fn show(
     ctx["offers"] = serde_json::json!(data.offers);
     ctx["assignments"] = serde_json::json!(data.assignments);
     ctx["findings"] = serde_json::json!(data.findings);
+    let available_users_json: Vec<serde_json::Value> = data
+        .available_users
+        .iter()
+        .map(|u| {
+            serde_json::json!({
+                "id": u.id,
+                "name": u.name,
+                "email": u.email,
+            })
+        })
+        .collect();
+    ctx["available_users"] = serde_json::json!(available_users_json);
     format::render().view(v, "admin/engagement/show.html", data!(ctx))
 }

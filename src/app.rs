@@ -180,8 +180,33 @@ impl AdminEntity for SubscriptionsEntity {
     }
 }
 
+struct UsersEntity;
+
+#[async_trait]
+impl AdminEntity for UsersEntity {
+    fn entity_name(&self) -> &'static str {
+        "Users"
+    }
+    fn url_prefix(&self) -> &'static str {
+        "/admin/users"
+    }
+    fn description(&self) -> &'static str {
+        "Registered platform users"
+    }
+    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
+        users::Entity::find().count(db).await.unwrap_or(0)
+    }
+}
+
 fn build_entity_registry() -> EntityRegistry {
-    let mut registry = fracture_core::entity_registry::default_entity_registry();
+    let mut registry = EntityRegistry::new();
+    // Re-register core entities (with custom UsersEntity url_prefix)
+    registry.register(Box::new(fracture_core::entity_registry::OrgsEntity));
+    registry.register(Box::new(UsersEntity));
+    registry.register(Box::new(fracture_core::entity_registry::BlogPostsEntity));
+    registry.register(Box::new(fracture_core::entity_registry::JobDefinitionsEntity));
+    registry.register(Box::new(fracture_core::entity_registry::JobRunsEntity));
+    // Gethacked-specific entities
     registry.register(Box::new(EngagementsEntity));
     registry.register(Box::new(ScanTargetsEntity));
     registry.register(Box::new(ScanJobsEntity));

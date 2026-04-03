@@ -1,0 +1,37 @@
+{% extends "_layout.html" %}
+
+{% block title %}Admin: Users -- GetHacked{% endblock title %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Admin: Users <span class="badge secondary">{{ items | length }}</span></h1>
+    </div>
+
+    {% if items %}
+        <table class="clickable-rows">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Orgs</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+               {% for item in items %}
+                <tr data-href="/admin/users/{{ item.pid }}">
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.email }}</td>
+                    <td><span class="badge secondary">{{ item.org_count }}</span></td>
+                    <td>{{ item.created_at | date(format="%Y-%m-%d") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <article class="card empty-state">
+            <h3>No Users</h3>
+            <p>No users have registered yet.</p>
+        </article>
+    {% endif %}
+{% endblock content %}

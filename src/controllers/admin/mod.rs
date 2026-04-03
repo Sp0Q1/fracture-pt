@@ -1,6 +1,7 @@
 pub mod engagement;
 pub mod finding;
 pub mod report;
+pub mod user;
 
 use loco_rs::prelude::*;
 
@@ -13,6 +14,9 @@ pub fn routes() -> Routes {
         routes = routes.add(&r.0, r.1);
     }
     for r in report::route_list() {
+        routes = routes.add(&r.0, r.1);
+    }
+    for r in user::route_list() {
         routes = routes.add(&r.0, r.1);
     }
     routes
