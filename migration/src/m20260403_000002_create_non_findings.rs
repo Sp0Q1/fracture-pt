@@ -58,7 +58,11 @@ impl MigrationTrait for Migration {
                             .integer()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(NonFindings::CreatedByUserId).integer().null())
+                    .col(
+                        ColumnDef::new(NonFindings::CreatedByUserId)
+                            .integer()
+                            .null(),
+                    )
                     .col(ColumnDef::new(NonFindings::Title).string().not_null())
                     .col(
                         ColumnDef::new(NonFindings::Content)
