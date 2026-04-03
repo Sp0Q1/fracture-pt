@@ -100,20 +100,34 @@ pub async fn add(
     if let Some(ref hostname) = params.hostname {
         let hostname = hostname.trim().to_lowercase();
         if !hostname.is_empty() {
-            let config = serde_json::json!({
-                "target_id": target.id,
-                "hostname": hostname,
-                "org_id": org_ctx.org.id,
-            });
-            let definition = job_definitions::ActiveModel {
-                org_id: Set(org_ctx.org.id),
-                name: Set(format!("ASM: {hostname}")),
-                job_type: Set("asm_scan".to_string()),
-                config: Set(config.to_string()),
-                enabled: Set(true),
-                ..Default::default()
+            let def_name = format!("ASM: {hostname}");
+
+            // Find existing definition or create a new one
+            let definition = match job_definitions::Entity::find()
+                .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+                .filter(job_definitions::Column::Name.eq(&def_name))
+                .one(&ctx.db)
+                .await?
+            {
+                Some(existing) => existing,
+                None => {
+                    let config = serde_json::json!({
+                        "target_id": target.id,
+                        "hostname": hostname,
+                        "org_id": org_ctx.org.id,
+                    });
+                    job_definitions::ActiveModel {
+                        org_id: Set(org_ctx.org.id),
+                        name: Set(def_name),
+                        job_type: Set("asm_scan".to_string()),
+                        config: Set(config.to_string()),
+                        enabled: Set(true),
+                        ..Default::default()
+                    }
+                    .insert(&ctx.db)
+                    .await?
+                }
             };
-            let definition = definition.insert(&ctx.db).await?;
 
             let run =
                 job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
