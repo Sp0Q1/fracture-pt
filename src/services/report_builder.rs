@@ -277,8 +277,7 @@ pub async fn generate_report(
 
     let pdf_filename = format!("report-{}.pdf", engagement.pid);
     let final_path = storage_dir.join(&pdf_filename);
-    std::fs::copy(&pdf_path, &final_path)
-        .map_err(|e| format!("Failed to copy PDF: {}", e))?;
+    std::fs::copy(&pdf_path, &final_path).map_err(|e| format!("Failed to copy PDF: {}", e))?;
 
     // Clean up temp directory
     let _ = std::fs::remove_dir_all(&temp_dir);
