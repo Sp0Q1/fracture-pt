@@ -19,7 +19,9 @@ use loco_rs::bgworker::BackgroundWorker;
 
 use crate::{
     controllers, initializers,
-    jobs::{asm_scan::AsmScanExecutor, port_scan::PortScanExecutor, report_build::ReportBuildExecutor},
+    jobs::{
+        asm_scan::AsmScanExecutor, port_scan::PortScanExecutor, report_build::ReportBuildExecutor,
+    },
     models::_entities::{
         blog_posts, engagement_offers, engagement_targets, engagements, findings, invoices,
         job_definitions, job_run_diffs, job_runs, non_findings, org_invites, org_members,
@@ -204,7 +206,9 @@ fn build_entity_registry() -> EntityRegistry {
     registry.register(Box::new(fracture_core::entity_registry::OrgsEntity));
     registry.register(Box::new(UsersEntity));
     registry.register(Box::new(fracture_core::entity_registry::BlogPostsEntity));
-    registry.register(Box::new(fracture_core::entity_registry::JobDefinitionsEntity));
+    registry.register(Box::new(
+        fracture_core::entity_registry::JobDefinitionsEntity,
+    ));
     registry.register(Box::new(fracture_core::entity_registry::JobRunsEntity));
     // Gethacked-specific entities
     registry.register(Box::new(EngagementsEntity));

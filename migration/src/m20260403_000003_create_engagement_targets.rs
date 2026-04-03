@@ -58,20 +58,14 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-engagement_targets-engagement_id")
-                            .from(
-                                EngagementTargets::Table,
-                                EngagementTargets::EngagementId,
-                            )
+                            .from(EngagementTargets::Table, EngagementTargets::EngagementId)
                             .to(Engagements::Table, Engagements::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-engagement_targets-scan_target_id")
-                            .from(
-                                EngagementTargets::Table,
-                                EngagementTargets::ScanTargetId,
-                            )
+                            .from(EngagementTargets::Table, EngagementTargets::ScanTargetId)
                             .to(ScanTargets::Table, ScanTargets::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
