@@ -54,10 +54,8 @@ impl JobExecutor for AsmScanExecutor {
                             attempt,
                             "ASM scan failed, retrying"
                         );
-                        tokio::time::sleep(std::time::Duration::from_secs(
-                            10 * u64::from(attempt),
-                        ))
-                        .await;
+                        tokio::time::sleep(std::time::Duration::from_secs(10 * u64::from(attempt)))
+                            .await;
                     }
                 }
             }
@@ -87,8 +85,7 @@ impl JobExecutor for AsmScanExecutor {
 }
 
 fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) -> Vec<JobDiff> {
-    let current_subdomains: BTreeSet<&str> =
-        result.subdomains.iter().map(String::as_str).collect();
+    let current_subdomains: BTreeSet<&str> = result.subdomains.iter().map(String::as_str).collect();
 
     let previous_subdomains: BTreeSet<String> = previous_run
         .and_then(|run| run.result_summary.as_deref())
