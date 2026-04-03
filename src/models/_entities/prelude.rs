@@ -1,4 +1,5 @@
 pub use super::engagement_offers::Entity as EngagementOffers;
+pub use super::engagement_targets::Entity as EngagementTargets;
 pub use super::engagements::Entity as Engagements;
 pub use super::findings::Entity as Findings;
 pub use super::invoices::Entity as Invoices;

@@ -618,3 +618,9 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
     .asm-cert-grid { grid-template-columns:1fr }
     .asm-cert-dates { flex-direction:column; gap:.25rem }
 }
+
+/* --- Port Scan Table --- */
+.port-scan-table { width:100%; border-collapse:collapse; font-size:.875rem; margin-top:1rem }
+.port-scan-table th,.port-scan-table td { padding:.5rem .75rem; border-bottom:1px solid rgba(255,255,255,.08); text-align:left }
+.port-scan-table thead th { font-weight:600; color:var(--foreground); border-bottom:2px solid rgba(255,255,255,.12) }
+.port-scan-table code { font-size:.85rem; background:rgba(255,255,255,.06); padding:.1rem .35rem; border-radius:4px }

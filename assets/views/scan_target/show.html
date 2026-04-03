@@ -4,7 +4,7 @@
 
 {% block head %}
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-{% if scan_status == "running" %}
+{% if scan_status == "running" or port_scan_status == "running" %}
 <meta http-equiv="refresh" content="5">
 {% endif %}
 {% endblock head %}
@@ -59,6 +59,12 @@
     <div class="form-actions">
         <a href="/targets" class="button" data-variant="secondary">Back to Targets</a>
         {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">
+            <button type="submit"{% if port_scan_status == "running" %} disabled{% endif %}>
+                {% if port_scan_status == "running" %}Port Scan Running&hellip;{% else %}Run Port Scan{% endif %}
+            </button>
+        </form>
         <span class="spacer"></span>
         <button class="outline" data-variant="danger"
                 data-delete-url="/targets/{{ item.pid }}"
@@ -107,6 +113,73 @@
         <h3>Scan Failed</h3>
         <p>The ASM scan could not be completed.{% if scan_error %} <strong>Reason:</strong> {{ scan_error }}{% endif %}</p>
         <p>This can happen when upstream services (crt.sh) are temporarily unavailable. You can retry by adding the target again.</p>
+    </article>
+</section>
+{% endif %}
+
+{% if port_scan %}
+<section class="mt-4">
+    <h3>Port Scan Results</h3>
+    <div class="asm-summary-strip max-w-800">
+        <div class="asm-stat">
+            <span class="asm-stat-number blue">{{ port_scan.total_open | default(value=0) }}</span>
+            <span class="asm-stat-label">Open Ports</span>
+        </div>
+        <div class="asm-stat">
+            <span class="asm-stat-number green">{{ port_scan.scan_time | default(value="-") }}</span>
+            <span class="asm-stat-label">Scan Time</span>
+        </div>
+        {% if port_scan.os_guess %}
+        <div class="asm-stat">
+            <span class="asm-stat-label">OS Guess</span>
+            <span class="asm-stat-label">{{ port_scan.os_guess }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if port_scan.ports and port_scan.ports | length > 0 %}
+    <table class="port-scan-table">
+        <thead>
+            <tr>
+                <th>Port</th>
+                <th>Protocol</th>
+                <th>State</th>
+                <th>Service</th>
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in port_scan.ports %}
+            <tr>
+                <td><code>{{ p.port }}</code></td>
+                <td>{{ p.protocol }}</td>
+                <td>
+                    <span class="badge {% if p.state == 'open' %}success{% elif p.state == 'filtered' %}warning{% else %}secondary{% endif %}">
+                        {{ p.state }}
+                    </span>
+                </td>
+                <td>{{ p.service }}</td>
+                <td>{{ p.version }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+{% elif port_scan_status == "running" %}
+<section class="mt-4">
+    <article class="card card-accent scan-progress-card">
+        <div class="scan-spinner"></div>
+        <h3>Port Scan in Progress</h3>
+        <p>Running nmap TCP connect scan on top 1000 ports&hellip;</p>
+        <p class="text-muted text-sm">This page refreshes automatically.</p>
+    </article>
+</section>
+{% elif port_scan_status == "failed" %}
+<section class="mt-4">
+    <article class="card card-accent scan-failed-card">
+        <h3>Port Scan Failed</h3>
+        <p>The port scan could not be completed.{% if port_scan_error %} <strong>Reason:</strong> {{ port_scan_error }}{% endif %}</p>
     </article>
 </section>
 {% endif %}

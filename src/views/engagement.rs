@@ -2,7 +2,8 @@ use loco_rs::prelude::*;
 
 use crate::controllers::middleware::OrgContext;
 use crate::models::_entities::{
-    engagement_offers, engagements, findings, non_findings, organizations, services, users,
+    engagement_offers, engagements, findings, non_findings, organizations, scan_targets, services,
+    users,
 };
 
 /// Render the engagement list.
@@ -36,6 +37,8 @@ pub struct EngagementShowData<'a> {
     pub offers: &'a [engagement_offers::Model],
     pub findings: &'a [findings::Model],
     pub non_findings: &'a [non_findings::Model],
+    pub linked_targets: &'a [scan_targets::Model],
+    pub all_org_targets: &'a [scan_targets::Model],
 }
 
 /// Render the engagement detail page (client view).
@@ -51,5 +54,14 @@ pub fn show(
     ctx["offers"] = serde_json::json!(data.offers);
     ctx["findings"] = serde_json::json!(data.findings);
     ctx["non_findings"] = serde_json::json!(data.non_findings);
+    ctx["linked_targets"] = serde_json::json!(data.linked_targets);
+    // Compute unlinked targets (org targets not yet linked to this engagement)
+    let linked_ids: Vec<i32> = data.linked_targets.iter().map(|t| t.id).collect();
+    let unlinked: Vec<&scan_targets::Model> = data
+        .all_org_targets
+        .iter()
+        .filter(|t| !linked_ids.contains(&t.id))
+        .collect();
+    ctx["unlinked_targets"] = serde_json::json!(unlinked);
     format::render().view(v, "engagement/show.html", data!(ctx))
 }

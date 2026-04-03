@@ -1,4 +1,4 @@
-use gethacked::app::App;
+use fracture_pt::app::App;
 use loco_rs::cli;
 use migration::Migrator;
 

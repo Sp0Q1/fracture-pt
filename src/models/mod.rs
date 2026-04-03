@@ -1,6 +1,7 @@
 pub mod _entities;
 pub mod auth;
 pub mod engagement_offers;
+pub mod engagement_targets;
 pub mod engagements;
 pub mod findings;
 pub mod invoices;

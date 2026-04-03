@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 use super::middleware;
 use crate::models::_entities::engagements::ActiveModel;
 use crate::models::engagement_offers;
+use crate::models::engagement_targets;
 use crate::models::engagements;
 use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
+use crate::models::scan_targets;
 use crate::models::services;
 use crate::{require_role, require_user, views};
 
@@ -26,6 +28,11 @@ pub struct RequestParams {
     pub contact_email: String,
     pub contact_phone: Option<String>,
     pub rules_of_engagement: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LinkTargetParams {
+    pub scan_target_id: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -129,6 +136,9 @@ pub async fn show(
     let findings = crate::models::findings::Model::find_by_engagement(&ctx.db, item.id).await;
     let non_findings =
         crate::models::non_findings::Model::find_by_engagement(&ctx.db, item.id).await;
+    let linked_targets =
+        engagement_targets::Model::find_targets_for_engagement(&ctx.db, item.id).await;
+    let all_org_targets = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     views::engagement::show(
         &v,
@@ -140,6 +150,8 @@ pub async fn show(
             offers: &offers,
             findings: &findings,
             non_findings: &non_findings,
+            linked_targets: &linked_targets,
+            all_org_targets: &all_org_targets,
         },
     )
 }
@@ -210,6 +222,64 @@ pub async fn respond(
     Ok(Redirect::to(&format!("/engagements/{pid}")).into_response())
 }
 
+/// `POST /engagements/:pid/targets` -- link a scan target to an engagement.
+#[debug_handler]
+pub async fn link_target(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+    Form(params): Form<LinkTargetParams>,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+    let item = engagements::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    // Verify the target belongs to the same org
+    let _target = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id)
+        .await
+        .into_iter()
+        .find(|t| t.id == params.scan_target_id)
+        .ok_or_else(|| Error::NotFound)?;
+
+    // Link (ignore unique constraint errors -- already linked)
+    let _ = engagement_targets::Model::link(&ctx.db, item.id, params.scan_target_id).await;
+
+    Ok(Redirect::to(&format!("/engagements/{pid}")).into_response())
+}
+
+/// `POST /engagements/:pid/targets/:target_pid/remove` -- unlink a scan target.
+#[debug_handler]
+pub async fn unlink_target(
+    Path((pid, target_pid)): Path<(String, String)>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+    let item = engagements::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    let target = scan_targets::Model::find_by_pid_and_org(&ctx.db, &target_pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    engagement_targets::Model::unlink(&ctx.db, item.id, target.id)
+        .await
+        .map_err(|e| Error::BadRequest(e.to_string().into()))?;
+
+    Ok(Redirect::to(&format!("/engagements/{pid}")).into_response())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/engagements")
@@ -218,4 +288,6 @@ pub fn routes() -> Routes {
         .add("/new", get(new))
         .add("/{pid}", get(show))
         .add("/{pid}/respond", post(respond))
+        .add("/{pid}/targets", post(link_target))
+        .add("/{pid}/targets/{target_pid}/remove", post(unlink_target))
 }

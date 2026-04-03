@@ -23,7 +23,7 @@ RUN cargo build --release
 # -- Stage 3: Minimal runtime image --
 FROM debian:trixie-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsqlite3-0 ca-certificates \
+    libsqlite3-0 ca-certificates nmap \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --uid 1000 --create-home --shell /bin/bash appuser
