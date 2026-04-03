@@ -42,37 +42,6 @@
 <link rel="stylesheet" href="/static/app.css?v=11" integrity="sha384-Y+UcYyVOOGLM74kOO+7KtawBAmR9VH5X8B5nx5E32PcWPN410Yk3pcC8uGu+hrJQ" crossorigin="anonymous">
 {% endblock stylesheets %}
 
-{% block nav_authenticated %}
-<span><a href="/">Dashboard</a></span>
-<span><a href="/targets">Scans</a></span>
-<span><a href="/engagements">Pentests</a></span>
-<span><a href="/reports">Reports</a></span>
-{% endblock nav_authenticated %}
-
-{% block nav_guest %}
-<ot-dropdown>
-    <button class="ghost" popovertarget="services-menu">Services
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div id="services-menu" popover>
-        <a href="/services/pentesting" role="menuitem">Penetration Testing</a>
-        <a href="/services/scanning" role="menuitem">Vulnerability Scanning</a>
-        <a href="/services/red-team" role="menuitem">Red Teaming</a>
-        <a href="/services/attack-surface-mapping" role="menuitem">Attack Surface Mapping</a>
-        <a href="/incident-response" role="menuitem">Incident Response</a>
-    </div>
-</ot-dropdown>
-<span><a href="/pricing">Pricing</a></span>
-<span><a href="/scope">Scope Your Pentest</a></span>
-<span><a href="/about">About</a></span>
-<span><a href="/contact">Contact</a></span>
-{% endblock nav_guest %}
-
-{% block nav_public %}
-<a href="/blog">Blog</a>
-<a href="/free-scan" class="nav-free-scan">Free Scan</a>
-{% endblock nav_public %}
-
 {% block nav_auth_buttons %}
 <span class="nav-auth-buttons">
     <a href="/api/auth/oidc/authorize" class="button ghost small">Log In</a>
