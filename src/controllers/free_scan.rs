@@ -154,15 +154,10 @@ pub async fn results_page(
 
     let config: serde_json::Value = serde_json::from_str(&definition.config)
         .map_err(|_| Error::BadRequest("Invalid job config".into()))?;
-    let domain = config["hostname"]
-        .as_str()
-        .unwrap_or("unknown")
-        .to_string();
+    let domain = config["hostname"].as_str().unwrap_or("unknown").to_string();
 
     match run.status.as_str() {
-        "queued" | "running" => {
-            views::free_scan::progress(&v, &domain, &run.status, None, None)
-        }
+        "queued" | "running" => views::free_scan::progress(&v, &domain, &run.status, None, None),
         "completed" => {
             let asm_result = run
                 .result_summary
@@ -170,7 +165,9 @@ pub async fn results_page(
                 .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
             views::free_scan::progress(&v, &domain, "completed", asm_result.as_ref(), None)
         }
-        "failed" => views::free_scan::progress(&v, &domain, "failed", None, run.error_message.as_deref()),
+        "failed" => {
+            views::free_scan::progress(&v, &domain, "failed", None, run.error_message.as_deref())
+        }
         _ => views::free_scan::progress(&v, &domain, &run.status, None, None),
     }
 }
