@@ -72,9 +72,14 @@ pub async fn download(
         .await
         .map_err(|_| Error::NotFound)?;
 
-    let filename = format!("report-{}.pdf", item.pid);
+    let (content_type, ext) = match item.format.as_str() {
+        "pdf" => ("application/pdf", "pdf"),
+        "zip" => ("application/zip", "zip"),
+        _ => ("application/octet-stream", "bin"),
+    };
+    let filename = format!("report-{}.{ext}", item.pid);
     Ok(axum::response::Response::builder()
-        .header("content-type", "application/pdf")
+        .header("content-type", content_type)
         .header(
             "content-disposition",
             format!("attachment; filename=\"{filename}\""),
