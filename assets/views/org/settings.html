@@ -19,11 +19,45 @@
     </div>
 
     <article class="card form-card">
+        <h3>Plan</h3>
+        <div class="detail-row">
+            <span class="detail-label">Current Tier</span>
+            <span class="detail-value">
+                <span class="badge {% if plan_tier == 'Enterprise' %}success{% elif plan_tier == 'Pro' %}info{% else %}secondary{% endif %}">{{ plan_tier }}</span>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Max Targets</span>
+            <span class="detail-value">{{ max_targets }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Scheduling</span>
+            <span class="detail-value">{% if scheduling_enabled %}Enabled{% else %}Upgrade to Pro{% endif %}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Port Scans</span>
+            <span class="detail-value">{% if port_scans_enabled %}Enabled{% else %}Upgrade to Pro{% endif %}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email Alerts</span>
+            <span class="detail-value">{% if email_alerts_enabled %}Enabled{% else %}Upgrade to Pro{% endif %}</span>
+        </div>
+    </article>
+
+    <article class="card form-card">
+        <h3>General</h3>
         <form action="/orgs/{{ org.pid }}/settings" method="post">
             <div data-field>
                 <label for="name">Organization Name</label>
                 <input id="name" name="name" type="text" value="{{ org.name }}" required />
             </div>
+            {% if email_alerts_enabled %}
+            <div data-field>
+                <label for="alert_emails">Alert Email Addresses</label>
+                <textarea id="alert_emails" name="alert_emails" rows="3" placeholder="one@example.com&#10;two@example.com">{{ alert_emails }}</textarea>
+                <small>One email per line. Scan change alerts will be sent to these addresses.</small>
+            </div>
+            {% endif %}
             <div class="form-actions">
                 <button type="submit">Save Changes</button>
                 <a href="/orgs" class="button" data-variant="secondary">Cancel</a>

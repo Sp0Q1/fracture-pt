@@ -2,11 +2,14 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use fracture_core::jobs::{JobDiff, JobExecutor, JobResult};
-use fracture_core::models::_entities::{job_definitions, job_runs};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
+use fracture_core::models::_entities::{job_definitions, job_runs, organizations};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 
 use crate::models::_entities::findings;
-use crate::services::asm::{self, ScanResult};
+use crate::services::asm::{self, ScanResult, SubdomainInfo};
+use crate::services::tier::PlanTier;
 
 const MAX_RETRIES: u32 = 3;
 
@@ -66,9 +69,12 @@ impl JobExecutor for AsmScanExecutor {
 
         let scan_result = asm::process_results(&hostname, &entries);
 
+        // Resolve subdomains via DNS
+        let subdomain_infos = asm::resolve_subdomains(&scan_result.subdomains).await;
+
         create_cert_findings(db, &scan_result, org_id, definition.id, &hostname).await?;
 
-        let diffs = compute_diffs(&scan_result, previous_run);
+        let diffs = compute_diffs(&subdomain_infos, previous_run);
 
         let summary = serde_json::json!({
             "domain": scan_result.domain,
@@ -76,46 +82,134 @@ impl JobExecutor for AsmScanExecutor {
             "cert_count": scan_result.cert_count,
             "expired_count": scan_result.expired_count,
             "wildcard_count": scan_result.wildcard_count,
-            "subdomains": scan_result.subdomains,
+            "subdomains": subdomain_infos,
             "certs": scan_result.certs,
         });
+
+        // Enqueue port scans for resolved subdomains (if tier allows)
+        let org = organizations::Entity::find_by_id(org_id).one(db).await?;
+        if let Some(ref org) = org {
+            let tier = PlanTier::from_org(org);
+            if tier.port_scans_enabled() {
+                for info in &subdomain_infos {
+                    if info.resolved {
+                        if let Err(e) =
+                            enqueue_subdomain_port_scan(db, org_id, definition.id, info).await
+                        {
+                            tracing::warn!(
+                                subdomain = %info.name,
+                                error = %e,
+                                "Failed to enqueue subdomain port scan"
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(JobResult { summary, diffs })
     }
 }
 
-fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) -> Vec<JobDiff> {
-    let current_subdomains: BTreeSet<&str> = result.subdomains.iter().map(String::as_str).collect();
-
-    let previous_subdomains: BTreeSet<String> = previous_run
+/// Extract subdomain names from the previous run summary.
+/// Supports both the new `SubdomainInfo` format (objects with `name` key)
+/// and the legacy plain-string format.
+fn extract_previous_subdomains(previous_run: Option<&job_runs::Model>) -> BTreeSet<String> {
+    previous_run
         .and_then(|run| run.result_summary.as_deref())
         .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
         .and_then(|v| {
             v["subdomains"].as_array().map(|arr| {
                 arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
+                    .filter_map(|v| {
+                        // New format: { "name": "sub.example.com", "resolved": true, ... }
+                        v["name"]
+                            .as_str()
+                            .map(String::from)
+                            // Legacy format: plain string
+                            .or_else(|| v.as_str().map(String::from))
+                    })
                     .collect()
             })
         })
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
+
+/// Build a map of subdomain -> resolved status from the previous run.
+fn extract_previous_resolution(
+    previous_run: Option<&job_runs::Model>,
+) -> std::collections::BTreeMap<String, bool> {
+    previous_run
+        .and_then(|run| run.result_summary.as_deref())
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+        .and_then(|v| {
+            v["subdomains"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|v| {
+                        let name = v["name"].as_str()?;
+                        let resolved = v["resolved"].as_bool().unwrap_or(false);
+                        Some((name.to_string(), resolved))
+                    })
+                    .collect()
+            })
+        })
+        .unwrap_or_default()
+}
+
+fn compute_diffs(
+    current_infos: &[SubdomainInfo],
+    previous_run: Option<&job_runs::Model>,
+) -> Vec<JobDiff> {
+    let current_subdomains: BTreeSet<&str> =
+        current_infos.iter().map(|i| i.name.as_str()).collect();
+
+    let previous_subdomains = extract_previous_subdomains(previous_run);
+    let previous_resolution = extract_previous_resolution(previous_run);
 
     let mut diffs = Vec::new();
 
-    for sub in &current_subdomains {
-        if !previous_subdomains.contains(*sub) {
+    for info in current_infos {
+        if !previous_subdomains.contains(&info.name) {
             diffs.push(JobDiff {
-                diff_type: "added".to_string(),
-                entity_key: (*sub).to_string(),
+                diff_type: "subdomain_added".to_string(),
+                entity_key: info.name.clone(),
                 old_value: None,
-                new_value: None,
+                new_value: Some(serde_json::json!({
+                    "resolved": info.resolved,
+                    "ips": info.ips,
+                })),
             });
+        } else {
+            // Check for resolution status changes
+            let was_resolved = previous_resolution
+                .get(&info.name)
+                .copied()
+                .unwrap_or(false);
+            if info.resolved && !was_resolved {
+                diffs.push(JobDiff {
+                    diff_type: "subdomain_resolved".to_string(),
+                    entity_key: info.name.clone(),
+                    old_value: Some(serde_json::json!("unresolved")),
+                    new_value: Some(serde_json::json!({
+                        "resolved": true,
+                        "ips": info.ips,
+                    })),
+                });
+            } else if !info.resolved && was_resolved {
+                diffs.push(JobDiff {
+                    diff_type: "subdomain_unresolved".to_string(),
+                    entity_key: info.name.clone(),
+                    old_value: Some(serde_json::json!("resolved")),
+                    new_value: Some(serde_json::json!("unresolved")),
+                });
+            }
         }
     }
 
     for sub in &previous_subdomains {
         if !current_subdomains.contains(sub.as_str()) {
             diffs.push(JobDiff {
-                diff_type: "removed".to_string(),
+                diff_type: "subdomain_removed".to_string(),
                 entity_key: sub.clone(),
                 old_value: None,
                 new_value: None,
@@ -124,6 +218,68 @@ fn compute_diffs(result: &ScanResult, previous_run: Option<&job_runs::Model>) ->
     }
 
     diffs
+}
+
+/// Enqueue a port scan for a resolved subdomain.
+async fn enqueue_subdomain_port_scan(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    _parent_def_id: i32,
+    info: &SubdomainInfo,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let def_name = format!("Port Scan: {}", info.name);
+
+    // Find existing definition or create a new one
+    let definition = if let Some(existing) = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_id))
+        .filter(job_definitions::Column::Name.eq(&def_name))
+        .one(db)
+        .await?
+    {
+        existing
+    } else {
+        let config = serde_json::json!({
+            "hostname": info.name,
+            "org_id": org_id,
+            "source": "asm_subdomain",
+        });
+        job_definitions::ActiveModel {
+            org_id: Set(org_id),
+            name: Set(def_name),
+            job_type: Set("port_scan".to_string()),
+            config: Set(config.to_string()),
+            enabled: Set(true),
+            ..Default::default()
+        }
+        .insert(db)
+        .await?
+    };
+
+    // Check if there is already a pending run
+    let pending = job_runs::Entity::find()
+        .filter(job_runs::Column::JobDefinitionId.eq(definition.id))
+        .filter(
+            job_runs::Column::Status
+                .eq("queued")
+                .or(job_runs::Column::Status.eq("running")),
+        )
+        .one(db)
+        .await?;
+
+    if pending.is_some() {
+        return Ok(());
+    }
+
+    // Create a queued run -- the sequential JobDispatchWorker will pick it up
+    let _run = job_runs::Model::create_queued(db, definition.id, org_id).await?;
+
+    tracing::info!(
+        subdomain = %info.name,
+        job_definition_id = definition.id,
+        "Queued port scan for resolved subdomain"
+    );
+
+    Ok(())
 }
 
 async fn create_cert_findings(

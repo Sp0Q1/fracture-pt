@@ -1,0 +1,1 @@
+[GetHacked] Scan changes detected: {{ domain }}

@@ -270,6 +270,8 @@ impl Hooks for App {
             // Core routes (fracture-core)
             .add_route(controllers::org::routes())
             .add_route(controllers::org::invite_routes())
+            // Override org settings with tier-aware version
+            .add_route(controllers::org_settings::routes())
             .add_route(controllers::oidc::routes())
             .add_route(controllers::blog::public_routes())
             .add_route(controllers::blog::admin_routes())
@@ -304,6 +306,9 @@ impl Hooks for App {
     async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
         queue
             .register(workers::job_dispatcher::JobDispatchWorker::build(ctx))
+            .await?;
+        queue
+            .register(workers::job_scheduler::JobSchedulerWorker::build(ctx))
             .await?;
         Ok(())
     }

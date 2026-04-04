@@ -7,6 +7,7 @@ pub mod finding;
 pub mod free_scan;
 pub mod home;
 pub mod invoice;
+pub mod org_settings;
 pub mod pages;
 pub mod pentester;
 pub mod report;

@@ -1,10 +1,13 @@
 use async_trait::async_trait;
 use loco_rs::{app::AppContext, bgworker::BackgroundWorker, Result};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use fracture_core::jobs::job_registry;
-use fracture_core::models::_entities::{job_definitions, job_run_diffs, job_runs};
+use fracture_core::jobs::{job_registry, JobDiff};
+use fracture_core::models::_entities::{job_definitions, job_run_diffs, job_runs, organizations};
+
+use crate::mailers::scan_alert::ScanAlertMailer;
+use crate::services::tier::PlanTier;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JobDispatchArgs {
@@ -14,6 +17,100 @@ pub struct JobDispatchArgs {
 
 pub struct JobDispatchWorker {
     pub ctx: AppContext,
+}
+
+impl JobDispatchWorker {
+    /// Dispatch any queued runs that were created during job execution
+    /// (e.g. subdomain port scans created by the ASM executor).
+    async fn dispatch_queued_runs(&self) {
+        let db = &self.ctx.db;
+
+        let queued_runs = match job_runs::Entity::find()
+            .filter(job_runs::Column::Status.eq("queued"))
+            .filter(job_runs::Column::StartedAt.is_null())
+            .all(db)
+            .await
+        {
+            Ok(runs) => runs,
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to query queued runs");
+                return;
+            }
+        };
+
+        for run in queued_runs {
+            if let Err(e) = JobDispatchWorker::perform_later(
+                &self.ctx,
+                JobDispatchArgs {
+                    job_run_id: run.id,
+                    job_definition_id: run.job_definition_id,
+                },
+            )
+            .await
+            {
+                tracing::warn!(
+                    job_run_id = run.id,
+                    error = %e,
+                    "Failed to dispatch queued run"
+                );
+            }
+        }
+    }
+
+    /// Fire-and-forget email alerts for job diffs.
+    async fn send_diff_alerts(&self, definition: &job_definitions::Model, diffs: &[JobDiff]) {
+        let db = &self.ctx.db;
+
+        // Load the org
+        let org = match organizations::Entity::find_by_id(definition.org_id)
+            .one(db)
+            .await
+        {
+            Ok(Some(o)) => o,
+            _ => return,
+        };
+
+        let tier = PlanTier::from_org(&org);
+        if !tier.email_alerts_enabled() {
+            return;
+        }
+
+        // Read alert_emails from org settings
+        let emails_str = org
+            .get_setting("alert_emails")
+            .and_then(|v| v.as_str().map(String::from))
+            .unwrap_or_default();
+
+        if emails_str.trim().is_empty() {
+            return;
+        }
+
+        // Extract domain from config
+        let domain = serde_json::from_str::<serde_json::Value>(&definition.config)
+            .ok()
+            .and_then(|c| c["hostname"].as_str().map(String::from))
+            .unwrap_or_else(|| definition.name.clone());
+
+        let recipients: Vec<&str> = emails_str
+            .lines()
+            .map(str::trim)
+            .filter(|s| !s.is_empty() && s.contains('@'))
+            .collect();
+
+        for email in recipients {
+            if let Err(e) =
+                ScanAlertMailer::send_alert(&self.ctx, email, &definition.name, &domain, diffs)
+                    .await
+            {
+                tracing::error!(
+                    email = %email,
+                    job_definition_id = definition.id,
+                    error = %e,
+                    "Failed to send scan alert email"
+                );
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -93,6 +190,14 @@ impl BackgroundWorker<JobDispatchArgs> for JobDispatchWorker {
                     diffs = result.diffs.len(),
                     "Job completed successfully"
                 );
+
+                // Send email alerts if diffs are non-empty
+                if !result.diffs.is_empty() {
+                    self.send_diff_alerts(&definition, &result.diffs).await;
+                }
+
+                // Dispatch any newly queued runs (e.g. subdomain port scans)
+                self.dispatch_queued_runs().await;
             }
             Err(e) => {
                 // Mark run as failed

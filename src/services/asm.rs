@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
+use tokio::sync::Semaphore;
 
 // ---------- crt.sh types ----------
 
@@ -189,6 +191,65 @@ pub fn process_results(domain: &str, entries: &[CrtEntry]) -> ScanResult {
         wildcard_count: wildcard_count_set.len(),
         error: None,
     }
+}
+
+// ---------- DNS resolution ----------
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SubdomainInfo {
+    pub name: String,
+    pub resolved: bool,
+    pub ips: Vec<String>,
+}
+
+/// Resolve a list of subdomains concurrently with a concurrency limit of 10.
+/// Returns a `SubdomainInfo` for each subdomain indicating whether it resolved
+/// and what IP addresses were found.
+pub async fn resolve_subdomains(subdomains: &[String]) -> Vec<SubdomainInfo> {
+    let semaphore = Arc::new(Semaphore::new(10));
+    let mut handles = Vec::with_capacity(subdomains.len());
+
+    for subdomain in subdomains {
+        let sem = semaphore.clone();
+        let name = subdomain.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire().await.expect("semaphore closed");
+            // Append port 0 because lookup_host requires a socket address
+            let lookup_addr = format!("{name}:0");
+            let lookup_result = tokio::net::lookup_host(lookup_addr).await;
+            match lookup_result {
+                Ok(addrs) => {
+                    let ips: Vec<String> = addrs.map(|a| a.ip().to_string()).collect();
+                    // Deduplicate
+                    let mut unique: Vec<String> = ips
+                        .into_iter()
+                        .collect::<BTreeSet<_>>()
+                        .into_iter()
+                        .collect();
+                    unique.sort();
+                    SubdomainInfo {
+                        name,
+                        resolved: !unique.is_empty(),
+                        ips: unique,
+                    }
+                }
+                Err(_) => SubdomainInfo {
+                    name,
+                    resolved: false,
+                    ips: vec![],
+                },
+            }
+        }));
+    }
+
+    let mut results = Vec::with_capacity(handles.len());
+    for handle in handles {
+        match handle.await {
+            Ok(info) => results.push(info),
+            Err(_) => {}
+        }
+    }
+    results
 }
 
 fn extract_issuer_cn(issuer_name: &str) -> String {
