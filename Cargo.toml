@@ -34,6 +34,7 @@ migration = { path = "migration" }
 fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms" }
 sea-orm = { workspace = true }
 chrono = { version = "0.4" }
+zip = { version = "2", default-features = false, features = ["deflate"] }
 uuid = { version = "1.22", features = ["v4"] }
 fluent-templates = { version = "0.13", features = ["tera"] }
 unic-langid = { version = "0.9" }
