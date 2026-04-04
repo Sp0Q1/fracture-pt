@@ -64,7 +64,7 @@ impl AdminEntity for ScanTargetsEntity {
         "Scan Targets"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/scan-targets"
     }
     fn description(&self) -> &'static str {
         "Monitored targets across organizations"
@@ -82,7 +82,7 @@ impl AdminEntity for ScanJobsEntity {
         "Scan Jobs"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/scan-jobs"
     }
     fn description(&self) -> &'static str {
         "Scan execution history"
@@ -118,7 +118,7 @@ impl AdminEntity for NonFindingsEntity {
         "Non-Findings"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/non-findings"
     }
     fn description(&self) -> &'static str {
         "Secure areas documented during engagements"
@@ -154,7 +154,7 @@ impl AdminEntity for InvoicesEntity {
         "Invoices"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/invoices"
     }
     fn description(&self) -> &'static str {
         "Billing invoices"
@@ -172,7 +172,7 @@ impl AdminEntity for SubscriptionsEntity {
         "Subscriptions"
     }
     fn url_prefix(&self) -> &'static str {
-        ""
+        "/admin/subscriptions"
     }
     fn description(&self) -> &'static str {
         "Active subscriptions"

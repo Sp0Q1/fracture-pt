@@ -1,6 +1,10 @@
 pub mod engagement;
 pub mod finding;
+pub mod invoice;
+pub mod non_finding;
 pub mod report;
+pub mod scan_target;
+pub mod subscription;
 pub mod user;
 
 use loco_rs::prelude::*;
@@ -13,7 +17,19 @@ pub fn routes() -> Routes {
     for r in finding::route_list() {
         routes = routes.add(&r.0, r.1);
     }
+    for r in invoice::route_list() {
+        routes = routes.add(&r.0, r.1);
+    }
+    for r in non_finding::route_list() {
+        routes = routes.add(&r.0, r.1);
+    }
     for r in report::route_list() {
+        routes = routes.add(&r.0, r.1);
+    }
+    for r in scan_target::route_list() {
+        routes = routes.add(&r.0, r.1);
+    }
+    for r in subscription::route_list() {
         routes = routes.add(&r.0, r.1);
     }
     for r in user::route_list() {
