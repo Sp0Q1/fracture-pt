@@ -10,6 +10,7 @@ use crate::models::_entities::{job_definitions, job_runs, scan_targets::ActiveMo
 use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
 use crate::models::scan_targets;
+use crate::services::tier::PlanTier;
 use crate::workers::job_dispatcher::{JobDispatchArgs, JobDispatchWorker};
 use crate::{require_role, require_user, views};
 
@@ -69,6 +70,20 @@ pub async fn add(
         .await
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Member);
+
+    // Check tier target limits
+    let tier = PlanTier::from_org(&org_ctx.org);
+    if let Some(max) = tier.max_targets() {
+        let existing = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
+        if existing.len() >= max {
+            return Err(Error::BadRequest(format!(
+                "Your {} plan allows up to {} target{}. Upgrade to add more.",
+                tier.label(),
+                max,
+                if max == 1 { "" } else { "s" }
+            )));
+        }
+    }
 
     // Validate hostname if provided
     if let Some(ref hostname) = params.hostname {
@@ -458,6 +473,15 @@ pub async fn trigger_port_scan(
     let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
+
+    // Check tier allows port scans
+    let tier = PlanTier::from_org(&org_ctx.org);
+    if !tier.port_scans_enabled() {
+        return Err(Error::BadRequest(
+            "Port scans are not available on the Free plan. Upgrade to Pro or Enterprise."
+                .to_string(),
+        ));
+    }
 
     let scan_target_name = item
         .hostname
