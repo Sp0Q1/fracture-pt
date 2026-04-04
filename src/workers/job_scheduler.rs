@@ -58,15 +58,12 @@ impl BackgroundWorker<JobSchedulerArgs> for JobSchedulerWorker {
                 .one(db)
                 .await?;
 
-            let org = match org {
-                Some(o) => o,
-                None => {
-                    tracing::warn!(
-                        job_definition_id = def.id,
-                        "Skipping scheduled job: org not found"
-                    );
-                    continue;
-                }
+            let Some(org) = org else {
+                tracing::warn!(
+                    job_definition_id = def.id,
+                    "Skipping scheduled job: org not found"
+                );
+                continue;
             };
 
             let tier = PlanTier::from_org(&org);

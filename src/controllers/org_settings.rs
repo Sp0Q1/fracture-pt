@@ -107,9 +107,22 @@ pub async fn update_settings(
     Ok(Redirect::to(&format!("/orgs/{pid}/settings")).into_response())
 }
 
+/// Org routes that replace `fracture_core::controllers::org::routes()`,
+/// substituting the tier-aware settings handlers to avoid duplicate routes.
 pub fn routes() -> Routes {
+    use fracture_core::controllers::org;
+
     Routes::new()
         .prefix("/orgs")
+        .add("/", get(org::list))
+        .add("/", post(org::create))
+        .add("/new", get(org::new))
+        // Tier-aware settings (replaces core's settings handlers)
         .add("/{pid}/settings", get(settings))
         .add("/{pid}/settings", post(update_settings))
+        .add("/{pid}/members", get(org::members))
+        .add("/{pid}/members/invite", post(org::invite))
+        .add("/{pid}/members/{user_pid}/role", post(org::update_role))
+        .add("/{pid}/members/{user_pid}/remove", post(org::remove_member))
+        .add("/switch/{pid}", get(org::switch))
 }

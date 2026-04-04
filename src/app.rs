@@ -267,11 +267,9 @@ impl Hooks for App {
         init_job_registry(job_reg);
 
         AppRoutes::with_default_routes()
-            // Core routes (fracture-core)
-            .add_route(controllers::org::routes())
-            .add_route(controllers::org::invite_routes())
-            // Override org settings with tier-aware version
+            // Org routes with tier-aware settings override (replaces core org::routes)
             .add_route(controllers::org_settings::routes())
+            .add_route(controllers::org::invite_routes())
             .add_route(controllers::oidc::routes())
             .add_route(controllers::blog::public_routes())
             .add_route(controllers::blog::admin_routes())
