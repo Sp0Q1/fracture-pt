@@ -39,7 +39,7 @@ impl JobDispatchWorker {
         };
 
         for run in queued_runs {
-            if let Err(e) = JobDispatchWorker::perform_later(
+            if let Err(e) = Self::perform_later(
                 &self.ctx,
                 JobDispatchArgs {
                     job_run_id: run.id,
@@ -62,12 +62,11 @@ impl JobDispatchWorker {
         let db = &self.ctx.db;
 
         // Load the org
-        let org = match organizations::Entity::find_by_id(definition.org_id)
+        let Ok(Some(org)) = organizations::Entity::find_by_id(definition.org_id)
             .one(db)
             .await
-        {
-            Ok(Some(o)) => o,
-            _ => return,
+        else {
+            return;
         };
 
         let tier = PlanTier::from_org(&org);

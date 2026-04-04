@@ -219,10 +219,9 @@ pub async fn resolve_subdomains(subdomains: &[String]) -> Vec<SubdomainInfo> {
             let lookup_result = tokio::net::lookup_host(lookup_addr).await;
             match lookup_result {
                 Ok(addrs) => {
-                    let ips: Vec<String> = addrs.map(|a| a.ip().to_string()).collect();
                     // Deduplicate
-                    let mut unique: Vec<String> = ips
-                        .into_iter()
+                    let mut unique: Vec<String> = addrs
+                        .map(|a| a.ip().to_string())
                         .collect::<BTreeSet<_>>()
                         .into_iter()
                         .collect();
@@ -244,9 +243,8 @@ pub async fn resolve_subdomains(subdomains: &[String]) -> Vec<SubdomainInfo> {
 
     let mut results = Vec::with_capacity(handles.len());
     for handle in handles {
-        match handle.await {
-            Ok(info) => results.push(info),
-            Err(_) => {}
+        if let Ok(info) = handle.await {
+            results.push(info);
         }
     }
     results

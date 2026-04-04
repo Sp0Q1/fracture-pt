@@ -169,17 +169,7 @@ fn compute_diffs(
     let mut diffs = Vec::new();
 
     for info in current_infos {
-        if !previous_subdomains.contains(&info.name) {
-            diffs.push(JobDiff {
-                diff_type: "subdomain_added".to_string(),
-                entity_key: info.name.clone(),
-                old_value: None,
-                new_value: Some(serde_json::json!({
-                    "resolved": info.resolved,
-                    "ips": info.ips,
-                })),
-            });
-        } else {
+        if previous_subdomains.contains(&info.name) {
             // Check for resolution status changes
             let was_resolved = previous_resolution
                 .get(&info.name)
@@ -203,6 +193,16 @@ fn compute_diffs(
                     new_value: Some(serde_json::json!("unresolved")),
                 });
             }
+        } else {
+            diffs.push(JobDiff {
+                diff_type: "subdomain_added".to_string(),
+                entity_key: info.name.clone(),
+                old_value: None,
+                new_value: Some(serde_json::json!({
+                    "resolved": info.resolved,
+                    "ips": info.ips,
+                })),
+            });
         }
     }
 
