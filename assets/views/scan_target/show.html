@@ -120,6 +120,9 @@
 {% if port_scan %}
 <section class="mt-4">
     <h3>Port Scan Results</h3>
+    {% if port_scan.target %}
+    <p class="page-subtitle">Target: <code>{{ port_scan.target }}</code>{% if port_scan.ip %} ({{ port_scan.ip }}){% endif %}</p>
+    {% endif %}
     <div class="asm-summary-strip max-w-800">
         <div class="asm-stat">
             <span class="asm-stat-number blue">{{ port_scan.total_open | default(value=0) }}</span>
