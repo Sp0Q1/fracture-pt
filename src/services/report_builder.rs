@@ -168,8 +168,7 @@ pub async fn generate_report(
     let zip_data = build_report_zip(engagement, findings_list, non_findings_list)
         .map_err(|e| format!("Failed to build ZIP: {e}"))?;
 
-    std::fs::write(&final_path, &zip_data)
-        .map_err(|e| format!("Failed to write ZIP: {e}"))?;
+    std::fs::write(&final_path, &zip_data).map_err(|e| format!("Failed to write ZIP: {e}"))?;
 
     // Create report record in database
     #[allow(clippy::default_trait_access)]
