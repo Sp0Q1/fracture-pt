@@ -33,10 +33,12 @@ pub fn show(
     user: &users::Model,
     org_ctx: &Option<OrgContext>,
     user_orgs: &[organizations::Model],
+    engagement_org_name: &str,
     data: &ShowViewData<'_>,
 ) -> Result<Response> {
     let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
     ctx["item"] = serde_json::json!(data.item);
+    ctx["engagement_org_name"] = serde_json::json!(engagement_org_name);
     ctx["offers"] = serde_json::json!(data.offers);
     ctx["assignments"] = serde_json::json!(data
         .assignment_users
