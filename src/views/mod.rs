@@ -25,7 +25,7 @@ pub fn flatten_subdomains(subs: &[serde_json::Value]) -> Vec<serde_json::Value> 
                 "name": s.get("name").and_then(|n| n.as_str()).unwrap_or_default(),
                 "resolved": s.get("resolved").and_then(|r| r.as_bool()).unwrap_or(false),
                 "ips": s.get("ips").and_then(|i| i.as_array())
-                    .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
+                    .map(|arr| arr.iter().filter_map(serde_json::Value::as_str).collect::<Vec<_>>())
                     .unwrap_or_default(),
             })
         })
