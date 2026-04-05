@@ -92,19 +92,17 @@
     <div class="asm-subdomain-list">
         {% for sub in asm.subdomains %}
         <div class="asm-subdomain-item">
-            {% if sub.name is defined %}
-                <code>{{ sub.name }}</code>
+            <code>{{ sub.name | default(value=sub) }}</code>
+            {% if sub.resolved is defined %}
                 {% if sub.resolved %}
                     <span class="badge success">resolved</span>
-                    {% if sub.ips and sub.ips | length > 0 %}
+                    {% if sub.ips | length > 0 %}
                     <span class="text-muted text-sm">{{ sub.ips | join(sep=", ") }}</span>
                     {% endif %}
                 {% else %}
                     <span class="badge secondary">unresolved</span>
                     <span class="text-muted text-sm">possibly unused</span>
                 {% endif %}
-            {% else %}
-                <code>{{ sub }}</code>
             {% endif %}
         </div>
         {% endfor %}

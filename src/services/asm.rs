@@ -213,7 +213,17 @@ pub async fn resolve_subdomains(subdomains: &[String]) -> Vec<SubdomainInfo> {
         let sem = semaphore.clone();
         let name = subdomain.clone();
         handles.push(tokio::spawn(async move {
-            let _permit = sem.acquire().await.expect("semaphore closed");
+            let _permit = match sem.acquire().await {
+                Ok(p) => p,
+                Err(_) => {
+                    tracing::warn!(subdomain = %name, "DNS resolver semaphore closed, skipping");
+                    return SubdomainInfo {
+                        name,
+                        resolved: false,
+                        ips: vec![],
+                    };
+                }
+            };
             // Append port 0 because lookup_host requires a socket address
             let lookup_addr = format!("{name}:0");
             let lookup_result = tokio::net::lookup_host(lookup_addr).await;

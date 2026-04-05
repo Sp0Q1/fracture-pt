@@ -49,7 +49,11 @@ pub fn show(
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["item"] = serde_json::json!(item);
     if let Some(asm) = scan.asm_result {
-        ctx["asm"] = asm.clone();
+        let mut asm_ctx = asm.clone();
+        if let Some(subs) = asm.get("subdomains").and_then(|s| s.as_array()) {
+            asm_ctx["subdomains"] = serde_json::json!(super::flatten_subdomains(subs));
+        }
+        ctx["asm"] = asm_ctx;
     }
     ctx["scan_status"] = serde_json::json!(scan.status.unwrap_or(""));
     ctx["scan_error"] = serde_json::json!(scan.error.unwrap_or(""));

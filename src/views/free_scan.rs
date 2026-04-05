@@ -53,8 +53,9 @@ pub fn progress(
             json!(asm["wildcard_count"].as_i64().unwrap_or(0)),
         );
         if let Some(subs) = asm["subdomains"].as_array() {
-            ctx.insert("subdomains".into(), json!(subs));
-            ctx.insert("subdomain_count".into(), json!(subs.len()));
+            let friendly = super::flatten_subdomains(subs);
+            ctx.insert("subdomain_count".into(), json!(friendly.len()));
+            ctx.insert("subdomains".into(), json!(friendly));
         }
         if let Some(certs) = asm["certs"].as_array() {
             ctx.insert("certs".into(), json!(certs));

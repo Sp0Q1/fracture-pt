@@ -89,7 +89,15 @@
     <div class="asm-subdomain-list">
         {% for sub in subdomains %}
         <div class="asm-subdomain-item">
-            <code>{{ sub }}</code>
+            <code>{{ sub.name }}</code>
+            {% if sub.resolved %}
+                <span class="badge success">resolved</span>
+                {% if sub.ips | length > 0 %}
+                <span class="text-muted text-sm">{{ sub.ips | join(sep=", ") }}</span>
+                {% endif %}
+            {% else %}
+                <span class="badge secondary">unresolved</span>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

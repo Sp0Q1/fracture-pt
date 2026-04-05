@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use loco_rs::{app::AppContext, bgworker::BackgroundWorker, Result};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QuerySelect,
+};
 use serde::{Deserialize, Serialize};
 
 use fracture_core::jobs::{job_registry, JobDiff};
@@ -8,6 +10,28 @@ use fracture_core::models::_entities::{job_definitions, job_run_diffs, job_runs,
 
 use crate::mailers::scan_alert::ScanAlertMailer;
 use crate::services::tier::PlanTier;
+
+/// Basic email validation without external dependencies.
+fn is_valid_email(s: &str) -> bool {
+    let parts: Vec<&str> = s.splitn(2, '@').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    let (local, domain) = (parts[0], parts[1]);
+    !local.is_empty()
+        && !domain.is_empty()
+        && domain.contains('.')
+        && !domain.starts_with('.')
+        && !domain.ends_with('.')
+        && !s.contains(char::is_whitespace)
+        && !s.contains('\n')
+        && !s.contains('\r')
+}
+
+/// Strip newlines and control characters from a string (for safe use in emails).
+fn sanitize_for_email(s: &str) -> String {
+    s.chars().filter(|c| !c.is_control()).collect()
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JobDispatchArgs {
@@ -28,6 +52,7 @@ impl JobDispatchWorker {
         let queued_runs = match job_runs::Entity::find()
             .filter(job_runs::Column::Status.eq("queued"))
             .filter(job_runs::Column::StartedAt.is_null())
+            .limit(50)
             .all(db)
             .await
         {
@@ -66,11 +91,21 @@ impl JobDispatchWorker {
             .one(db)
             .await
         else {
+            tracing::warn!(
+                job_definition_id = definition.id,
+                org_id = definition.org_id,
+                "Cannot send diff alerts: org not found"
+            );
             return;
         };
 
         let tier = PlanTier::from_org(&org);
         if !tier.email_alerts_enabled() {
+            tracing::warn!(
+                job_definition_id = definition.id,
+                org_id = definition.org_id,
+                "Skipping diff alerts: email alerts not enabled for tier"
+            );
             return;
         }
 
@@ -81,19 +116,25 @@ impl JobDispatchWorker {
             .unwrap_or_default();
 
         if emails_str.trim().is_empty() {
+            tracing::warn!(
+                job_definition_id = definition.id,
+                org_id = definition.org_id,
+                "Skipping diff alerts: no alert_emails configured"
+            );
             return;
         }
 
-        // Extract domain from config
+        // Extract domain from config and sanitize for safe email use
         let domain = serde_json::from_str::<serde_json::Value>(&definition.config)
             .ok()
             .and_then(|c| c["hostname"].as_str().map(String::from))
             .unwrap_or_else(|| definition.name.clone());
+        let domain = sanitize_for_email(&domain);
 
         let recipients: Vec<&str> = emails_str
             .lines()
             .map(str::trim)
-            .filter(|s| !s.is_empty() && s.contains('@'))
+            .filter(|s| is_valid_email(s))
             .collect();
 
         for email in recipients {
