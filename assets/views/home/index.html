@@ -17,70 +17,127 @@
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-4">
-                <article class="card stat-card card-accent">
-                    <div class="stat-number">{{ scan_count | default(value=0) }}</div>
-                    <div class="stat-label">Scans</div>
-                </article>
+        {# --- Stats row --- #}
+        <div class="row mb-4 dash-stats">
+            <div class="col-3">
+                <a href="/targets" class="card stat-card card-accent dash-stat-link">
+                    <div class="stat-number">{{ target_count | default(value=0) }}</div>
+                    <div class="stat-label">Targets</div>
+                </a>
             </div>
-            <div class="col-4">
-                <article class="card stat-card card-accent">
+            <div class="col-3">
+                <a href="/engagements" class="card stat-card card-accent dash-stat-link">
                     <div class="stat-number">{{ engagement_count | default(value=0) }}</div>
                     <div class="stat-label">Pentests</div>
-                </article>
+                </a>
             </div>
-            <div class="col-4">
-                <article class="card stat-card card-accent">
-                    <div class="stat-number"><span class="badge success">Active</span></div>
-                    <div class="stat-label">Session</div>
-                </article>
+            <div class="col-3">
+                <a href="/findings" class="card stat-card card-accent dash-stat-link">
+                    <div class="stat-number">{{ findings_count | default(value=0) }}</div>
+                    <div class="stat-label">Findings</div>
+                </a>
+            </div>
+            <div class="col-3">
+                <a href="/reports" class="card stat-card card-accent dash-stat-link">
+                    <div class="stat-number">{{ report_count | default(value=0) }}</div>
+                    <div class="stat-label">Reports</div>
+                </a>
             </div>
         </div>
 
+        {# --- Severity breakdown bar --- #}
+        {% if severity.total > 0 %}
+        <div class="mb-4">
+            <article class="card card-accent">
+                <header>
+                    <h3 class="m-0">Severity Breakdown</h3>
+                </header>
+                <div class="severity-bar">
+                    {% if severity.extreme_pct > 0 %}<div class="sev-extreme w-pct-{{ severity.extreme_pct }}" title="Extreme: {{ severity.extreme }}"></div>{% endif %}
+                    {% if severity.high_pct > 0 %}<div class="sev-high w-pct-{{ severity.high_pct }}" title="High: {{ severity.high }}"></div>{% endif %}
+                    {% if severity.elevated_pct > 0 %}<div class="sev-elevated w-pct-{{ severity.elevated_pct }}" title="Elevated: {{ severity.elevated }}"></div>{% endif %}
+                    {% if severity.moderate_pct > 0 %}<div class="sev-moderate w-pct-{{ severity.moderate_pct }}" title="Moderate: {{ severity.moderate }}"></div>{% endif %}
+                    {% if severity.low_pct > 0 %}<div class="sev-low w-pct-{{ severity.low_pct }}" title="Low: {{ severity.low }}"></div>{% endif %}
+                </div>
+                <div class="severity-legend">
+                    {% if severity.extreme > 0 %}<span class="sev-legend-item"><span class="sev-dot sev-extreme"></span> Extreme {{ severity.extreme }}</span>{% endif %}
+                    {% if severity.high > 0 %}<span class="sev-legend-item"><span class="sev-dot sev-high"></span> High {{ severity.high }}</span>{% endif %}
+                    {% if severity.elevated > 0 %}<span class="sev-legend-item"><span class="sev-dot sev-elevated"></span> Elevated {{ severity.elevated }}</span>{% endif %}
+                    {% if severity.moderate > 0 %}<span class="sev-legend-item"><span class="sev-dot sev-moderate"></span> Moderate {{ severity.moderate }}</span>{% endif %}
+                    {% if severity.low > 0 %}<span class="sev-legend-item"><span class="sev-dot sev-low"></span> Low {{ severity.low }}</span>{% endif %}
+                </div>
+            </article>
+        </div>
+        {% endif %}
+
+        {# --- Recent scan results --- #}
         {% if asm %}
         <div class="mb-4">
             <article class="card card-accent">
                 <header>
                     <div class="hstack">
-                        <h3 class="m-0">Attack Surface</h3>
-                        <span class="badge success">{{ asm.status | default(value="completed") }}</span>
+                        <h3 class="m-0">Latest Scan</h3>
+                        <span class="badge success">completed</span>
                     </div>
                 </header>
-                <p class="text-muted mb-1">Latest scan for <strong>{{ asm.domain }}</strong></p>
+                <p class="text-muted mb-1">Attack surface scan for <strong>{{ asm.domain }}</strong></p>
                 <div class="asm-summary-strip">
                     <div class="asm-stat">
                         <span class="asm-stat-number blue">{{ asm.subdomain_count | default(value=0) }}</span>
                         <span class="asm-stat-label">Subdomains</span>
                     </div>
                     <div class="asm-stat">
-                        <span class="asm-stat-number green">{{ asm.cert_count | default(value=0) }}</span>
+                        <span class="asm-stat-number green">{{ asm.resolved_count | default(value=0) }}</span>
+                        <span class="asm-stat-label">Resolved</span>
+                    </div>
+                    <div class="asm-stat">
+                        <span class="asm-stat-number blue">{{ asm.cert_count | default(value=0) }}</span>
                         <span class="asm-stat-label">Certificates</span>
                     </div>
                 </div>
                 <div class="form-actions mt-1">
+                    {% if asm.target_pid %}
+                    <a href="/targets/{{ asm.target_pid }}" class="button outline">View Target</a>
+                    {% else %}
                     <a href="/targets" class="button outline">View Targets</a>
+                    {% endif %}
                 </div>
             </article>
         </div>
         {% endif %}
 
-        <div class="row">
-            <div class="col-6">
-                <article class="card card-accent">
-                    <header>Scans</header>
-                    <p>Run automated vulnerability scans on your targets.</p>
-                    <a href="/targets" class="button outline">View Scans</a>
-                </article>
-            </div>
-            <div class="col-6">
-                <article class="card card-accent">
-                    <header>Pentests</header>
-                    <p>Manage your penetration testing engagements.</p>
-                    <a href="/engagements" class="button outline">View Pentests</a>
-                </article>
-            </div>
+        {# --- Active engagements --- #}
+        {% if active_engagements | length > 0 %}
+        <div class="mb-4">
+            <article class="card card-accent">
+                <header>
+                    <h3 class="m-0">Active Engagements</h3>
+                </header>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Findings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eng in active_engagements %}
+                        <tr>
+                            <td><a href="/engagements/{{ eng.pid }}">{{ eng.title }}</a></td>
+                            <td>
+                                <span class="badge {% if eng.status == 'in_progress' %}primary{% elif eng.status == 'review' %}secondary{% endif %}">
+                                    {{ eng.status | replace(from="_", to=" ") }}
+                                </span>
+                            </td>
+                            <td>{{ eng.findings_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
         </div>
+        {% endif %}
     </div>
 
 {% else %}

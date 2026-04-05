@@ -137,11 +137,19 @@ pub async fn show(
         .filter(|u| !assigned_user_ids.contains(&u.id))
         .collect();
 
+    let engagement_org_name = organizations::Entity::find_by_id(item.org_id)
+        .one(&ctx.db)
+        .await
+        .ok()
+        .flatten()
+        .map_or_else(|| "Unknown".to_string(), |o| o.name);
+
     views::admin::engagement::show(
         &v,
         &user,
         &org_ctx,
         &user_orgs,
+        &engagement_org_name,
         &views::admin::engagement::ShowViewData {
             item: &item,
             offers: &offers,
@@ -304,7 +312,10 @@ pub async fn update_status(
     // Validate status transitions (no wildcard -- delivered/review cannot be cancelled)
     let valid_transition = matches!(
         (item.status.as_str(), params.status.as_str()),
-        ("in_progress", "review")
+        (
+            "requested" | "offer_sent" | "negotiating" | "accepted",
+            "in_progress"
+        ) | ("in_progress", "review")
             | ("review", "delivered" | "in_progress")
             | (
                 "requested" | "offer_sent" | "negotiating" | "accepted" | "in_progress",

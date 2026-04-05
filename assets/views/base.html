@@ -17,7 +17,7 @@
   {% block structured_data %}{% endblock structured_data %}
   <link rel="stylesheet" href="/static/oat.min.css" integrity="sha384-Q7tDn81qF6GoBv+Rdj5l6JFr2qaiXG01Z5dT8jRpp5lE+6IZx8as9X/Igi7ISdBP" crossorigin="anonymous">
   {% block stylesheets %}
-  <link rel="stylesheet" href="/static/app.css?v=15" integrity="sha384-oU6IRBUsf2xGaXjNC7AwghUOJ9vVSnjoGGCWD+SWotPfNhhMdP7Elfo8tnwNnwTn" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/app.css?v=16" integrity="sha384-FdqEq1rz0Dl9usN6cvcQii0hoYyQoUn6uhpmIhQRrFWBzDsj21yZfF374x/bZqFg" crossorigin="anonymous">
   {% endblock stylesheets %}
   {% block head %}
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
@@ -63,6 +63,7 @@
         <span><a href="/">Dashboard</a></span>
         <span><a href="/targets">Scans</a></span>
         <span><a href="/engagements">Pentests</a></span>
+        {% if is_platform_admin %}<span><a href="/pentester/engagements">Workspace</a></span>{% endif %}
         <span><a href="/reports">Reports</a></span>
         {% endblock nav_authenticated %}
         {% else %}
