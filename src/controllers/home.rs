@@ -20,13 +20,9 @@ struct SeverityBreakdown {
 }
 
 impl SeverityBreakdown {
-    fn total(&self) -> u64 {
-        self.extreme + self.high + self.elevated + self.moderate + self.low
-    }
-
-    /// Calculate percentage widths for the stacked bar.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
     fn to_json(&self) -> serde_json::Value {
-        let total = self.total();
+        let total = self.extreme + self.high + self.elevated + self.moderate + self.low;
         if total == 0 {
             return serde_json::json!({
                 "extreme": 0, "high": 0, "elevated": 0, "moderate": 0, "low": 0,
