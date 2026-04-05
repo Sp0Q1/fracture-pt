@@ -11,7 +11,7 @@ pub fn list(
     user: &users::Model,
     org_ctx: &Option<OrgContext>,
     user_orgs: &[organizations::Model],
-    items: &[engagements::Model],
+    items: &[serde_json::Value],
 ) -> Result<Response> {
     let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
     ctx["items"] = serde_json::json!(items);

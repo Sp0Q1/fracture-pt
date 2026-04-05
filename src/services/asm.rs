@@ -226,13 +226,23 @@ pub async fn resolve_subdomains(subdomains: &[String]) -> Vec<SubdomainInfo> {
             let lookup_result = tokio::net::lookup_host(lookup_addr).await;
             match lookup_result {
                 Ok(addrs) => {
-                    // Deduplicate
+                    // Deduplicate, converting IPv4-mapped IPv6 to plain IPv4
                     let mut unique: Vec<String> = addrs
-                        .map(|a| a.ip().to_string())
+                        .map(|a| match a.ip() {
+                            std::net::IpAddr::V4(v4) => v4.to_string(),
+                            std::net::IpAddr::V6(v6) => v6
+                                .to_ipv4_mapped()
+                                .map_or_else(|| v6.to_string(), |v4| v4.to_string()),
+                        })
                         .collect::<BTreeSet<_>>()
                         .into_iter()
                         .collect();
-                    unique.sort();
+                    // Sort IPv4 addresses first, then IPv6
+                    unique.sort_by(|a, b| {
+                        let a_is_v4 = a.parse::<std::net::Ipv4Addr>().is_ok();
+                        let b_is_v4 = b.parse::<std::net::Ipv4Addr>().is_ok();
+                        b_is_v4.cmp(&a_is_v4).then_with(|| a.cmp(b))
+                    });
                     SubdomainInfo {
                         name,
                         resolved: !unique.is_empty(),
