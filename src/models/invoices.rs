@@ -40,8 +40,12 @@ impl Model {
     ) -> Option<Self> {
         let uuid = Uuid::parse_str(pid).ok()?;
         Entity::find()
-            .filter(Column::Pid.eq(uuid))
             .filter(Column::OrgId.eq(org_id))
+            .filter(
+                sea_orm::Condition::any()
+                    .add(Column::Pid.eq(uuid))
+                    .add(Column::Pid.eq(pid)),
+            )
             .one(db)
             .await
             .ok()
