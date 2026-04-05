@@ -3,7 +3,7 @@
 <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 {% block canonical %}<link rel="canonical" href="https://gethacked.eu/free-scan" />{% endblock canonical %}
 {% block title %}Free Attack Surface Scan | Subdomain Discovery Tool | GetHacked.eu{% endblock title %}
-{% block meta_description %}Discover your exposed subdomains and certificates with a free attack surface scan. Just enter your domain — no account needed. 100% EU-hosted, passive reconnaissance only.{% endblock meta_description %}
+{% block meta_description %}Discover your exposed subdomains, certificates, and external attack surface with a free OSINT-powered scan. Just enter your domain — no account needed. Instant results, professional-grade reconnaissance.{% endblock meta_description %}
 
 {% block structured_data %}
 <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
@@ -31,9 +31,9 @@
 
 {% block content %}
 <section class="asm-hero">
-    <span class="badge success asm-free-badge">Free — Just Enter Your Domain</span>
-    <h1>See What Attackers <span class="gradient-text">Already Know About You</span></h1>
-    <p class="subtitle">Your external attack surface is visible to anyone who looks. Subdomains, open ports, exposed services, certificate issues — attackers enumerate these before every breach. Now you can too.</p>
+    <span class="badge success asm-free-badge">Free — No Account Required</span>
+    <h1>Map Your External <span class="gradient-text">Digital Attack Surface</span></h1>
+    <p class="subtitle">Subdomain discovery, certificate transparency analysis, DNS resolution, and service fingerprinting — the same OSINT techniques attackers use before every breach. Professional-grade reconnaissance, instant results.</p>
 </section>
 
 <section class="asm-input-section">
@@ -45,7 +45,7 @@
                 </svg>
             </div>
             <h2>Enter Your Domain</h2>
-            <p>We will enumerate subdomains, discover open ports, check certificate transparency logs, and summarise your external exposure.</p>
+            <p>We enumerate subdomains, query certificate transparency logs, resolve DNS records, and fingerprint exposed services — all in seconds.</p>
         </div>
         {% if error %}
         <p class="text-error" style="margin-bottom:1rem">{{ error }}</p>
@@ -57,7 +57,7 @@
             </div>
         </form>
         <div class="asm-trust-row">
-            <span class="badge outline small">EU-Hosted</span>
+            <span class="badge outline small">Open Source</span>
             <span class="badge outline small">Passive Recon Only</span>
             <span class="badge outline small">No Data Stored</span>
             <span class="badge outline small">No Account Needed</span>
@@ -116,7 +116,8 @@
 </section>
 
 <section class="asm-value-section">
-    <h2>What the Free Scan Covers</h2>
+    <h2>Professional-Grade Reconnaissance</h2>
+    <p class="section-subtitle">The same techniques used by penetration testers and red teams during external engagements.</p>
     <div class="row">
         <div class="col-4">
             <article class="card card-accent">
@@ -125,8 +126,8 @@
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                     </svg>
                 </div>
-                <header>Subdomain Enumeration</header>
-                <p>Discover subdomains visible to the public via DNS records, certificate transparency logs, and passive sources. Find forgotten dev, staging, and admin endpoints.</p>
+                <header>Subdomain Discovery</header>
+                <p>Passive enumeration via certificate transparency logs, DNS brute-forcing, and public OSINT sources. Surfaces forgotten dev, staging, and admin endpoints that expand your attack surface.</p>
             </article>
         </div>
         <div class="col-4">
@@ -136,8 +137,8 @@
                         <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
                     </svg>
                 </div>
-                <header>Port Discovery</header>
-                <p>Identify open ports and running services across your discovered hosts. Detect unexpected services, legacy protocols, and shadow IT before attackers do.</p>
+                <header>Port Scanning &amp; Service Fingerprinting</header>
+                <p>Identify open ports and fingerprint running services across discovered hosts. Detect unexpected services, legacy protocols, and misconfigured infrastructure.</p>
             </article>
         </div>
         <div class="col-4">
@@ -147,8 +148,8 @@
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
                 </div>
-                <header>Certificate Transparency</header>
-                <p>Check certificate validity, expiry dates, and certificate transparency logs for your domain. Catch expired, misconfigured, or rogue certificates.</p>
+                <header>Certificate Transparency &amp; DNS</header>
+                <p>Query CT logs for every certificate ever issued to your domain. Resolve DNS records to map live infrastructure, detect stale entries, and catch expired or misconfigured certificates.</p>
             </article>
         </div>
     </div>
@@ -161,27 +162,31 @@
 </div>
 
 <section class="faq-section">
-    <h2>Free Scan FAQ</h2>
+    <h2>Frequently Asked Questions</h2>
     <div class="faq-grid">
         <details class="faq-item">
-            <summary>What data do you collect during the free scan?</summary>
-            <p>We perform passive reconnaissance only — DNS lookups, certificate transparency log queries, and non-intrusive port checks. We do not store your domain or results after the scan completes. No account is created.</p>
+            <summary>What is GetHacked.eu?</summary>
+            <p>GetHacked.eu is an open-source offensive security platform. It combines attack surface mapping, vulnerability scanning, and managed penetration testing into a single dashboard with real-time findings. The platform is open-source under AGPL-3.0 and can be self-hosted on your own infrastructure.</p>
         </details>
         <details class="faq-item">
-            <summary>Is this scan safe? Will it trigger alerts on my infrastructure?</summary>
-            <p>Yes, it is safe. We use passive techniques that do not send exploit payloads or modify anything on your systems. The scan is comparable to what search engines and certificate monitors already do.</p>
+            <summary>How does the free scan work?</summary>
+            <p>Enter a domain and we run passive OSINT reconnaissance: certificate transparency log queries, subdomain enumeration, DNS resolution, and service fingerprinting. Results appear in seconds. No account is created and no data is stored after the scan completes.</p>
         </details>
         <details class="faq-item">
-            <summary>How is this different from paid ASM monitoring?</summary>
-            <p>The free scan is a one-time snapshot. Paid continuous monitoring runs 24/7, detects changes as they happen, sends alerts, tracks shadow IT over time, and includes API access and integrations.</p>
+            <summary>Is the scan safe? Will it trigger alerts on my infrastructure?</summary>
+            <p>Yes. The free scan uses passive techniques and lightweight probes comparable to what search engines and certificate monitors already do. No exploit payloads are sent and nothing on your systems is modified.</p>
         </details>
         <details class="faq-item">
-            <summary>Can I scan any domain?</summary>
-            <p>You may scan domains you own or have explicit authorisation to test. We verify domain ownership for paid plans. The free scan uses only publicly available data.</p>
+            <summary>What tiers are available beyond the free scan?</summary>
+            <p>Paid plans start at &euro;99/month (Recon) for continuous attack surface monitoring and monthly vulnerability scans. Higher tiers add weekly scanning, manual testing hours, source code review, and dedicated pentesting. Enterprise plans include self-hosted deployment and bundled pentest days. See our <a href="/pricing">pricing page</a> for a full comparison.</p>
         </details>
         <details class="faq-item">
-            <summary>Where does the scan run?</summary>
-            <p>All scanning infrastructure is hosted in the European Union. Data never leaves EU borders. No third-party services outside the EU are involved.</p>
+            <summary>Can I self-host the platform?</summary>
+            <p>Yes. GetHacked.eu is open-source and designed for self-hosted deployment. Enterprise plans include support for running the entire platform on your own infrastructure. Your data never leaves your control.</p>
+        </details>
+        <details class="faq-item">
+            <summary>How are reports generated?</summary>
+            <p>Scan results and pentest findings compile into downloadable PDF reports with severity ratings, technical reproduction steps, and remediation guidance. During managed pentests, findings appear on your dashboard in real time as testers discover them — no waiting for the final deliverable.</p>
         </details>
     </div>
 </section>

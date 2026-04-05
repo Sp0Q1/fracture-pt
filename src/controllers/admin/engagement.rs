@@ -7,12 +7,33 @@ use serde::{Deserialize, Serialize};
 
 use crate::controllers::middleware;
 use crate::models::_entities::engagement_offers::ActiveModel as OfferActiveModel;
+use crate::models::_entities::organizations;
 use crate::models::_entities::pentester_assignments::ActiveModel as AssignmentActiveModel;
 use crate::models::_entities::users;
 use crate::models::engagement_offers;
 use crate::models::engagements;
 use crate::models::findings;
 use crate::models::organizations as org_model;
+
+/// Resolve org names for a list of engagements.
+async fn resolve_org_names(
+    db: &sea_orm::DatabaseConnection,
+    items: &[crate::models::_entities::engagements::Model],
+) -> Vec<serde_json::Value> {
+    let mut result = Vec::with_capacity(items.len());
+    for item in items {
+        let org_name = organizations::Entity::find_by_id(item.org_id)
+            .one(db)
+            .await
+            .ok()
+            .flatten()
+            .map_or_else(|| "Unknown".to_string(), |o| o.name);
+        let mut j = serde_json::json!(item);
+        j["org_name"] = serde_json::json!(org_name);
+        result.push(j);
+    }
+    result
+}
 use crate::models::pentester_assignments;
 use crate::{require_user, views};
 
@@ -51,7 +72,8 @@ pub async fn list(
     fracture_core::require_platform_admin!(org_ctx);
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = engagements::Model::find_all_pending(&ctx.db).await;
-    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
+    let items_with_org = resolve_org_names(&ctx.db, &items).await;
+    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items_with_org)
 }
 
 /// `GET /admin/engagements/all` -- list all engagements across all statuses.
@@ -71,7 +93,8 @@ pub async fn list_all(
         .all(&ctx.db)
         .await
         .unwrap_or_default();
-    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
+    let items_with_org = resolve_org_names(&ctx.db, &items).await;
+    views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items_with_org)
 }
 
 /// `GET /admin/engagements/:pid` -- show engagement detail (admin view).

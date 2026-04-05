@@ -17,6 +17,7 @@ use crate::{require_role, require_user};
 pub struct OrgSettingsParams {
     pub name: String,
     pub alert_emails: Option<String>,
+    pub plan_tier: Option<String>,
 }
 
 /// `GET /orgs/:pid/settings` -- org settings page with tier info.
@@ -89,6 +90,21 @@ pub async fn update_settings(
     let mut active: organizations::ActiveModel = org.clone().into();
     active.name = sea_orm::ActiveValue::Set(params.name);
     active.update(&ctx.db).await?;
+
+    // Platform admins can change the org tier
+    let valid_tiers = ["free", "pro", "enterprise"];
+    if let Some(ref tier_str) = params.plan_tier {
+        if org_ctx.is_platform_admin && valid_tiers.contains(&tier_str.as_str()) {
+            org_model::Model::set_setting(
+                &ctx.db,
+                org.id,
+                "plan_tier",
+                serde_json::Value::String(tier_str.clone()),
+            )
+            .await
+            .map_err(|e| Error::Message(e.to_string()))?;
+        }
+    }
 
     // Save alert emails if tier allows it
     let tier = PlanTier::from_org(&org);

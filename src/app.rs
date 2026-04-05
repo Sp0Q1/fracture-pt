@@ -74,24 +74,6 @@ impl AdminEntity for ScanTargetsEntity {
     }
 }
 
-struct ScanJobsEntity;
-
-#[async_trait]
-impl AdminEntity for ScanJobsEntity {
-    fn entity_name(&self) -> &'static str {
-        "Scan Jobs"
-    }
-    fn url_prefix(&self) -> &'static str {
-        "/admin/scan-jobs"
-    }
-    fn description(&self) -> &'static str {
-        "Scan execution history"
-    }
-    async fn count_all(&self, db: &DatabaseConnection) -> u64 {
-        scan_jobs::Entity::find().count(db).await.unwrap_or(0)
-    }
-}
-
 struct FindingsEntity;
 
 #[async_trait]
@@ -213,7 +195,6 @@ fn build_entity_registry() -> EntityRegistry {
     // Gethacked-specific entities
     registry.register(Box::new(EngagementsEntity));
     registry.register(Box::new(ScanTargetsEntity));
-    registry.register(Box::new(ScanJobsEntity));
     registry.register(Box::new(FindingsEntity));
     registry.register(Box::new(NonFindingsEntity));
     registry.register(Box::new(ReportsEntity));

@@ -51,6 +51,16 @@
                 <label for="name">Organization Name</label>
                 <input id="name" name="name" type="text" value="{{ org.name }}" required />
             </div>
+            {% if is_platform_admin %}
+            <div data-field>
+                <label for="plan_tier">Plan Tier</label>
+                <select id="plan_tier" name="plan_tier">
+                    <option value="free"{% if plan_tier == "Free" %} selected{% endif %}>Free</option>
+                    <option value="pro"{% if plan_tier == "Pro" %} selected{% endif %}>Pro</option>
+                    <option value="enterprise"{% if plan_tier == "Enterprise" %} selected{% endif %}>Enterprise</option>
+                </select>
+            </div>
+            {% endif %}
             {% if email_alerts_enabled %}
             <div data-field>
                 <label for="alert_emails">Alert Email Addresses</label>

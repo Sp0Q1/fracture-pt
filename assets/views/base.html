@@ -4,13 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="{% block meta_description %}Europe's offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. 100% EU-hosted.{% endblock meta_description %}">
+  <meta name="description" content="{% block meta_description %}Open-source offensive security platform. Penetration testing, vulnerability scanning, red teaming, and attack surface mapping. Self-hosted, transparent, yours.{% endblock meta_description %}">
   <title>{% block title %}GetHacked.eu{% endblock title %}</title>
   {% block canonical %}{% endblock canonical %}
   {% block og_tags %}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GetHacked.eu">
-  <meta property="og:title" content="GetHacked.eu | EU-Based Penetration Testing &amp; Security Platform">
+  <meta property="og:title" content="GetHacked.eu | Open-Source Security Platform">
   <meta property="og:locale" content="en_GB">
   <meta name="twitter:card" content="summary">
   {% endblock og_tags %}
@@ -63,7 +63,6 @@
         <span><a href="/">Dashboard</a></span>
         <span><a href="/targets">Scans</a></span>
         <span><a href="/engagements">Pentests</a></span>
-        <span><a href="/pentester/engagements">Workspace</a></span>
         <span><a href="/reports">Reports</a></span>
         {% endblock nav_authenticated %}
         {% else %}
@@ -135,10 +134,10 @@
         <div class="footer-grid">
             <div class="footer-brand">
                 <strong class="gradient-text">GetHacked.eu</strong>
-                <p>Offensive Security, European Standards.</p>
+                <p>Open-Source Offensive Security.</p>
                 <div class="footer-eu-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003399" stroke-width="2"><path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/></svg>
-                    <small>100% EU-hosted infrastructure</small>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/></svg>
+                    <small>Open-source under AGPL-3.0</small>
                 </div>
             </div>
             <div class="footer-col">
@@ -172,13 +171,13 @@
             </div>
         </div>
         <div class="footer-trust-row">
-            <span class="badge outline">100% EU-Hosted</span>
-            <span class="badge outline">Offensive Security Experts</span>
+            <span class="badge outline">Open Source</span>
+            <span class="badge outline">Self-Hosted Option</span>
             <span class="badge outline">Real-Time Findings</span>
             <span class="badge outline">Encrypted at Rest &amp; In Transit</span>
         </div>
         <div class="footer-bottom">
-            &copy; 2026 GetHacked.eu &mdash; Registered in the European Union
+            &copy; 2026 GetHacked.eu &mdash; Open-source under AGPL-3.0
         </div>
         {% endblock footer %}
     </footer>

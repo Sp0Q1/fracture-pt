@@ -3,7 +3,7 @@
 <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
 {% block canonical %}<link rel="canonical" href="https://gethacked.eu/pricing" />{% endblock canonical %}
 {% block title %}Pricing Plans | Security Testing from EUR 99/mo | GetHacked.eu{% endblock title %}
-{% block meta_description %}Transparent security testing plans for every business. From vulnerability scans to managed pentesting engagements. No hidden fees. SSO included on every plan. 100% EU-hosted.{% endblock meta_description %}
+{% block meta_description %}Transparent security testing plans for every business. From vulnerability scans to managed pentesting engagements. No hidden fees. SSO included on every plan. Open-source, self-hosted.{% endblock meta_description %}
 
 {% block structured_data %}
 <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
@@ -13,7 +13,7 @@
   "@type": "FAQPage",
   "mainEntity": [
     {"@type": "Question", "name": "Can I upgrade or downgrade my plan at any time?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Upgrades take effect immediately with prorated billing. Downgrades apply at your next renewal date."}},
-    {"@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": {"@type": "Answer", "text": "We use EU-based infrastructure for data storage. We aim to keep all data within the EU."}},
+    {"@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": {"@type": "Answer", "text": "On the managed service, data is stored on encrypted infrastructure. Self-hosted deployments keep all data on your own systems — your infrastructure, your rules."}},
     {"@type": "Question", "name": "What is Attack Surface Mapping?", "acceptedAnswer": {"@type": "Answer", "text": "Attack Surface Mapping continuously discovers and monitors your external-facing assets — subdomains, open ports, certificates, and exposed services. A free one-time scan is available with no account required."}},
     {"@type": "Question", "name": "How does the managed pentest engagement work?", "acceptedAnswer": {"@type": "Answer", "text": "You define your scope, our team sends an offer with pricing and timeline. Once accepted, pentesters are assigned and findings appear in your dashboard in real time."}}
   ]
@@ -56,7 +56,7 @@
             <ul class="tier-features">
                 <li>Single domain</li>
                 <li>Continuous attack surface mapping</li>
-                <li>Subdomain &amp; shadow IT discovery</li>
+                <li>Subdomain &amp; OSINT reconnaissance</li>
                 <li>Certificate monitoring</li>
                 <li>Monthly vulnerability scan</li>
                 <li>Isolated tenant environment</li>
@@ -113,7 +113,7 @@
                 <li>Dedicated pentest team</li>
                 <li>Dedicated account manager</li>
                 <li>Dedicated scanning infrastructure</li>
-                <li>On-premises deployment</li>
+                <li>Self-hosted deployment</li>
                 <li>Isolated tenant environments</li>
                 <li>Dedicated support</li>
             </ul>
@@ -127,7 +127,7 @@
         <div class="row">
             <div class="col-8">
                 <h3>Attack Surface Mapping</h3>
-                <p>Know what attackers see before they act. Continuous subdomain enumeration, exposed service detection, certificate monitoring, and shadow IT discovery.</p>
+                <p>Know what attackers see before they act. Continuous subdomain enumeration, exposed service detection, certificate monitoring, and OSINT-driven domain reconnaissance.</p>
                 <p class="mb-0"><strong>Included in every plan.</strong> Start free with a one-time scan, or get continuous monitoring from &euro;99/month.</p>
             </div>
             <div class="col-4 asm-callout-cta">
@@ -246,7 +246,7 @@
                     <td>Yes</td>
                 </tr>
                 <tr>
-                    <td>Subdomain &amp; shadow IT discovery</td>
+                    <td>Subdomain &amp; OSINT reconnaissance</td>
                     <td>Yes</td>
                     <td>Yes</td>
                     <td class="featured-col">Yes</td>
@@ -319,7 +319,7 @@
                     <td>Yes</td>
                 </tr>
                 <tr>
-                    <td>On-premises deployment</td>
+                    <td>Self-hosted deployment</td>
                     <td>&mdash;</td>
                     <td>&mdash;</td>
                     <td class="featured-col">&mdash;</td>
@@ -343,8 +343,8 @@
         <div class="col-4">
             <div class="include-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.43C17.25 23.14 21 18.25 21 13V7l-9-5z"/></svg>
-                <h4>EU-hosted infrastructure</h4>
-                <p>All data processed and stored in EU data centres. Data never leaves the European Union.</p>
+                <h4>Open-source platform</h4>
+                <p>Fully auditable codebase under AGPL-3.0. Self-host on your own infrastructure or use our managed service. Your data stays on your systems.</p>
             </div>
         </div>
         <div class="col-4">
@@ -373,7 +373,7 @@
         </details>
         <details class="faq-item">
             <summary>Where is my data stored?</summary>
-            <p>All scan data, results, and reports are stored in EU-based data centres. We use infrastructure located in Germany and the Netherlands. We aim to keep all data within the EU.</p>
+            <p>On the managed service, data is stored on encrypted infrastructure. Self-hosted deployments keep all data on your own systems. Either way, you retain full control over your vulnerability data and reports.</p>
         </details>
         <details class="faq-item">
             <summary>Do you offer discounts for annual billing?</summary>
