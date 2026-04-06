@@ -356,8 +356,7 @@
     <form action="/engagements/{{ item.pid }}/comments" method="post">
         <div data-field>
             <label for="comment_content">Add a comment</label>
-            <textarea id="comment_content" name="content" rows="4" placeholder="Write a comment... Markdown is supported." data-upload-target></textarea>
-            <small>Drag and drop or paste images to upload. Markdown is supported.</small>
+            <textarea id="comment_content" name="content" rows="4" placeholder="Write a comment... Markdown is supported." data-md-editor></textarea>
         </div>
         <div class="form-actions">
             <button type="submit">Post Comment</button>
@@ -368,5 +367,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/upload.js?v=1" integrity="sha384-Zs3xZV3iFi4KNpDmstJgtqLOZV6GpF330wwKev2ZROjRFVDaVUuGXtOr14IzLkxf" crossorigin="anonymous"></script>
+<script src="/static/md-editor.js?v=1" integrity="sha384-pZj4EtnJkVCjTwacBCOdj3Qbx91thWT9E3qWKULN7W3F+8B+zjdOaQ5MlUyTosmz" crossorigin="anonymous"></script>
 {% endblock js %}
