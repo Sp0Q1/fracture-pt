@@ -61,10 +61,11 @@
         </ot-dropdown>
         {% block nav_authenticated %}
         <span><a href="/">Dashboard</a></span>
-        <span><a href="/targets">Scans</a></span>
+        <span><a href="/targets">Targets</a></span>
         <span><a href="/engagements">Pentests</a></span>
-        {% if is_platform_admin %}<span><a href="/pentester/engagements">Workspace</a></span>{% endif %}
+        <span><a href="/findings">Findings</a></span>
         <span><a href="/reports">Reports</a></span>
+        <span><a href="/blog">Blog</a></span>
         {% endblock nav_authenticated %}
         {% else %}
         {% block nav_guest %}
@@ -84,12 +85,10 @@
         <span><a href="/scope">Scope Your Pentest</a></span>
         <span><a href="/about">About</a></span>
         <span><a href="/contact">Contact</a></span>
+        <span><a href="/blog">Blog</a></span>
+        <span><a href="/free-scan" class="nav-free-scan">Free Scan</a></span>
         {% endblock nav_guest %}
         {% endif %}
-        {% block nav_public %}
-        <a href="/blog">Blog</a>
-        {% if not user_name %}<a href="/free-scan" class="nav-free-scan">Free Scan</a>{% endif %}
-        {% endblock nav_public %}
         {% if is_platform_admin %}
         <a href="/admin">Admin</a>
         {% endif %}

@@ -1,0 +1,42 @@
+{% extends "_layout.html" %}
+
+{% block title %}New Non-Finding -- GetHacked{% endblock title %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/engagements">Engagements</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <a href="/engagements/{{ engagement.pid }}">{{ engagement.title }}</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">New Non-Finding</span>
+</nav>
+
+<div class="page-header">
+    <h1>Add Non-Finding</h1>
+</div>
+
+<article class="card form-card">
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/engagements/{{ engagement.pid }}/non-findings" method="post">
+        <div data-field>
+            <label for="title">Title</label>
+            <input id="title" name="title" type="text" placeholder="e.g., Authentication mechanism tested and found secure" required />
+        </div>
+
+        <div data-field>
+            <label for="content">Details</label>
+            <textarea id="content" name="content" rows="10" placeholder="Describe what was tested and why it was found to be secure..." data-upload-target></textarea>
+            <small>Drag and drop or paste images to upload.</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Save Non-Finding</button>
+            <a href="/engagements/{{ engagement.pid }}" class="button" data-variant="secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% endblock content %}
+
+{% block js %}
+<script src="/static/upload.js?v=1" integrity="sha384-Zs3xZV3iFi4KNpDmstJgtqLOZV6GpF330wwKev2ZROjRFVDaVUuGXtOr14IzLkxf" crossorigin="anonymous"></script>
+{% endblock js %}

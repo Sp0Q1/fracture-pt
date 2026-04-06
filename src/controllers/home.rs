@@ -367,14 +367,31 @@ async fn fetch_attack_surface(
         .await
         .unwrap_or_default();
 
-    // Group definitions by target_id from config
+    // Group definitions by target — match by target_id from config,
+    // or by hostname if target_id is missing (e.g. free scans).
+    let hostname_to_target_id: HashMap<&str, i32> = targets
+        .iter()
+        .filter_map(|t| t.hostname.as_deref().map(|h| (h, t.id)))
+        .collect();
     let mut asm_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
     let mut port_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
     for def in &all_defs {
         if let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) {
-            if let Some(tid) = cfg["target_id"].as_i64() {
-                #[allow(clippy::cast_possible_truncation)]
-                let tid = tid as i32;
+            // Try matching by target_id first, fall back to hostname
+            let tid = cfg["target_id"]
+                .as_i64()
+                .map(|id| {
+                    #[allow(clippy::cast_possible_truncation)]
+                    let id = id as i32;
+                    id
+                })
+                .or_else(|| {
+                    cfg["hostname"]
+                        .as_str()
+                        .and_then(|h| hostname_to_target_id.get(h))
+                        .copied()
+                });
+            if let Some(tid) = tid {
                 if def.job_type == "asm_scan" {
                     asm_defs_by_target.entry(tid).or_default().push(def.id);
                 } else {

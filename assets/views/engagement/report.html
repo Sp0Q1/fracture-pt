@@ -1,0 +1,100 @@
+{% extends "_layout.html" %}
+
+{% block title %}Generate Report -- {{ item.title }} -- GetHacked{% endblock title %}
+
+{% block head %}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+{% if report_job_status == "running" %}
+<meta http-equiv="refresh" content="5">
+{% endif %}
+{% endblock head %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/engagements">Engagements</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <a href="/engagements/{{ item.pid }}">{{ item.title }}</a>
+    <span class="separator" aria-hidden="true">/</span>
+    <span aria-current="page">Report</span>
+</nav>
+
+<div class="page-header">
+    <h1>Generate Report</h1>
+    <p class="page-subtitle">{{ item.title }}</p>
+</div>
+
+{% if report_job_status == "running" %}
+<article class="card scan-progress-card">
+    <div class="scan-spinner"></div>
+    <h3>Report Generation in Progress</h3>
+    <p>Building PenText PDF report from {{ finding_count }} finding{{ finding_count | pluralize }} and {{ non_finding_count }} non-finding{{ non_finding_count | pluralize }}.</p>
+    <p class="text-muted text-sm">This page refreshes automatically.</p>
+</article>
+{% elif report_job_status == "failed" %}
+<article class="card scan-failed-card">
+    <h3>Report Generation Failed</h3>
+    <p>The report could not be generated. Check the job logs for details or try again.</p>
+</article>
+{% endif %}
+
+<article class="card">
+    <h3>Report Summary</h3>
+    <div class="detail-row">
+        <span class="detail-label">Engagement</span>
+        <span class="detail-value">{{ item.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+            <span class="badge {% if item.status == 'in_progress' %}primary{% elif item.status == 'review' %}warning{% else %}secondary{% endif %}">
+                {{ item.status | replace(from="_", to=" ") }}
+            </span>
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Findings</span>
+        <span class="detail-value">{{ finding_count }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Non-Findings</span>
+        <span class="detail-value">{{ non_finding_count }}</span>
+    </div>
+
+    {% if finding_count > 0 and report_job_status != "running" %}
+    <form action="/engagements/{{ item.pid }}/report" method="post" class="form-actions">
+        <button type="submit" class="button">Generate Report</button>
+    </form>
+    {% elif finding_count == 0 %}
+    <p class="text-muted">Add at least one finding before generating a report.</p>
+    {% endif %}
+</article>
+
+{% if reports | length > 0 %}
+<h2>Generated Reports <span class="badge secondary">{{ reports | length }}</span></h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Format</th>
+            <th>Generated</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.title }}</td>
+            <td><span class="badge secondary">{{ report.format | upper }}</span></td>
+            <td>{% if report.generated_at %}{{ report.generated_at }}{% else %}Pending{% endif %}</td>
+            <td>
+                {% if report.storage_path %}
+                <a href="/reports/{{ report.pid }}/download" class="button outline small">Download</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock content %}
