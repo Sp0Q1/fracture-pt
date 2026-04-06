@@ -102,14 +102,11 @@ fn build_report_xml(engagement: &engagements::Model, targets: &[String]) -> Stri
 fn build_finding_xml(finding: &findings::Model, number: usize) -> String {
     let finding_id = format!("finding-{}", finding.pid);
     let threat_level = map_threat_level(&finding.severity);
-    let status = &finding.status;
-    let description = finding.description.as_str();
-    let tech_desc = finding
-        .technical_description
-        .as_deref()
-        .unwrap_or("<p>N/A</p>");
-    let impact = finding.impact.as_deref().unwrap_or("<p>N/A</p>");
-    let recommendation = finding.recommendation.as_deref().unwrap_or("<p>N/A</p>");
+    let status = xml_escape(&finding.status);
+    let description = xml_escape(&finding.description);
+    let tech_desc = xml_escape(finding.technical_description.as_deref().unwrap_or("N/A"));
+    let impact = xml_escape(finding.impact.as_deref().unwrap_or("N/A"));
+    let recommendation = xml_escape(finding.recommendation.as_deref().unwrap_or("N/A"));
     let category = xml_escape(&finding.category);
     let title = xml_escape(&finding.title);
     let id = xml_escape(&finding_id);
@@ -131,9 +128,9 @@ fn build_finding_xml(finding: &findings::Model, number: usize) -> String {
 fn build_non_finding_xml(nf: &non_findings::Model, number: usize) -> String {
     let nf_id = format!("non-finding-{}", nf.pid);
     let content = if nf.content.is_empty() {
-        "<p>This area was tested and found secure.</p>"
+        "This area was tested and found secure.".to_string()
     } else {
-        &nf.content
+        xml_escape(&nf.content)
     };
     let title = xml_escape(&nf.title);
     let id = xml_escape(&nf_id);
@@ -142,7 +139,7 @@ fn build_non_finding_xml(nf: &non_findings::Model, number: usize) -> String {
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <non-finding id="{id}" number="{number}">
   <title>{title}</title>
-  {content}
+  <p>{content}</p>
 </non-finding>
 "#
     )

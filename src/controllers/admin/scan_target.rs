@@ -1,11 +1,25 @@
 use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
-use sea_orm::{EntityTrait, QueryOrder};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use std::collections::HashMap;
 
 use crate::controllers::middleware;
 use crate::models::_entities::{organizations, scan_targets};
 use crate::models::organizations as org_model;
 use crate::{require_user, views};
+
+/// Batch-load org names for a set of org IDs.
+async fn load_org_names(db: &sea_orm::DatabaseConnection, org_ids: &[i32]) -> HashMap<i32, String> {
+    if org_ids.is_empty() {
+        return HashMap::new();
+    }
+    let orgs = organizations::Entity::find()
+        .filter(organizations::Column::Id.is_in(org_ids.iter().copied()))
+        .all(db)
+        .await
+        .unwrap_or_default();
+    orgs.into_iter().map(|o| (o.id, o.name)).collect()
+}
 
 /// `GET /admin/scan-targets` -- list all scan targets cross-org.
 #[debug_handler]
@@ -26,23 +40,23 @@ pub async fn list(
         .await
         .unwrap_or_default();
 
-    // Resolve org names
-    let mut items_json: Vec<serde_json::Value> = Vec::new();
-    for item in &items {
-        let org = organizations::Entity::find_by_id(item.org_id)
-            .one(&ctx.db)
-            .await
-            .ok()
-            .flatten();
-        items_json.push(serde_json::json!({
-            "pid": item.pid,
-            "org_name": org.as_ref().map_or("Unknown", |o| o.name.as_str()),
-            "hostname": item.hostname,
-            "ip_address": item.ip_address,
-            "target_type": item.target_type,
-            "verified_at": item.verified_at,
-        }));
-    }
+    // Batch-resolve org names instead of N+1
+    let org_ids: Vec<i32> = items.iter().map(|i| i.org_id).collect();
+    let org_names = load_org_names(&ctx.db, &org_ids).await;
+
+    let items_json: Vec<serde_json::Value> = items
+        .iter()
+        .map(|item| {
+            serde_json::json!({
+                "pid": item.pid,
+                "org_name": org_names.get(&item.org_id).map_or("Unknown", String::as_str),
+                "hostname": item.hostname,
+                "ip_address": item.ip_address,
+                "target_type": item.target_type,
+                "verified_at": item.verified_at,
+            })
+        })
+        .collect();
 
     views::admin::scan_target::list(&v, &user, &org_ctx, &user_orgs, &items_json)
 }

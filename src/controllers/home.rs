@@ -1,6 +1,9 @@
 use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
+use sea_orm::{
+    ColumnTrait, EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
+};
+use std::collections::HashMap;
 
 use super::middleware;
 use crate::models::_entities::{
@@ -81,22 +84,37 @@ async fn fetch_stat_counts(db: &sea_orm::DatabaseConnection, org_id: i32) -> (u6
     (targets, engs, total_findings, reps)
 }
 
-/// Compute severity breakdown from all findings in an org.
+/// Result struct for the severity GROUP BY query.
+#[derive(Debug, FromQueryResult)]
+struct SeverityCount {
+    severity: String,
+    count: i64,
+}
+
+/// Compute severity breakdown using a GROUP BY aggregate query.
+/// This avoids loading all findings into memory.
 async fn compute_severity(db: &sea_orm::DatabaseConnection, org_id: i32) -> SeverityBreakdown {
-    let all_findings = findings::Entity::find()
+    let rows: Vec<SeverityCount> = findings::Entity::find()
         .filter(findings::Column::OrgId.eq(org_id))
+        .select_only()
+        .column(findings::Column::Severity)
+        .column_as(findings::Column::Id.count(), "count")
+        .group_by(findings::Column::Severity)
+        .into_model::<SeverityCount>()
         .all(db)
         .await
         .unwrap_or_default();
 
     let mut sev = SeverityBreakdown::default();
-    for f in &all_findings {
-        match f.severity.as_str() {
-            "extreme" => sev.extreme += 1,
-            "high" => sev.high += 1,
-            "elevated" => sev.elevated += 1,
-            "moderate" => sev.moderate += 1,
-            "low" => sev.low += 1,
+    for row in &rows {
+        #[allow(clippy::cast_sign_loss)]
+        let n = row.count as u64;
+        match row.severity.as_str() {
+            "extreme" => sev.extreme = n,
+            "high" => sev.high = n,
+            "elevated" => sev.elevated = n,
+            "moderate" => sev.moderate = n,
+            "low" => sev.low = n,
             _ => {}
         }
     }
@@ -170,6 +188,7 @@ async fn fetch_asm_summary(
 }
 
 /// Fetch active engagements (in_progress or review) with findings counts.
+/// Uses a batch query for findings counts to avoid N+1.
 async fn fetch_active_engagements(
     db: &sea_orm::DatabaseConnection,
     org_id: i32,
@@ -186,21 +205,47 @@ async fn fetch_active_engagements(
         .await
         .unwrap_or_default();
 
-    let mut active_json = Vec::new();
-    for eng in &active {
-        let fc = findings::Entity::find()
-            .filter(findings::Column::EngagementId.eq(eng.id))
-            .count(db)
-            .await
-            .unwrap_or(0);
-        active_json.push(serde_json::json!({
-            "pid": eng.pid.to_string(),
-            "title": eng.title,
-            "status": eng.status,
-            "findings_count": fc,
-        }));
+    if active.is_empty() {
+        return Vec::new();
     }
-    active_json
+
+    // Batch-fetch findings counts for all active engagements in one query
+    let eng_ids: Vec<i32> = active.iter().map(|e| e.id).collect();
+    let counts: Vec<EngagementFindingsCount> = findings::Entity::find()
+        .filter(findings::Column::EngagementId.is_in(eng_ids))
+        .select_only()
+        .column(findings::Column::EngagementId)
+        .column_as(findings::Column::Id.count(), "count")
+        .group_by(findings::Column::EngagementId)
+        .into_model::<EngagementFindingsCount>()
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    let count_map: HashMap<i32, i64> = counts
+        .into_iter()
+        .filter_map(|c| c.engagement_id.map(|eid| (eid, c.count)))
+        .collect();
+
+    active
+        .iter()
+        .map(|eng| {
+            let fc = count_map.get(&eng.id).copied().unwrap_or(0);
+            serde_json::json!({
+                "pid": eng.pid.to_string(),
+                "title": eng.title,
+                "status": eng.status,
+                "findings_count": fc,
+            })
+        })
+        .collect()
+}
+
+/// Result struct for engagement findings count GROUP BY query.
+#[derive(Debug, FromQueryResult)]
+struct EngagementFindingsCount {
+    engagement_id: Option<i32>,
+    count: i64,
 }
 
 /// Render the home page (authenticated or guest).
@@ -220,11 +265,15 @@ pub async fn index(
                 let org_id = oc.org.id;
                 let db = &ctx.db;
 
-                let (target_count, engagement_count, findings_count, report_count) =
-                    fetch_stat_counts(db, org_id).await;
-                let severity = compute_severity(db, org_id).await;
-                let asm_summary = fetch_asm_summary(db, org_id).await;
-                let active_engagements = fetch_active_engagements(db, org_id).await;
+                // Run all dashboard queries concurrently
+                let (stat_counts, severity, asm_summary, active_engagements) = tokio::join!(
+                    fetch_stat_counts(db, org_id),
+                    compute_severity(db, org_id),
+                    fetch_asm_summary(db, org_id),
+                    fetch_active_engagements(db, org_id),
+                );
+
+                let (target_count, engagement_count, findings_count, report_count) = stat_counts;
 
                 DashboardData {
                     target_count,

@@ -45,6 +45,24 @@ pub async fn submit(
     ViewEngine(v): ViewEngine<TeraView>,
     Form(form): Form<ContactForm>,
 ) -> Result<Response> {
+    // Basic validation — reject empty required fields
+    let name = form.name.trim();
+    let email = form.email.trim();
+    if name.is_empty() || email.is_empty() {
+        return format::render().view(
+            &v,
+            "contact/success.html",
+            data!({ "error": "Name and email are required." }),
+        );
+    }
+    if !email.contains('@') || !email.contains('.') {
+        return format::render().view(
+            &v,
+            "contact/success.html",
+            data!({ "error": "Please enter a valid email address." }),
+        );
+    }
+
     let to = contact_recipient(&ctx);
     let is_scope = form.subject == "scope-wizard";
 

@@ -7,20 +7,20 @@
   // Red-team is org-wide — flat base of 15 days + per-complexity scaling
   var REDTEAM_BASE_DAYS = 15;
 
-  // Complexity levels map to internal effort multipliers (not shown to user)
+  // Base man-days per complexity level (for black-box approach)
   var COMPLEXITY = {
-    1: { label: "Minimal", targets: 2, redteamExtra: 1 },
-    2: { label: "Small", targets: 5, redteamExtra: 3 },
-    3: { label: "Medium", targets: 10, redteamExtra: 5 },
-    4: { label: "Large", targets: 20, redteamExtra: 8 },
-    5: { label: "Enterprise", targets: 40, redteamExtra: 12 },
+    1: { label: "Minimal", baseDays: 3, redteamExtra: 1 },
+    2: { label: "Small", baseDays: 4, redteamExtra: 3 },
+    3: { label: "Medium", baseDays: 6, redteamExtra: 5 },
+    4: { label: "Large", baseDays: 12, redteamExtra: 8 },
+    5: { label: "Enterprise", baseDays: 25, redteamExtra: 12 },
   };
 
-  var BASE_DAYS_PER_TARGET = 0.8;
-
-  var EFFICIENCY = {
-    crystal: 1.35,
-    grey: 1.15,
+  // Approach modifiers: crystal and grey are slightly more efficient
+  // (less time needed due to better access), black is baseline
+  var APPROACH_MODIFIER = {
+    crystal: 0.85,
+    grey: 0.92,
     black: 1.0,
     redteam: 2.0,
   };
@@ -38,7 +38,7 @@
   // Current values
   var currentApproach = "crystal";
   var currentComplexity = 3;
-  var currentDuration = 8;
+  var currentDuration = 6;
 
   // DOM refs
   var lockDuration = document.getElementById("lock-duration");
@@ -94,7 +94,7 @@
     if (approach === "redteam") {
       raw = REDTEAM_BASE_DAYS + level.redteamExtra;
     } else {
-      raw = level.targets * BASE_DAYS_PER_TARGET * EFFICIENCY[approach];
+      raw = level.baseDays * APPROACH_MODIFIER[approach];
     }
     return Math.max(getMinDays(approach), Math.ceil(raw));
   }
@@ -215,7 +215,7 @@
     var color = APPROACH_COLORS[currentApproach];
     var w = 30 + (currentComplexity / 5) * 90;
     var h = 30 + (currentDuration / 40) * 90;
-    var d = 20 + (3.5 - EFFICIENCY[currentApproach]) * 20;
+    var d = 20 + (2.0 - APPROACH_MODIFIER[currentApproach]) * 40;
 
     boxInner.style.setProperty("--box-w", w + "px");
     boxInner.style.setProperty("--box-h", h + "px");

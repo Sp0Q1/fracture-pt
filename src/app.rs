@@ -25,8 +25,8 @@ use crate::{
     models::_entities::{
         blog_posts, engagement_offers, engagement_targets, engagements, findings, invoices,
         job_definitions, job_run_diffs, job_runs, non_findings, org_invites, org_members,
-        organizations, pentester_assignments, pricing_tiers, reports, scan_jobs, scan_targets,
-        services, subscriptions, users,
+        organizations, pentester_assignments, pricing_tiers, reports, scan_targets, services,
+        subscriptions, users,
     },
     workers,
 };
@@ -230,6 +230,7 @@ impl Hooks for App {
 
     async fn initializers(_ctx: &AppContext) -> Result<Vec<Box<dyn Initializer>>> {
         Ok(vec![
+            Box::new(initializers::sqlite_pragmas::SqlitePragmasInitializer),
             Box::new(initializers::view_engine::TemplateInitializer),
             Box::new(initializers::oidc::OidcInitializer),
             Box::new(initializers::security_headers::SecurityHeadersInitializer),
@@ -257,6 +258,7 @@ impl Hooks for App {
             .add_route(controllers::jobs::org_routes())
             .add_route(controllers::jobs::admin_routes())
             .add_route(fracture_core::controllers::admin::routes())
+            .add_route(controllers::uploads::routes())
             // Public pages
             .add_route(controllers::home::routes())
             .add_route(controllers::pages::routes())
@@ -265,7 +267,6 @@ impl Hooks for App {
             .add_route(controllers::service::routes())
             .add_route(controllers::subscription::routes())
             .add_route(controllers::scan_target::routes())
-            .add_route(controllers::scan_job::routes())
             .add_route(controllers::finding::routes())
             .add_route(controllers::engagement::routes())
             .add_route(controllers::report::routes())
@@ -302,7 +303,6 @@ impl Hooks for App {
         truncate_table(&ctx.db, pentester_assignments::Entity).await?;
         truncate_table(&ctx.db, engagement_offers::Entity).await?;
         truncate_table(&ctx.db, engagement_targets::Entity).await?;
-        truncate_table(&ctx.db, scan_jobs::Entity).await?;
         truncate_table(&ctx.db, invoices::Entity).await?;
         truncate_table(&ctx.db, engagements::Entity).await?;
         truncate_table(&ctx.db, subscriptions::Entity).await?;

@@ -11,10 +11,10 @@ pub mod org_settings;
 pub mod pages;
 pub mod pentester;
 pub mod report;
-pub mod scan_job;
 pub mod scan_target;
 pub mod service;
 pub mod subscription;
+pub mod uploads;
 
 pub use fracture_core::controllers::{
     admin as core_admin, blog, jobs, middleware, oidc, oidc_state, org,

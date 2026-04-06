@@ -97,6 +97,12 @@ pub async fn download(
         .as_deref()
         .ok_or_else(|| Error::NotFound)?;
 
+    // Defense-in-depth: validate storage path is within the expected directory
+    if !storage_path.starts_with("/app/data/reports/") {
+        tracing::error!(path = %storage_path, "Report storage path outside expected directory");
+        return Err(Error::NotFound);
+    }
+
     let bytes = tokio::fs::read(storage_path).await.map_err(|e| {
         tracing::error!(path = %storage_path, error = %e, "Report file not found on disk");
         Error::NotFound

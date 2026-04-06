@@ -37,6 +37,9 @@ async fn set_security_headers(request: axum::extract::Request, next: middleware:
         "max-age=63072000; includeSubDomains".parse().unwrap(),
     );
 
+    // Remove framework information leakage
+    headers.remove(HeaderName::from_static("x-powered-by"));
+
     response
 }
 
