@@ -85,19 +85,28 @@
   var tooltip = document.createElement("div");
   tooltip.className = "nm-tooltip"; tooltip.setAttribute("hidden","");
   container.appendChild(tooltip);
-  function escHtml(s) { var d=document.createElement("span"); d.textContent=s; return d.innerHTML; }
+  function addLine(parent, text, cls) {
+    var el = document.createElement("div");
+    if (cls) el.className = cls;
+    el.textContent = text;
+    parent.appendChild(el);
+  }
   function showTooltip(n, evt) {
-    var lines = ["<strong>"+escHtml(n.label)+"</strong>"];
+    while (tooltip.firstChild) tooltip.removeChild(tooltip.firstChild);
+    var title = document.createElement("strong");
+    title.textContent = n.label;
+    tooltip.appendChild(title);
     if (n.data && n.isDomain) {
-      lines.push("Subdomains: "+(n.data.subdomains||0));
-      lines.push("Open ports: "+(n.data.open_ports||0));
+      addLine(tooltip, "Subdomains: "+(n.data.subdomains||0));
+      addLine(tooltip, "Open ports: "+(n.data.open_ports||0));
       if (n.data.findings) {
-        var f=n.data.findings, parts=[];
-        SEV_ORDER.forEach(function(s) { if(f[s]>0) parts.push('<span class="nm-sev-'+s+'">'+s+": "+f[s]+"</span>"); });
-        if (parts.length) lines.push("Findings: "+parts.join(", "));
+        var f=n.data.findings;
+        SEV_ORDER.forEach(function(s) {
+          if(f[s]>0) addLine(tooltip, s+": "+f[s], "nm-sev-"+s);
+        });
       }
-    } else if (n.data) { lines.push(n.data.resolved?"Resolved":"Unresolved"); }
-    tooltip.innerHTML = lines.join("<br>"); tooltip.removeAttribute("hidden");
+    } else if (n.data) { addLine(tooltip, n.data.resolved?"Resolved":"Unresolved"); }
+    tooltip.removeAttribute("hidden");
     var rect = container.getBoundingClientRect();
     var x = evt.clientX-rect.left+12, y = evt.clientY-rect.top-10;
     if (x+280>rect.width) x = evt.clientX-rect.left-290;
