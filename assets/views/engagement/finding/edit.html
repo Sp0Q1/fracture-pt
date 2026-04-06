@@ -75,13 +75,11 @@
         <h3>Description</h3>
         <div data-field>
             <label for="description">Business Description</label>
-            <textarea id="description" name="description" rows="4" required data-upload-target>{{ finding.description }}</textarea>
-            <small>Drag and drop or paste images to upload.</small>
+            <textarea id="description" name="description" rows="4" required data-md-editor>{{ finding.description }}</textarea>
         </div>
         <div data-field>
             <label for="technical_description">Technical Description</label>
-            <textarea id="technical_description" name="technical_description" rows="6" data-upload-target>{{ finding.technical_description | default(value="") }}</textarea>
-            <small>Drag and drop or paste images to upload.</small>
+            <textarea id="technical_description" name="technical_description" rows="6" data-md-editor>{{ finding.technical_description | default(value="") }}</textarea>
         </div>
         <div data-field>
             <label for="impact">Impact</label>
@@ -93,8 +91,7 @@
         </div>
         <div data-field>
             <label for="evidence">Evidence</label>
-            <textarea id="evidence" name="evidence" rows="4" data-upload-target>{{ finding.evidence | default(value="") }}</textarea>
-            <small>Drag and drop or paste screenshots to attach evidence.</small>
+            <textarea id="evidence" name="evidence" rows="4" data-md-editor>{{ finding.evidence | default(value="") }}</textarea>
         </div>
 
         <div class="form-actions">
@@ -117,5 +114,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/upload.js?v=1" integrity="sha384-Zs3xZV3iFi4KNpDmstJgtqLOZV6GpF330wwKev2ZROjRFVDaVUuGXtOr14IzLkxf" crossorigin="anonymous"></script>
+<script src="/static/md-editor.js?v=1" integrity="sha384-pZj4EtnJkVCjTwacBCOdj3Qbx91thWT9E3qWKULN7W3F+8B+zjdOaQ5MlUyTosmz" crossorigin="anonymous"></script>
 {% endblock js %}

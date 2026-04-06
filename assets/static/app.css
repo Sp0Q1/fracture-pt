@@ -742,3 +742,13 @@ th[data-sortable]:hover { color:var(--accent) }
 th[data-sortable]::after { content:''; margin-left:.3em; font-size:.75em }
 th[data-sortable].asc::after { content:'\25B2' }
 th[data-sortable].desc::after { content:'\25BC' }
+
+/* --- Markdown Editor --- */
+.md-editor-wrap { position:relative }
+.md-toolbar { display:flex; gap:2px; padding:4px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-bottom:none; border-radius:6px 6px 0 0; flex-wrap:wrap }
+.md-toolbar button { background:none; border:1px solid transparent; color:var(--foreground); padding:4px 8px; border-radius:4px; cursor:pointer; font-size:.85rem; min-width:28px }
+.md-toolbar button:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.15) }
+.md-toolbar .md-upload-status { font-size:.75rem; color:var(--muted); margin-left:auto; padding:4px 8px }
+.md-editor-wrap textarea { border-radius:0 0 6px 6px !important; border-top:none !important }
+.md-preview { border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:1rem; margin-top:.5rem; min-height:4rem; font-size:.9rem; line-height:1.6; color:var(--foreground); background:rgba(255,255,255,.02) }
+.md-preview:empty::before { content:"Preview will appear here..."; color:var(--muted); font-style:italic }
