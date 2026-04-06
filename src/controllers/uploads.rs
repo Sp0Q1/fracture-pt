@@ -58,9 +58,10 @@ async fn get_upload_service(ctx: &AppContext) -> Result<UploadService> {
         .map_err(|e| Error::Message(format!("Failed to initialize upload service: {e}")))
 }
 
-/// `POST /api/uploads` — delegates to fracture-core's create handler.
-/// (No override needed — the core handler's org membership check is sufficient
-/// because only org members and pentesters with workspace access upload.)
+/// `POST /api/uploads` — delegates to core's create handler.
+///
+/// No override needed — the core handler's org membership check is sufficient
+/// because only org members and pentesters with workspace access upload.
 #[debug_handler]
 pub async fn create(
     State(ctx): State<AppContext>,
@@ -87,10 +88,8 @@ pub async fn show(
             // Public files served to everyone
         }
         Some(upload_model::Visibility::Org) | None => {
-            let user = middleware::get_current_user(&jar, &ctx).await;
-            let user = match user {
-                Some(u) => u,
-                None => return Err(Error::NotFound),
+            let Some(user) = middleware::get_current_user(&jar, &ctx).await else {
+                return Err(Error::NotFound);
             };
 
             let is_platform_admin =
