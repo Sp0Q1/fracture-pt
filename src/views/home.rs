@@ -12,6 +12,8 @@ pub struct DashboardData {
     pub severity: serde_json::Value,
     pub asm_summary: Option<serde_json::Value>,
     pub active_engagements: Vec<serde_json::Value>,
+    pub attack_surface: Vec<serde_json::Value>,
+    pub recent_findings: Vec<serde_json::Value>,
 }
 
 /// Render the home page for an authenticated user.
@@ -32,6 +34,10 @@ pub fn index(
         ctx["asm"] = asm.clone();
     }
     ctx["active_engagements"] = serde_json::json!(data.active_engagements);
+    ctx["attack_surface"] = serde_json::json!(data.attack_surface);
+    ctx["attack_surface_json"] =
+        serde_json::json!(serde_json::to_string(&data.attack_surface).unwrap_or_default());
+    ctx["recent_findings"] = serde_json::json!(data.recent_findings);
     format::render().view(v, "home/index.html", data!(ctx))
 }
 

@@ -110,6 +110,7 @@ pub async fn download(
 
     let (content_type, ext) = match item.format.as_str() {
         "pdf" => ("application/pdf", "pdf"),
+        "html" => ("text/html; charset=utf-8", "html"),
         "zip" => ("application/zip", "zip"),
         _ => ("application/octet-stream", "bin"),
     };

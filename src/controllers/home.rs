@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use super::middleware;
 use crate::models::_entities::{
-    engagements, findings, job_definitions, job_runs, reports, scan_targets,
+    engagement_targets, engagements, findings, job_definitions, job_runs, reports, scan_targets,
 };
 use crate::models::organizations as org_model;
 use crate::views;
@@ -248,6 +248,319 @@ struct EngagementFindingsCount {
     count: i64,
 }
 
+/// Result struct for per-target findings severity GROUP BY query.
+#[derive(Debug, FromQueryResult)]
+struct TargetSeverityCount {
+    affected_asset: Option<String>,
+    severity: String,
+    count: i64,
+}
+
+/// Build the attack surface overview: one entry per target with subdomain count,
+/// open port count, and per-severity finding counts.
+#[allow(clippy::too_many_lines)]
+async fn fetch_attack_surface(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+) -> Vec<serde_json::Value> {
+    let targets = scan_targets::Entity::find()
+        .filter(scan_targets::Column::OrgId.eq(org_id))
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    if targets.is_empty() {
+        return Vec::new();
+    }
+
+    // Collect all target IDs for batch queries
+    let target_ids: Vec<i32> = targets.iter().map(|t| t.id).collect();
+
+    // Collect all hostnames (for matching findings.affected_asset)
+    let hostnames: Vec<String> = targets.iter().filter_map(|t| t.hostname.clone()).collect();
+
+    // --- Batch: get engagement IDs linked to these targets ---
+    let eng_target_links = engagement_targets::Entity::find()
+        .filter(engagement_targets::Column::ScanTargetId.is_in(target_ids.clone()))
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    // Build scan_target_id -> set of engagement_ids
+    let mut target_eng_map: HashMap<i32, Vec<i32>> = HashMap::new();
+    for link in &eng_target_links {
+        target_eng_map
+            .entry(link.scan_target_id)
+            .or_default()
+            .push(link.engagement_id);
+    }
+
+    // --- Batch: findings severity counts grouped by affected_asset ---
+    let hostname_severity_counts: Vec<TargetSeverityCount> = if hostnames.is_empty() {
+        Vec::new()
+    } else {
+        findings::Entity::find()
+            .filter(findings::Column::OrgId.eq(org_id))
+            .filter(findings::Column::AffectedAsset.is_in(hostnames.clone()))
+            .select_only()
+            .column(findings::Column::AffectedAsset)
+            .column(findings::Column::Severity)
+            .column_as(findings::Column::Id.count(), "count")
+            .group_by(findings::Column::AffectedAsset)
+            .group_by(findings::Column::Severity)
+            .into_model::<TargetSeverityCount>()
+            .all(db)
+            .await
+            .unwrap_or_default()
+    };
+
+    // Build hostname -> severity -> count
+    let mut hostname_sev_map: HashMap<String, HashMap<String, i64>> = HashMap::new();
+    for row in &hostname_severity_counts {
+        if let Some(ref asset) = row.affected_asset {
+            hostname_sev_map
+                .entry(asset.clone())
+                .or_default()
+                .insert(row.severity.clone(), row.count);
+        }
+    }
+
+    // --- Batch: findings via engagement_targets link ---
+    let all_eng_ids: Vec<i32> = eng_target_links.iter().map(|l| l.engagement_id).collect();
+    let eng_severity_counts: Vec<EngagementSeverityCount> = if all_eng_ids.is_empty() {
+        Vec::new()
+    } else {
+        findings::Entity::find()
+            .filter(findings::Column::EngagementId.is_in(all_eng_ids))
+            .select_only()
+            .column(findings::Column::EngagementId)
+            .column(findings::Column::Severity)
+            .column_as(findings::Column::Id.count(), "count")
+            .group_by(findings::Column::EngagementId)
+            .group_by(findings::Column::Severity)
+            .into_model::<EngagementSeverityCount>()
+            .all(db)
+            .await
+            .unwrap_or_default()
+    };
+
+    // Build engagement_id -> severity -> count
+    let mut eng_sev_map: HashMap<i32, HashMap<String, i64>> = HashMap::new();
+    for row in &eng_severity_counts {
+        if let Some(eid) = row.engagement_id {
+            eng_sev_map
+                .entry(eid)
+                .or_default()
+                .insert(row.severity.clone(), row.count);
+        }
+    }
+
+    // --- Fetch ASM + port scan summaries per target ---
+    let all_defs = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_id))
+        .filter(
+            job_definitions::Column::JobType
+                .eq("asm_scan")
+                .or(job_definitions::Column::JobType.eq("port_scan")),
+        )
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    // Group definitions by target_id from config
+    let mut asm_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
+    let mut port_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
+    for def in &all_defs {
+        if let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) {
+            if let Some(tid) = cfg["target_id"].as_i64() {
+                #[allow(clippy::cast_possible_truncation)]
+                let tid = tid as i32;
+                if def.job_type == "asm_scan" {
+                    asm_defs_by_target.entry(tid).or_default().push(def.id);
+                } else {
+                    port_defs_by_target.entry(tid).or_default().push(def.id);
+                }
+            }
+        }
+    }
+
+    // Fetch latest completed runs for all relevant definition IDs
+    let all_def_ids: Vec<i32> = all_defs.iter().map(|d| d.id).collect();
+    let all_completed_runs = if all_def_ids.is_empty() {
+        Vec::new()
+    } else {
+        job_runs::Entity::find()
+            .filter(job_runs::Column::JobDefinitionId.is_in(all_def_ids))
+            .filter(job_runs::Column::Status.eq("completed"))
+            .order_by_desc(job_runs::Column::CompletedAt)
+            .all(db)
+            .await
+            .unwrap_or_default()
+    };
+
+    // Build definition_id -> latest completed run (first match since ordered desc)
+    let mut latest_run_by_def: HashMap<i32, &job_runs::Model> = HashMap::new();
+    for run in &all_completed_runs {
+        latest_run_by_def
+            .entry(run.job_definition_id)
+            .or_insert(run);
+    }
+
+    // --- Assemble per-target data ---
+    let mut result = Vec::with_capacity(targets.len());
+
+    for target in &targets {
+        let hostname = target
+            .hostname
+            .as_deref()
+            .or(target.ip_address.as_deref())
+            .unwrap_or("unknown");
+
+        // Subdomain count + list from latest ASM scan
+        let (subdomain_count, subdomains_list) = asm_defs_by_target
+            .get(&target.id)
+            .and_then(|def_ids| {
+                def_ids.iter().find_map(|did| {
+                    let run = latest_run_by_def.get(did)?;
+                    let summary = run.result_summary.as_deref()?;
+                    let v = serde_json::from_str::<serde_json::Value>(summary).ok()?;
+                    let count = v
+                        .get("subdomain_count")
+                        .and_then(serde_json::Value::as_u64)?;
+                    let subs = v
+                        .get("subdomains")
+                        .and_then(serde_json::Value::as_array)
+                        .map(|arr| {
+                            arr.iter()
+                                .take(30)
+                                .filter_map(|s| {
+                                    let name = s.get("name")?.as_str()?;
+                                    let resolved = s
+                                        .get("resolved")
+                                        .and_then(serde_json::Value::as_bool)
+                                        .unwrap_or(false);
+                                    Some(serde_json::json!({"name": name, "resolved": resolved}))
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    Some((count, subs))
+                })
+            })
+            .unwrap_or((0, Vec::new()));
+
+        // Open port count from latest port scan
+        let open_ports = port_defs_by_target
+            .get(&target.id)
+            .and_then(|def_ids| {
+                def_ids.iter().find_map(|did| {
+                    let run = latest_run_by_def.get(did)?;
+                    let summary = run.result_summary.as_deref()?;
+                    let v = serde_json::from_str::<serde_json::Value>(summary).ok()?;
+                    v.get("total_open").and_then(serde_json::Value::as_u64)
+                })
+            })
+            .unwrap_or(0);
+
+        // Merge findings from hostname match and engagement links
+        let mut merged_sev: HashMap<String, i64> = HashMap::new();
+
+        if let Some(hn) = &target.hostname {
+            if let Some(sev_map) = hostname_sev_map.get(hn) {
+                for (sev, count) in sev_map {
+                    *merged_sev.entry(sev.clone()).or_default() += count;
+                }
+            }
+        }
+
+        if let Some(eng_ids) = target_eng_map.get(&target.id) {
+            for eid in eng_ids {
+                if let Some(sev_map) = eng_sev_map.get(eid) {
+                    for (sev, count) in sev_map {
+                        *merged_sev.entry(sev.clone()).or_default() += count;
+                    }
+                }
+            }
+        }
+
+        let findings_json = serde_json::json!({
+            "extreme": merged_sev.get("extreme").copied().unwrap_or(0),
+            "high": merged_sev.get("high").copied().unwrap_or(0),
+            "elevated": merged_sev.get("elevated").copied().unwrap_or(0),
+            "moderate": merged_sev.get("moderate").copied().unwrap_or(0),
+            "low": merged_sev.get("low").copied().unwrap_or(0),
+        });
+
+        let findings_total = merged_sev.values().sum::<i64>();
+
+        // Determine highest severity for border coloring
+        let highest_severity = if merged_sev.get("extreme").copied().unwrap_or(0) > 0 {
+            "extreme"
+        } else if merged_sev.get("high").copied().unwrap_or(0) > 0 {
+            "high"
+        } else if merged_sev.get("elevated").copied().unwrap_or(0) > 0 {
+            "elevated"
+        } else if merged_sev.get("moderate").copied().unwrap_or(0) > 0 {
+            "moderate"
+        } else if merged_sev.get("low").copied().unwrap_or(0) > 0 {
+            "low"
+        } else {
+            "none"
+        };
+
+        result.push(serde_json::json!({
+            "hostname": hostname,
+            "pid": target.pid.to_string(),
+            "label": target.label.as_deref().unwrap_or(""),
+            "target_type": target.target_type,
+            "subdomains": subdomain_count,
+            "open_ports": open_ports,
+            "findings": findings_json,
+            "findings_total": findings_total,
+            "highest_severity": highest_severity,
+            "subdomains_list": subdomains_list,
+        }));
+    }
+
+    result
+}
+
+/// Result struct for engagement-scoped severity GROUP BY query.
+#[derive(Debug, FromQueryResult)]
+struct EngagementSeverityCount {
+    engagement_id: Option<i32>,
+    severity: String,
+    count: i64,
+}
+
+/// Fetch the 10 most recent findings for an org.
+async fn fetch_recent_findings(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+) -> Vec<serde_json::Value> {
+    let recent = findings::Entity::find()
+        .filter(findings::Column::OrgId.eq(org_id))
+        .order_by_desc(findings::Column::CreatedAt)
+        .limit(10)
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    recent
+        .iter()
+        .map(|f| {
+            serde_json::json!({
+                "pid": f.pid.to_string(),
+                "title": f.title,
+                "severity": f.severity,
+                "affected_asset": f.affected_asset.as_deref().unwrap_or(""),
+                "category": f.category,
+                "created_at": f.created_at.to_rfc3339(),
+            })
+        })
+        .collect()
+}
+
 /// Render the home page (authenticated or guest).
 #[debug_handler]
 pub async fn index(
@@ -266,11 +579,20 @@ pub async fn index(
                 let db = &ctx.db;
 
                 // Run all dashboard queries concurrently
-                let (stat_counts, severity, asm_summary, active_engagements) = tokio::join!(
+                let (
+                    stat_counts,
+                    severity,
+                    asm_summary,
+                    active_engagements,
+                    attack_surface,
+                    recent_findings,
+                ) = tokio::join!(
                     fetch_stat_counts(db, org_id),
                     compute_severity(db, org_id),
                     fetch_asm_summary(db, org_id),
                     fetch_active_engagements(db, org_id),
+                    fetch_attack_surface(db, org_id),
+                    fetch_recent_findings(db, org_id),
                 );
 
                 let (target_count, engagement_count, findings_count, report_count) = stat_counts;
@@ -283,6 +605,8 @@ pub async fn index(
                     severity: severity.to_json(),
                     asm_summary,
                     active_engagements,
+                    attack_surface,
+                    recent_findings,
                 }
             } else {
                 DashboardData {
@@ -293,6 +617,8 @@ pub async fn index(
                     severity: SeverityBreakdown::default().to_json(),
                     asm_summary: None,
                     active_engagements: Vec::new(),
+                    attack_surface: Vec::new(),
+                    recent_findings: Vec::new(),
                 }
             };
 

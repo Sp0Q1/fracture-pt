@@ -1,18 +1,10 @@
 #!/bin/bash
-# Run all CI checks locally in podman containers.
-# Mirrors .github/workflows/ci.yaml so you can validate before pushing.
+# Run all CI checks locally. Uses local Rust toolchain for speed,
+# podman only for semgrep (which needs its own image).
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
-RUST_IMAGE="localhost/gethacked-ci:latest"
 SEMGREP_IMAGE="docker.io/semgrep/semgrep:latest"
-CARGO_CACHE="gethacked-ci-cargo"
-
-# Build the CI image if it doesn't exist (bundles rust + sqlite + clippy + rustfmt)
-if ! podman image exists "$RUST_IMAGE" 2>/dev/null; then
-    echo "Building CI image (one-time)..."
-    podman build -t gethacked-ci -f "$SRC/dev/Dockerfile.ci" "$SRC/dev"
-fi
 
 # Warn if there are uncommitted changes
 if [ -d "$SRC/.git" ] && ! git -C "$SRC" diff --quiet 2>/dev/null; then
@@ -20,19 +12,6 @@ if [ -d "$SRC/.git" ] && ! git -C "$SRC" diff --quiet 2>/dev/null; then
     echo "   working tree, not what is committed. CI in GitHub will differ."
     echo ""
 fi
-
-# Named volume for cargo registry cache (speeds up repeat runs)
-podman volume exists "$CARGO_CACHE" 2>/dev/null || podman volume create "$CARGO_CACHE" > /dev/null
-
-# Ensure Cargo.lock is up-to-date before read-only CI checks.
-echo "Updating Cargo.lock..."
-podman run --rm \
-    -v "$SRC:/src" \
-    -v "$CARGO_CACHE:/usr/local/cargo/registry" \
-    -e CARGO_TARGET_DIR=/tmp/target \
-    -w /src \
-    "$RUST_IMAGE" \
-    cargo generate-lockfile --quiet
 
 passed=0
 failed=0
@@ -53,25 +32,15 @@ run_check() {
     fi
 }
 
-rust_run() {
-    podman run --rm \
-        -v "$SRC:/src:ro" \
-        -v "$CARGO_CACHE:/usr/local/cargo/registry" \
-        -e CARGO_TARGET_DIR=/tmp/target \
-        -w /src \
-        "$RUST_IMAGE" \
-        "$@"
-}
-
 # --- rustfmt ---
 run_check "rustfmt" \
-    rust_run cargo fmt --all -- --check
+    cargo fmt --all -- --check
 
 # --- clippy ---
 run_check "clippy" \
-    rust_run cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
+    cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
 
-# --- semgrep ---
+# --- semgrep (still needs podman) ---
 run_check "semgrep" \
     podman run --rm -v "$SRC:/src:ro" -w /src "$SEMGREP_IMAGE" \
     semgrep scan --config auto --error \
@@ -79,9 +48,7 @@ run_check "semgrep" \
 
 # --- tests ---
 run_check "test" \
-    rust_run sh -c "\
-        DATABASE_URL=sqlite:///tmp/gethacked_test.sqlite?mode=rwc \
-        cargo test --all-features --all"
+    sh -c "DATABASE_URL=sqlite:///tmp/gethacked_test.sqlite?mode=rwc cargo test --all-features --all"
 
 # --- summary ---
 echo ""

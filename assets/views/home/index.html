@@ -70,37 +70,94 @@
         </div>
         {% endif %}
 
-        {# --- Recent scan results --- #}
-        {% if asm %}
+        {# --- Attack Surface Overview --- #}
         <div class="mb-4">
             <article class="card card-accent">
                 <header>
                     <div class="hstack">
-                        <h3 class="m-0">Latest Scan</h3>
-                        <span class="badge success">completed</span>
+                        <h3 class="m-0">Attack Surface</h3>
+                        <a href="/targets" class="button outline small">All Targets</a>
                     </div>
                 </header>
-                <p class="text-muted mb-1">Attack surface scan for <strong>{{ asm.domain }}</strong></p>
-                <div class="asm-summary-strip">
-                    <div class="asm-stat">
-                        <span class="asm-stat-number blue">{{ asm.subdomain_count | default(value=0) }}</span>
-                        <span class="asm-stat-label">Subdomains</span>
-                    </div>
-                    <div class="asm-stat">
-                        <span class="asm-stat-number green">{{ asm.resolved_count | default(value=0) }}</span>
-                        <span class="asm-stat-label">Resolved</span>
-                    </div>
-                    <div class="asm-stat">
-                        <span class="asm-stat-number blue">{{ asm.cert_count | default(value=0) }}</span>
-                        <span class="asm-stat-label">Certificates</span>
-                    </div>
+                {% if attack_surface | length > 0 %}
+                <div class="as-grid">
+                    {% for target in attack_surface %}
+                    <a href="/targets/{{ target.pid }}" class="as-target-card as-border-{{ target.highest_severity }}">
+                        <div class="as-target-header">
+                            <span class="as-hostname">{{ target.hostname }}</span>
+                            {% if target.label %}<span class="as-label">{{ target.label }}</span>{% endif %}
+                        </div>
+                        <div class="as-badges">
+                            <span class="as-badge as-badge-sub" title="Subdomains discovered">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                {{ target.subdomains }}
+                            </span>
+                            <span class="as-badge as-badge-port" title="Open ports">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                {{ target.open_ports }}
+                            </span>
+                            {% if target.findings_total > 0 %}
+                            <span class="as-badge as-badge-finding" title="Total findings">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                {{ target.findings_total }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if target.findings_total > 0 %}
+                        <div class="as-sev-dots">
+                            {% if target.findings.extreme > 0 %}<span class="as-sev-dot sev-extreme" title="Extreme: {{ target.findings.extreme }}"></span>{% endif %}
+                            {% if target.findings.high > 0 %}<span class="as-sev-dot sev-high" title="High: {{ target.findings.high }}"></span>{% endif %}
+                            {% if target.findings.elevated > 0 %}<span class="as-sev-dot sev-elevated" title="Elevated: {{ target.findings.elevated }}"></span>{% endif %}
+                            {% if target.findings.moderate > 0 %}<span class="as-sev-dot sev-moderate" title="Moderate: {{ target.findings.moderate }}"></span>{% endif %}
+                            {% if target.findings.low > 0 %}<span class="as-sev-dot sev-low" title="Low: {{ target.findings.low }}"></span>{% endif %}
+                        </div>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
                 </div>
-                <div class="form-actions mt-1">
-                    {% if asm.target_pid %}
-                    <a href="/targets/{{ asm.target_pid }}" class="button outline">View Target</a>
-                    {% else %}
-                    <a href="/targets" class="button outline">View Targets</a>
-                    {% endif %}
+                {% else %}
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <p>No targets defined yet. Add your first target to start mapping your attack surface.</p>
+                    <a href="/targets/new" class="button cta-button">Add Target</a>
+                </div>
+                {% endif %}
+            </article>
+        </div>
+
+        {# --- Network Topology Map --- #}
+        {% if attack_surface | length > 0 %}
+        <div class="mb-4">
+            <article class="card card-accent">
+                <header>
+                    <h3 class="m-0">Network Topology</h3>
+                </header>
+                <div id="network-map" data-targets="{{ attack_surface_json }}"></div>
+            </article>
+        </div>
+        {% endif %}
+
+        {# --- Recent Findings feed --- #}
+        {% if recent_findings | length > 0 %}
+        <div class="mb-4">
+            <article class="card card-accent">
+                <header>
+                    <div class="hstack">
+                        <h3 class="m-0">Recent Findings</h3>
+                        <a href="/findings" class="button outline small">View All</a>
+                    </div>
+                </header>
+                <div class="rf-list">
+                    {% for f in recent_findings %}
+                    <a href="/findings/{{ f.pid }}" class="rf-item">
+                        <span class="rf-severity severity-{{ f.severity }}">{{ f.severity }}</span>
+                        <span class="rf-title">{{ f.title }}</span>
+                        <span class="rf-meta">
+                            {% if f.affected_asset %}<span class="rf-asset">{{ f.affected_asset }}</span>{% endif %}
+                            <span class="rf-category">{{ f.category }}</span>
+                        </span>
+                    </a>
+                    {% endfor %}
                 </div>
             </article>
         </div>
@@ -402,6 +459,7 @@
                     <li>Everything in Recon, plus:</li>
                     <li>Weekly automated scanning</li>
                     <li>2 hours manual testing/month</li>
+                    <li>2 hours AI-augmented pentesting/month</li>
                     <li>Vulnerability trending</li>
                     <li>API access for CI/CD</li>
                 </ul>
@@ -416,7 +474,7 @@
                 <ul class="tier-features">
                     <li>Everything in Strike, plus:</li>
                     <li>Multi-domain coverage</li>
-                    <li>4 hours manual pentesting/month</li>
+                    <li>4 hours AI-augmented pentesting/month</li>
                     <li>Source code review</li>
                     <li>Custom scan profiles</li>
                     <li>Remediation tracking</li>
@@ -432,6 +490,7 @@
                 <ul class="tier-features">
                     <li>Everything in Offensive, plus:</li>
                     <li>Bundled pentest days/month</li>
+                    <li>Autonomous AI red team operations</li>
                     <li>Red team exercises</li>
                     <li>Incident response retainer</li>
                     <li>Dedicated account manager</li>
@@ -479,3 +538,9 @@
 
 {% endif %}
 {% endblock content %}
+
+{% block js %}
+{% if user_name and attack_surface | length > 0 %}
+<script src="/static/network-map.js?v=1" integrity="sha384-feIIJ/h71bb0W7pm4n+5DRysLKuX32DP4YmzY8uOxBdKhwJn2yI3qsChKVxyfMit" crossorigin="anonymous"></script>
+{% endif %}
+{% endblock js %}

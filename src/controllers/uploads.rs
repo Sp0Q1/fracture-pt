@@ -82,7 +82,7 @@ pub async fn show(
         .await
         .ok_or_else(|| Error::NotFound)?;
 
-    let vis = upload_model::Visibility::from_str(&upload.visibility);
+    let vis = upload_model::Visibility::parse(&upload.visibility);
     match vis {
         Some(upload_model::Visibility::Public) => {
             // Public files served to everyone

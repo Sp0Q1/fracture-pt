@@ -26,6 +26,7 @@ serde_json = { version = "1" }
 tokio = { version = "1.50", default-features = false, features = [
   "rt-multi-thread",
   "net",
+  "process",
 ] }
 async-trait = { version = "0.1" }
 axum = { version = "0.8" }
@@ -35,13 +36,14 @@ migration = { path = "migration" }
 fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms" }
 sea-orm = { workspace = true }
 chrono = { version = "0.4" }
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
+comrak = { version = "0.52", default-features = false }
 uuid = { version = "1.22", features = ["v4"] }
 fluent-templates = { version = "0.13", features = ["tera"] }
 unic-langid = { version = "0.9" }
 axum-extra = { version = "0.12", features = ["form", "cookie"] }
 slug = { version = "0.1" }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json"] }
 include_dir = { version = "0.7", features = ["glob"] }
 
 [[bin]]

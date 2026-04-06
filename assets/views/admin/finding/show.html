@@ -59,34 +59,34 @@
 
 <article class="card mt-4">
     <h3>Description</h3>
-    <div class="prose">{{ item.description }}</div>
+    <div class="markdown-content">{{ description_html | safe }}</div>
 </article>
 
-{% if item.technical_description %}
+{% if technical_description_html %}
 <article class="card mt-4">
     <h3>Technical Description</h3>
-    <div class="prose">{{ item.technical_description }}</div>
+    <div class="markdown-content">{{ technical_description_html | safe }}</div>
 </article>
 {% endif %}
 
-{% if item.impact %}
+{% if impact_html %}
 <article class="card mt-4">
     <h3>Impact</h3>
-    <div class="prose">{{ item.impact }}</div>
+    <div class="markdown-content">{{ impact_html | safe }}</div>
 </article>
 {% endif %}
 
-{% if item.recommendation %}
+{% if recommendation_html %}
 <article class="card mt-4">
     <h3>Recommendation</h3>
-    <div class="prose">{{ item.recommendation }}</div>
+    <div class="markdown-content">{{ recommendation_html | safe }}</div>
 </article>
 {% endif %}
 
-{% if item.evidence %}
+{% if evidence_html %}
 <article class="card mt-4">
     <h3>Evidence</h3>
-    <div class="prose"><pre>{{ item.evidence }}</pre></div>
+    <div class="markdown-content">{{ evidence_html | safe }}</div>
 </article>
 {% endif %}
 {% endblock content %}
