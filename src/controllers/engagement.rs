@@ -453,7 +453,10 @@ pub async fn new_finding(
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot add findings in current state".into(),
         ));
@@ -472,7 +475,10 @@ pub async fn add_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot add findings in current state".into(),
         ));
@@ -541,7 +547,10 @@ pub async fn update_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot edit findings in current state".into(),
         ));
@@ -591,7 +600,10 @@ pub async fn delete_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot delete findings in current state".into(),
         ));
@@ -623,7 +635,10 @@ pub async fn new_non_finding(
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot add non-findings in current state".into(),
         ));
@@ -642,7 +657,10 @@ pub async fn add_non_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot add non-findings in current state".into(),
         ));
@@ -690,7 +708,10 @@ pub async fn update_non_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot edit non-findings in current state".into(),
         ));
@@ -718,7 +739,10 @@ pub async fn delete_non_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" {
+    if item.status != "in_progress"
+        && !fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
+            .await
+    {
         return Err(Error::BadRequest(
             "Cannot delete non-findings in current state".into(),
         ));
