@@ -2,8 +2,9 @@ use axum::response::Redirect;
 use axum_extra::extract::{CookieJar, Form};
 use loco_rs::prelude::*;
 use sea_orm::sea_query::Order;
-use sea_orm::{EntityTrait, QueryOrder};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::controllers::middleware;
 use crate::models::_entities::engagement_offers::ActiveModel as OfferActiveModel;
@@ -15,24 +16,34 @@ use crate::models::engagements;
 use crate::models::findings;
 use crate::models::organizations as org_model;
 
-/// Resolve org names for a list of engagements.
+/// Batch-resolve org names for a list of engagements (avoids N+1 queries).
 async fn resolve_org_names(
     db: &sea_orm::DatabaseConnection,
     items: &[crate::models::_entities::engagements::Model],
 ) -> Vec<serde_json::Value> {
-    let mut result = Vec::with_capacity(items.len());
-    for item in items {
-        let org_name = organizations::Entity::find_by_id(item.org_id)
-            .one(db)
+    let org_ids: Vec<i32> = items.iter().map(|i| i.org_id).collect();
+    let org_map: HashMap<i32, String> = if org_ids.is_empty() {
+        HashMap::new()
+    } else {
+        organizations::Entity::find()
+            .filter(organizations::Column::Id.is_in(org_ids.iter().copied()))
+            .all(db)
             .await
-            .ok()
-            .flatten()
-            .map_or_else(|| "Unknown".to_string(), |o| o.name);
-        let mut j = serde_json::json!(item);
-        j["org_name"] = serde_json::json!(org_name);
-        result.push(j);
-    }
-    result
+            .unwrap_or_default()
+            .into_iter()
+            .map(|o| (o.id, o.name))
+            .collect()
+    };
+
+    items
+        .iter()
+        .map(|item| {
+            let mut j = serde_json::json!(item);
+            j["org_name"] =
+                serde_json::json!(org_map.get(&item.org_id).map_or("Unknown", String::as_str));
+            j
+        })
+        .collect()
 }
 use crate::models::pentester_assignments;
 use crate::{require_user, views};

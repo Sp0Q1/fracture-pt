@@ -7,7 +7,6 @@ pub mod invoice;
 pub mod pages;
 pub mod pentester;
 pub mod report;
-pub mod scan_job;
 pub mod scan_target;
 pub mod service;
 pub mod subscription;

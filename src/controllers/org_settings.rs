@@ -106,8 +106,11 @@ pub async fn update_settings(
         }
     }
 
-    // Save alert emails if tier allows it
-    let tier = PlanTier::from_org(&org);
+    // Re-read org to get updated settings (tier may have just changed)
+    let updated_org = org_model::Model::find_by_pid(&ctx.db, &pid)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    let tier = PlanTier::from_org(&updated_org);
     if tier.email_alerts_enabled() {
         let emails = params.alert_emails.unwrap_or_default();
         org_model::Model::set_setting(

@@ -32,6 +32,16 @@ mailer:
 
 settings:
   contact_email: {{ get_env(name="CONTACT_EMAIL", default="hello@gethacked.eu") }}
+  uploads:
+    max_file_size: 5242880
+    max_total_size: 20971520
+    storage_root: /app/data/uploads
+    allowed_types:
+      - image/png
+      - image/jpeg
+      - image/gif
+      - image/webp
+      - image/svg+xml
   blog:
     org_slug: "gethacked-admin"
   oidc:

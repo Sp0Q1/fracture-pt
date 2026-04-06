@@ -1,7 +1,9 @@
 use axum::response::Redirect;
 use axum_extra::extract::{CookieJar, Form};
 use loco_rs::prelude::*;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+};
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
@@ -74,8 +76,13 @@ pub async fn add(
     // Check tier target limits
     let tier = PlanTier::from_org(&org_ctx.org);
     if let Some(max) = tier.max_targets() {
-        let existing = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-        if existing.len() >= max {
+        #[allow(clippy::cast_possible_truncation)]
+        let existing_count = scan_targets::Entity::find()
+            .filter(scan_targets::Column::OrgId.eq(org_ctx.org.id))
+            .count(&ctx.db)
+            .await
+            .unwrap_or(0) as usize;
+        if existing_count >= max {
             return Err(Error::BadRequest(format!(
                 "Your {} plan allows up to {} target{}. Upgrade to add more.",
                 tier.label(),

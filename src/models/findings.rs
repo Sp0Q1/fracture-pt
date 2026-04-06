@@ -32,17 +32,6 @@ impl Model {
             .unwrap_or_default()
     }
 
-    /// Finds findings for a specific scan job, scoped to an org.
-    pub async fn find_by_job(db: &DatabaseConnection, job_id: i32, org_id: i32) -> Vec<Self> {
-        Entity::find()
-            .filter(Column::JobId.eq(job_id))
-            .filter(Column::OrgId.eq(org_id))
-            .order_by(Column::Id, Order::Desc)
-            .all(db)
-            .await
-            .unwrap_or_default()
-    }
-
     /// Finds findings for a specific engagement.
     pub async fn find_by_engagement(db: &DatabaseConnection, engagement_id: i32) -> Vec<Self> {
         Entity::find()

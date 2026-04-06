@@ -66,7 +66,7 @@
 
             <div class="scope-control" id="control-duration">
                 <div class="scope-duration-header">
-                    <h3>Duration <span class="scope-value-display" id="duration-value-display">4 man-days</span></h3>
+                    <h3>Duration <span class="scope-value-display" id="duration-value-display">6 man-days</span></h3>
                     <label class="scope-lock-toggle" title="Unlock to override the estimated duration">
                         <input type="checkbox" id="lock-duration" checked>
                         <span class="scope-lock-label">
@@ -77,8 +77,8 @@
                 </div>
                 <p class="scope-control-hint">Estimated testing effort in man-days</p>
                 <div class="scope-slider-group">
-                    <input type="range" id="duration-range" min="3" max="40" value="4" class="scope-slider" disabled>
-                    <input type="number" id="duration-number" min="3" max="40" value="4" class="scope-number-input" disabled>
+                    <input type="range" id="duration-range" min="3" max="40" value="6" class="scope-slider" disabled>
+                    <input type="number" id="duration-number" min="3" max="40" value="6" class="scope-number-input" disabled>
                 </div>
                 <p class="scope-duration-warning" id="duration-warning"></p>
             </div>
@@ -96,9 +96,9 @@
                 </div>
             </div>
             <div class="scope-price-area">
-                <div class="scope-price" id="scope-price">&euro;5,600</div>
+                <div class="scope-price" id="scope-price">&euro;7,980</div>
                 <div class="scope-price-label">Estimated starting price (excl. VAT)</div>
-                <div class="scope-price-breakdown" id="scope-breakdown">4 man-days &times; &euro;1,400/day</div>
+                <div class="scope-price-breakdown" id="scope-breakdown">6 man-days &times; &euro;1,400/day &minus; 5% volume discount</div>
                 <p class="scope-price-disclaimer">This is a rough estimate. Final pricing depends on complexity, target type, and specific requirements discussed during scoping. Man-day estimates reflect testing effort only &mdash; reporting, scoping calls, and debrief are included at no extra charge.</p>
             </div>
         </div>
@@ -131,8 +131,8 @@
             <input type="hidden" name="subject" value="scope-wizard">
             <input type="hidden" name="wizard_approach" id="form-approach" value="crystal">
             <input type="hidden" name="wizard_scope" id="form-scope" value="Medium">
-            <input type="hidden" name="wizard_duration" id="form-duration" value="4">
-            <input type="hidden" name="wizard_estimate" id="form-estimate" value="5600">
+            <input type="hidden" name="wizard_duration" id="form-duration" value="6">
+            <input type="hidden" name="wizard_estimate" id="form-estimate" value="7980">
             <div class="row">
                 <div class="col-6">
                     <label for="scope-name">Name <span class="required">*</span></label>
@@ -200,5 +200,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/scope-wizard.js?v=2" integrity="sha384-XLBRhqjghT4mdddHoLS0L8K5PYBPR7+64pq4DCejRu/+P9jMpde0tqhCFKlN4qR5" crossorigin="anonymous"></script>
+<script src="/static/scope-wizard.js?v=3" integrity="sha384-8el8qmWHYKjBFyEP9Htrl+OXSc4vbzEziiH0vhHgUScvFFMwcUJITZ2OWKT5vE0s" crossorigin="anonymous"></script>
 {% endblock js %}

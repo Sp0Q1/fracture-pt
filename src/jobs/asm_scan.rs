@@ -72,7 +72,7 @@ impl JobExecutor for AsmScanExecutor {
         // Resolve subdomains via DNS
         let subdomain_infos = asm::resolve_subdomains(&scan_result.subdomains).await;
 
-        create_cert_findings(db, &scan_result, org_id, definition.id, &hostname).await?;
+        create_cert_findings(db, &scan_result, org_id, &hostname).await?;
 
         let diffs = compute_diffs(&subdomain_infos, previous_run);
 
@@ -286,7 +286,6 @@ async fn create_cert_findings(
     db: &DatabaseConnection,
     result: &ScanResult,
     org_id: i32,
-    job_id: i32,
     hostname: &str,
 ) -> Result<i32, Box<dyn std::error::Error + Send + Sync>> {
     let mut count = 0i32;
@@ -322,7 +321,6 @@ async fn create_cert_findings(
 
         findings::ActiveModel {
             org_id: Set(org_id),
-            job_id: Set(Some(job_id)),
             title: Set(format!(
                 "{} Wildcard Certificate{}",
                 wildcards.len(),

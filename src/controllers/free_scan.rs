@@ -115,7 +115,7 @@ pub async fn submit(
     cookie.set_path(format!("/free-scan/{run_pid}"));
     cookie.set_http_only(true);
     cookie.set_same_site(SameSite::Lax);
-    cookie.set_secure(true);
+    cookie.set_secure(ctx.config.server.host.starts_with("https"));
 
     let mut response = Redirect::to(&format!("/free-scan/{run_pid}")).into_response();
     response.headers_mut().insert(
