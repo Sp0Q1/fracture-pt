@@ -42,26 +42,26 @@
     {% endif %}
 
     <h3>Description</h3>
-    <p>{{ item.description }}</p>
+    <div class="markdown-content">{{ description_html | safe }}</div>
 
-    {% if item.technical_description %}
+    {% if technical_description_html %}
     <h3>Technical Description</h3>
-    <pre>{{ item.technical_description }}</pre>
+    <div class="markdown-content">{{ technical_description_html | safe }}</div>
     {% endif %}
 
-    {% if item.impact %}
+    {% if impact_html %}
     <h3>Impact</h3>
-    <p>{{ item.impact }}</p>
+    <div class="markdown-content">{{ impact_html | safe }}</div>
     {% endif %}
 
-    {% if item.recommendation %}
+    {% if recommendation_html %}
     <h3>Recommendation</h3>
-    <p>{{ item.recommendation }}</p>
+    <div class="markdown-content">{{ recommendation_html | safe }}</div>
     {% endif %}
 
-    {% if item.evidence %}
+    {% if evidence_html %}
     <h3>Evidence</h3>
-    <pre>{{ item.evidence }}</pre>
+    <div class="markdown-content">{{ evidence_html | safe }}</div>
     {% endif %}
 
     <div class="form-actions">

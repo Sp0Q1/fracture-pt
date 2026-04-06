@@ -169,8 +169,7 @@ pub async fn respond(
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    // Accepting/negotiating offers is a financial commitment -- require Admin or Owner
-    require_role!(org_ctx, OrgRole::Admin);
+    require_role!(org_ctx, OrgRole::Member);
     let item = engagements::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
