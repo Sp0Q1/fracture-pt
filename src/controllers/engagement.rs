@@ -818,9 +818,9 @@ pub async fn report_page(
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" && item.status != "review" {
+    if !matches!(item.status.as_str(), "in_progress" | "review" | "delivered") {
         return Err(Error::BadRequest(
-            "Reports can only be generated for in-progress or review engagements".into(),
+            "Reports can only be generated for active or delivered engagements".into(),
         ));
     }
     let engagement_findings = findings::Model::find_by_engagement(&ctx.db, item.id).await;
@@ -893,9 +893,9 @@ pub async fn generate_report(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
-    if item.status != "in_progress" && item.status != "review" {
+    if !matches!(item.status.as_str(), "in_progress" | "review" | "delivered") {
         return Err(Error::BadRequest(
-            "Reports can only be generated for in-progress or review engagements".into(),
+            "Reports can only be generated for active or delivered engagements".into(),
         ));
     }
 
