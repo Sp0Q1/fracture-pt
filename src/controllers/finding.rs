@@ -1,7 +1,9 @@
 use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
 use super::middleware;
+use crate::models::_entities::{engagements, pentester_assignments};
 use crate::models::findings;
 use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
@@ -22,7 +24,46 @@ pub async fn list(
     require_role!(org_ctx, OrgRole::Viewer);
     let items = findings::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
-    views::finding::list(&v, &user, &org_ctx, &user_orgs, &items)
+
+    // For admins/pentesters: provide in-progress engagements they can add findings to
+    let is_admin =
+        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+    let editable_engagements = if is_admin {
+        engagements::Entity::find()
+            .filter(engagements::Column::OrgId.eq(org_ctx.org.id))
+            .filter(engagements::Column::Status.eq("in_progress"))
+            .all(&ctx.db)
+            .await
+            .unwrap_or_default()
+    } else {
+        // Check if user is a pentester with assignments in this org
+        let assigned = pentester_assignments::Entity::find()
+            .filter(pentester_assignments::Column::UserId.eq(user.id))
+            .all(&ctx.db)
+            .await
+            .unwrap_or_default();
+        let eng_ids: Vec<i32> = assigned.iter().map(|a| a.engagement_id).collect();
+        if eng_ids.is_empty() {
+            Vec::new()
+        } else {
+            engagements::Entity::find()
+                .filter(engagements::Column::Id.is_in(eng_ids))
+                .filter(engagements::Column::OrgId.eq(org_ctx.org.id))
+                .filter(engagements::Column::Status.eq("in_progress"))
+                .all(&ctx.db)
+                .await
+                .unwrap_or_default()
+        }
+    };
+
+    views::finding::list(
+        &v,
+        &user,
+        &org_ctx,
+        &user_orgs,
+        &items,
+        &editable_engagements,
+    )
 }
 
 /// `GET /findings/:pid` -- show a single finding.

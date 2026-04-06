@@ -70,7 +70,7 @@
         <span class="detail-value">{{ item.contact_name }} &lt;{{ item.contact_email }}&gt;</span>
     </div>
 
-    {% if can_edit_findings and (item.status == "in_progress" or item.status == "review") %}
+    {% if can_edit_findings and (item.status == "in_progress" or item.status == "review" or item.status == "delivered") %}
     <div class="mt-4">
         <a href="/engagements/{{ item.pid }}/report" class="button" data-variant="secondary">Generate Report</a>
     </div>
