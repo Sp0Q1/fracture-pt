@@ -180,7 +180,7 @@
 <div class="page-header mt-6">
     <div class="hstack">
         <h2>Findings <span class="badge secondary">{{ findings | length }}</span></h2>
-        {% if can_edit_findings and item.status == "in_progress" %}
+        {% if can_edit_findings %}
         <a href="/engagements/{{ item.pid }}/findings/new" class="button">Add Finding</a>
         {% endif %}
     </div>
@@ -245,7 +245,7 @@
 <div class="page-header mt-6">
     <div class="hstack">
         <h2>Non-Findings <span class="badge secondary">{{ non_findings | length }}</span></h2>
-        {% if can_edit_findings and item.status == "in_progress" %}
+        {% if can_edit_findings %}
         <a href="/engagements/{{ item.pid }}/non-findings/new" class="button">Add Non-Finding</a>
         {% endif %}
     </div>

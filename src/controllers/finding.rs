@@ -29,9 +29,9 @@ pub async fn list(
     let is_admin =
         fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
     let editable_engagements = if is_admin {
+        // Admins can add findings to any engagement in the org
         engagements::Entity::find()
             .filter(engagements::Column::OrgId.eq(org_ctx.org.id))
-            .filter(engagements::Column::Status.eq("in_progress"))
             .all(&ctx.db)
             .await
             .unwrap_or_default()
