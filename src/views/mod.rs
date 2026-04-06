@@ -5,7 +5,6 @@ pub mod free_scan;
 pub mod home;
 pub mod invoice;
 pub mod pages;
-pub mod pentester;
 pub mod report;
 pub mod scan_target;
 pub mod service;

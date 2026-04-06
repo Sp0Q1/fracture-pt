@@ -23,10 +23,10 @@ use crate::{
         asm_scan::AsmScanExecutor, port_scan::PortScanExecutor, report_build::ReportBuildExecutor,
     },
     models::_entities::{
-        blog_posts, engagement_offers, engagement_targets, engagements, findings, invoices,
-        job_definitions, job_run_diffs, job_runs, non_findings, org_invites, org_members,
-        organizations, pentester_assignments, pricing_tiers, reports, scan_targets, services,
-        subscriptions, users,
+        blog_posts, engagement_comments, engagement_offers, engagement_targets, engagements,
+        findings, invoices, job_definitions, job_run_diffs, job_runs, non_findings, org_invites,
+        org_members, organizations, pentester_assignments, pricing_tiers, reports, scan_targets,
+        services, subscriptions, users,
     },
     workers,
 };
@@ -297,6 +297,7 @@ impl Hooks for App {
 
     async fn truncate(ctx: &AppContext) -> Result<()> {
         // Children first (reverse FK dependency order)
+        truncate_table(&ctx.db, engagement_comments::Entity).await?;
         truncate_table(&ctx.db, non_findings::Entity).await?;
         truncate_table(&ctx.db, findings::Entity).await?;
         truncate_table(&ctx.db, reports::Entity).await?;

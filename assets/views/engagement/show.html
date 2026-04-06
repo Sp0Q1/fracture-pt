@@ -14,7 +14,7 @@
 <article class="card detail-card">
     <header>
         <h2>{{ item.title }}</h2>
-        <span class="badge {% if item.status == 'delivered' or item.status == 'closed' %}success{% elif item.status == 'in_progress' %}primary{% elif item.status == 'cancelled' %}danger{% elif item.status == 'offer_sent' %}warning{% else %}secondary{% endif %}">
+        <span class="badge {% if item.status == 'delivered' or item.status == 'closed' %}success{% elif item.status == 'in_progress' %}primary{% elif item.status == 'cancelled' %}danger{% elif item.status == 'offer_sent' %}warning{% elif item.status == 'review' %}warning{% else %}secondary{% endif %}">
             {{ item.status | replace(from="_", to=" ") }}
         </span>
     </header>
@@ -59,12 +59,25 @@
         <span class="detail-value">{{ item.exclusions }}</span>
     </div>
     {% endif %}
+    {% if item.rules_of_engagement %}
+    <div class="detail-row">
+        <span class="detail-label">Rules of Engagement</span>
+        <span class="detail-value">{{ item.rules_of_engagement }}</span>
+    </div>
+    {% endif %}
     <div class="detail-row">
         <span class="detail-label">Contact</span>
         <span class="detail-value">{{ item.contact_name }} &lt;{{ item.contact_email }}&gt;</span>
     </div>
+
+    {% if can_edit_findings and (item.status == "in_progress" or item.status == "review") %}
+    <div class="mt-4">
+        <a href="/engagements/{{ item.pid }}/report" class="button" data-variant="secondary">Generate Report</a>
+    </div>
+    {% endif %}
 </article>
 
+{# ---------- Linked Targets ---------- #}
 {% if linked_targets | length > 0 or unlinked_targets | length > 0 %}
 <div class="page-header mt-6">
     <h2>Linked Targets <span class="badge secondary">{{ linked_targets | length }}</span></h2>
@@ -109,6 +122,7 @@
 {% endif %}
 {% endif %}
 
+{# ---------- Offers ---------- #}
 {% if offers | length > 0 %}
 <div class="page-header mt-6">
     <h2>Offers</h2>
@@ -160,10 +174,17 @@
 {% endfor %}
 {% endif %}
 
-{% if findings | length > 0 %}
+{# ---------- Findings ---------- #}
 <div class="page-header mt-6">
-    <h2>Findings <span class="badge secondary">{{ findings | length }}</span></h2>
+    <div class="hstack">
+        <h2>Findings <span class="badge secondary">{{ findings | length }}</span></h2>
+        {% if can_edit_findings and item.status == "in_progress" %}
+        <a href="/engagements/{{ item.pid }}/findings/new" class="button">Add Finding</a>
+        {% endif %}
+    </div>
 </div>
+
+{% if findings | length > 0 %}
 <table class="clickable-rows">
     <thead>
         <tr>
@@ -171,34 +192,70 @@
             <th>Severity</th>
             <th>Category</th>
             <th>Status</th>
+            {% if can_edit_findings %}<th>Actions</th>{% endif %}
         </tr>
     </thead>
     <tbody>
-        {% for finding in findings %}
-        <tr data-href="/findings/{{ finding.pid }}">
-            <td>{{ finding.title }}</td>
+        {% for f in findings %}
+        <tr{% if can_edit_findings %} data-href="/engagements/{{ item.pid }}/findings/{{ f.pid }}/edit"{% else %} data-href="/findings/{{ f.pid }}"{% endif %}>
+            <td>{{ f.title }}</td>
             <td>
-                <span class="badge {% if finding.severity == 'extreme' %}danger{% elif finding.severity == 'high' %}warning{% elif finding.severity == 'elevated' %}primary{% elif finding.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
-                    {{ finding.severity }}
+                <span class="badge {% if f.severity == 'extreme' %}danger{% elif f.severity == 'high' %}warning{% elif f.severity == 'elevated' %}primary{% elif f.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
+                    {{ f.severity }}
                 </span>
             </td>
-            <td>{{ finding.category | replace(from="_", to=" ") }}</td>
-            <td>{{ finding.status }}</td>
+            <td>{{ f.category | replace(from="_", to=" ") }}</td>
+            <td>
+                <span class="badge {% if f.status == 'resolved' %}success{% elif f.status == 'unresolved' %}danger{% elif f.status == 'new' %}primary{% else %}secondary{% endif %}">
+                    {{ f.status | replace(from="_", to=" ") }}
+                </span>
+            </td>
+            {% if can_edit_findings %}
+            <td>
+                <a href="/engagements/{{ item.pid }}/findings/{{ f.pid }}/edit" class="button" data-variant="secondary" data-size="sm">Edit</a>
+                {% if item.status == "in_progress" %}
+                <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+                <form action="/engagements/{{ item.pid }}/findings/{{ f.pid }}/delete" method="post" class="d-inline">
+                    <button type="submit" data-variant="danger" data-size="sm" onclick="return confirm('Delete this finding?')">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% else %}
+<article class="card empty-state">
+    <h3>No Findings Yet</h3>
+    {% if can_edit_findings %}
+    <p>Start adding findings as you discover vulnerabilities.</p>
+    {% if item.status == "in_progress" %}
+    <a href="/engagements/{{ item.pid }}/findings/new" class="button">Add Finding</a>
+    {% endif %}
+    {% else %}
+    <p>No vulnerabilities have been reported for this engagement yet.</p>
+    {% endif %}
+</article>
 {% endif %}
 
-{% if non_findings | length > 0 %}
+{# ---------- Non-Findings ---------- #}
 <div class="page-header mt-6">
-    <h2>Non-Findings <span class="badge secondary">{{ non_findings | length }}</span></h2>
+    <div class="hstack">
+        <h2>Non-Findings <span class="badge secondary">{{ non_findings | length }}</span></h2>
+        {% if can_edit_findings and item.status == "in_progress" %}
+        <a href="/engagements/{{ item.pid }}/non-findings/new" class="button">Add Non-Finding</a>
+        {% endif %}
+    </div>
 </div>
+
+{% if non_findings | length > 0 %}
 <table>
     <thead>
         <tr>
             <th>Title</th>
             <th>Details</th>
+            {% if can_edit_findings %}<th>Actions</th>{% endif %}
         </tr>
     </thead>
     <tbody>
@@ -206,9 +263,108 @@
         <tr>
             <td>{{ nf.title }}</td>
             <td>{{ nf.content | truncate(length=120) }}</td>
+            {% if can_edit_findings %}
+            <td>
+                <a href="/engagements/{{ item.pid }}/non-findings/{{ nf.pid }}/edit" class="button" data-variant="secondary" data-size="sm">Edit</a>
+                {% if item.status == "in_progress" %}
+                <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+                <form action="/engagements/{{ item.pid }}/non-findings/{{ nf.pid }}/delete" method="post" class="d-inline">
+                    <button type="submit" data-variant="danger" data-size="sm" onclick="return confirm('Delete this non-finding?')">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<article class="card empty-state">
+    <h3>No Non-Findings Yet</h3>
+    {% if can_edit_findings %}
+    <p>Document areas tested and found secure.</p>
+    {% if item.status == "in_progress" %}
+    <a href="/engagements/{{ item.pid }}/non-findings/new" class="button">Add Non-Finding</a>
+    {% endif %}
+    {% else %}
+    <p>No secure areas have been documented for this engagement yet.</p>
+    {% endif %}
+</article>
+{% endif %}
+
+{# ---------- Reports ---------- #}
+{% if reports | length > 0 %}
+<div class="page-header mt-6">
+    <h2>Reports <span class="badge secondary">{{ reports | length }}</span></h2>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Format</th>
+            <th>Generated</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.title }}</td>
+            <td><span class="badge secondary">{{ report.format | upper }}</span></td>
+            <td>{% if report.generated_at %}{{ report.generated_at }}{% else %}Pending{% endif %}</td>
+            <td>
+                {% if report.storage_path %}
+                <a href="/reports/{{ report.pid }}/download" class="button outline small">Download</a>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% endif %}
+
+{# ---------- Comments ---------- #}
+<div class="page-header mt-6">
+    <h2>Comments <span class="badge secondary">{{ comments | length }}</span></h2>
+</div>
+
+{% if comments | length > 0 %}
+{% for comment in comments %}
+<article class="card mb-4">
+    <div class="hstack" style="justify-content: space-between; align-items: flex-start;">
+        <div>
+            <strong>{{ comment.author_name }}</strong>
+            <small class="text-muted" style="margin-left: 0.5rem;">{{ comment.created_at }}</small>
+        </div>
+        {% if comment.user_id == current_user_id or is_platform_admin %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/engagements/{{ item.pid }}/comments/{{ comment.pid }}/delete" method="post" class="d-inline">
+            <button type="submit" data-variant="danger" data-size="sm" onclick="return confirm('Delete this comment?')">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="mt-2 markdown-content">{{ comment.content_html | safe }}</div>
+</article>
+{% endfor %}
+{% endif %}
+
+{% if can_comment %}
+<article class="card">
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/engagements/{{ item.pid }}/comments" method="post">
+        <div data-field>
+            <label for="comment_content">Add a comment</label>
+            <textarea id="comment_content" name="content" rows="4" placeholder="Write a comment... Markdown is supported." data-upload-target></textarea>
+            <small>Drag and drop or paste images to upload. Markdown is supported.</small>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Post Comment</button>
+        </div>
+    </form>
+</article>
+{% endif %}
 {% endblock content %}
+
+{% block js %}
+<script src="/static/upload.js?v=1" integrity="sha384-Zs3xZV3iFi4KNpDmstJgtqLOZV6GpF330wwKev2ZROjRFVDaVUuGXtOr14IzLkxf" crossorigin="anonymous"></script>
+{% endblock js %}
