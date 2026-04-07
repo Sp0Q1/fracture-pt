@@ -23,7 +23,7 @@
                {% for item in items %}
                 <tr>
                     <td>{{ item.title }}</td>
-                    <td>Org #{{ item.org_id }}</td>
+                    <td>{{ item.org_name | default(value="Unknown") }}</td>
                     <td><span class="badge secondary">{{ item.report_type | replace(from="_", to=" ") }}</span></td>
                     <td>{{ item.format | upper }}</td>
                     <td>{% if item.generated_at %}{{ item.generated_at | date(format="%Y-%m-%d") }}{% else %}Pending{% endif %}</td>

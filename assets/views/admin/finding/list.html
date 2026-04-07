@@ -23,7 +23,7 @@
                {% for item in items %}
                 <tr data-href="/admin/findings/{{ item.pid }}">
                     <td>{{ item.title }}</td>
-                    <td>Org #{{ item.org_id }}</td>
+                    <td>{{ item.org_name | default(value="Unknown") }}</td>
                     <td>
                         <span class="badge {% if item.severity == 'extreme' %}danger{% elif item.severity == 'high' %}warning{% elif item.severity == 'elevated' %}primary{% elif item.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
                             {{ item.severity }}
