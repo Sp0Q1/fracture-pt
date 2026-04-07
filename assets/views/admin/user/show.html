@@ -69,4 +69,16 @@
     <p>This user is not a member of any organization.</p>
 </article>
 {% endif %}
+
+<article class="card form-card mt-6">
+    <h3>Danger Zone</h3>
+    <p>Delete this user's local account record. This removes all org memberships, pentester assignments, and comments.</p>
+    <p class="text-muted">This does <strong>not</strong> delete the user's identity provider account. They could re-register by logging in again.</p>
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/admin/users/{{ target_user.pid }}/delete" method="post">
+        <div class="form-actions">
+            <button type="submit" data-variant="danger" onclick="return confirm('Delete {{ target_user.name }}? This removes all their org memberships and assignments. The IdP account will still exist.')">Delete User</button>
+        </div>
+    </form>
+</article>
 {% endblock content %}
