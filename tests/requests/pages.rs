@@ -112,7 +112,12 @@ async fn test_unauthenticated_pentester_routes_forbidden() {
         let response = request.get("/pentester/engagements").await;
         let status = response.status_code();
         assert!(
-            status == 301 || status == 302 || status == 307 || status == 401 || status == 403,
+            status == 301
+                || status == 302
+                || status == 307
+                || status == 308
+                || status == 401
+                || status == 403,
             "Pentester routes should redirect or deny unauthenticated access, got {status}"
         );
     })
