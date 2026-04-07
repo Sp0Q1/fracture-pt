@@ -78,4 +78,17 @@
     <div class="mt-6">
         <a href="/orgs/{{ org.pid }}/members" class="button outline">Manage Members</a>
     </div>
+
+    {% if is_platform_admin and not org.is_personal %}
+    <article class="card form-card mt-6">
+        <h3>Danger Zone</h3>
+        <p>Permanently delete this organization and all its data. This action cannot be undone.</p>
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/orgs/{{ org.pid }}/delete" method="post">
+            <div class="form-actions">
+                <button type="submit" data-variant="danger" onclick="return confirm('Are you sure you want to delete {{ org.name }}? All targets, engagements, findings, and reports will be permanently removed.')">Delete Organization</button>
+            </div>
+        </form>
+    </article>
+    {% endif %}
 {% endblock content %}

@@ -143,5 +143,6 @@ pub fn routes() -> Routes {
         .add("/{pid}/members/invite", post(org::invite))
         .add("/{pid}/members/{user_pid}/role", post(org::update_role))
         .add("/{pid}/members/{user_pid}/remove", post(org::remove_member))
+        .add("/{pid}/delete", post(org::delete))
         .add("/switch/{pid}", get(org::switch))
 }

@@ -1,7 +1,10 @@
 use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use std::collections::HashMap;
 
 use crate::controllers::middleware;
+use crate::models::_entities::organizations;
 use crate::models::findings;
 use crate::models::organizations as org_model;
 use crate::{require_user, views};
@@ -19,7 +22,33 @@ pub async fn list(
     fracture_core::require_platform_admin!(org_ctx);
     let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
     let items = findings::Model::find_all(&ctx.db).await;
-    views::admin::finding::list(&v, &user, &org_ctx, &user_orgs, &items)
+
+    // Batch-resolve org names
+    let org_ids: Vec<i32> = items.iter().map(|i| i.org_id).collect();
+    let org_map: HashMap<i32, String> = if org_ids.is_empty() {
+        HashMap::new()
+    } else {
+        organizations::Entity::find()
+            .filter(organizations::Column::Id.is_in(org_ids.iter().copied()))
+            .all(&ctx.db)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|o| (o.id, o.name))
+            .collect()
+    };
+
+    let items_json: Vec<serde_json::Value> = items
+        .iter()
+        .map(|item| {
+            let mut j = serde_json::json!(item);
+            j["org_name"] =
+                serde_json::json!(org_map.get(&item.org_id).map_or("Unknown", String::as_str));
+            j
+        })
+        .collect();
+
+    views::admin::finding::list(&v, &user, &org_ctx, &user_orgs, &items_json)
 }
 
 /// `GET /admin/findings/:pid` -- show finding detail (admin view).
@@ -38,7 +67,36 @@ pub async fn show(
     let item = findings::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    views::admin::finding::show(&v, &user, &org_ctx, &user_orgs, &item)
+
+    // Resolve org name
+    let org_name = organizations::Entity::find_by_id(item.org_id)
+        .one(&ctx.db)
+        .await
+        .ok()
+        .flatten()
+        .map_or_else(|| "Unknown".to_string(), |o| o.name);
+
+    // Resolve engagement title if linked
+    let engagement_title = if let Some(eid) = item.engagement_id {
+        crate::models::_entities::engagements::Entity::find_by_id(eid)
+            .one(&ctx.db)
+            .await
+            .ok()
+            .flatten()
+            .map(|e| e.title)
+    } else {
+        None
+    };
+
+    views::admin::finding::show(
+        &v,
+        &user,
+        &org_ctx,
+        &user_orgs,
+        &item,
+        &org_name,
+        engagement_title.as_deref(),
+    )
 }
 
 pub fn route_list() -> Vec<(String, axum::routing::MethodRouter<AppContext>)> {
