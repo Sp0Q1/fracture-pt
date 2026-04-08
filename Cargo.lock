@@ -1452,9 +1452,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a043dc74da1e37d6afe657061213aa6f425f855399a11d3463c6ecccc4dfda1f"
+checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "ff"
@@ -1600,6 +1600,7 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
+source = "git+https://github.com/Sp0Q1/fracture-cms#5cdf34b782ab7c6b64f68285bae143fff759d65b"
 dependencies = [
  "async-trait",
  "axum",
@@ -1607,7 +1608,7 @@ dependencies = [
  "chrono",
  "comrak",
  "form_urlencoded",
- "fracture-core-migration 0.1.0",
+ "fracture-core-migration",
  "include_dir",
  "jsonwebtoken 10.3.0",
  "loco-rs",
@@ -1630,15 +1631,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-dependencies = [
- "loco-rs",
- "sea-orm-migration",
-]
-
-[[package]]
-name = "fracture-core-migration"
-version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#030ed3e1fc6723ac65a61e7cc768992ea0b79287"
+source = "git+https://github.com/Sp0Q1/fracture-cms#5cdf34b782ab7c6b64f68285bae143fff759d65b"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
@@ -2845,7 +2838,7 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "fracture-core-migration 0.1.0 (git+https://github.com/Sp0Q1/fracture-cms)",
+ "fracture-core-migration",
  "loco-rs",
  "sea-orm",
  "sea-orm-migration",
@@ -3083,7 +3076,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.1",
  "chrono",
  "getrandom 0.2.17",
  "http",
@@ -3575,7 +3568,7 @@ version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f"
 dependencies = [
- "toml_edit 0.25.10+spec-1.1.0",
+ "toml_edit 0.25.11+spec-1.1.0",
 ]
 
 [[package]]
@@ -5437,9 +5430,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.51.0"
+version = "1.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd1c4c0fc4a7ab90fc15ef6daaa3ec3b893f004f915f2392557ed23237820cd"
+checksum = "f66bf9585cda4b724d3e78ab34b73fb2bbaba9011b9bfdf69dc836382ea13b8c"
 dependencies = [
  "bytes",
  "libc",
@@ -5557,9 +5550,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.10+spec-1.1.0"
+version = "0.25.11+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a82418ca169e235e6c399a84e395ab6debeb3bc90edc959bf0f48647c6a32d1b"
+checksum = "0b59c4d22ed448339746c59b905d24568fcbb3ab65a500494f7b8c3e97739f2b"
 dependencies = [
  "indexmap 2.13.1",
  "toml_datetime 1.1.1+spec-1.1.0",
@@ -6754,9 +6747,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "8.5.0"
+version = "8.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2726508a48f38dceb22b35ecbbd2430efe34ff05c62bd3285f965d7911b33464"
+checksum = "dcab981e19633ebcf0b001ddd37dd802996098bc1864f90b7c5d970ce76c1d59"
 dependencies = [
  "crc32fast",
  "flate2",
