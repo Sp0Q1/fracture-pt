@@ -11,6 +11,9 @@ pub struct ScanState<'a> {
     pub port_scan_result: Option<&'a serde_json::Value>,
     pub port_scan_status: Option<&'a str>,
     pub port_scan_error: Option<&'a str>,
+    pub schedule: &'a str,
+    pub scheduling_enabled: bool,
+    pub is_free_tier: bool,
 }
 
 /// Render the scan target list.
@@ -62,5 +65,8 @@ pub fn show(
     }
     ctx["port_scan_status"] = serde_json::json!(scan.port_scan_status.unwrap_or(""));
     ctx["port_scan_error"] = serde_json::json!(scan.port_scan_error.unwrap_or(""));
+    ctx["schedule"] = serde_json::json!(scan.schedule);
+    ctx["scheduling_enabled"] = serde_json::json!(scan.scheduling_enabled);
+    ctx["is_free_tier"] = serde_json::json!(scan.is_free_tier);
     format::render().view(v, "scan_target/show.html", data!(ctx))
 }

@@ -61,10 +61,23 @@
         {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">
-            <button type="submit"{% if port_scan_status == "running" %} disabled{% endif %}>
+            <button type="submit"{% if port_scan_status == "running" %} disabled{% endif %}{% if is_free_tier %} title="Free plan: one scan included"{% endif %}>
                 {% if port_scan_status == "running" %}Port Scan Running&hellip;{% else %}Run Port Scan{% endif %}
             </button>
         </form>
+        {% if scheduling_enabled %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/targets/{{ item.pid }}/schedule" method="post" class="d-inline">
+            <select name="schedule" onchange="this.form.submit()">
+                <option value="off"{% if schedule == "off" %} selected{% endif %}>No schedule</option>
+                <option value="daily"{% if schedule == "daily" %} selected{% endif %}>Daily</option>
+                <option value="weekly"{% if schedule == "weekly" %} selected{% endif %}>Weekly</option>
+                <option value="monthly"{% if schedule == "monthly" %} selected{% endif %}>Monthly</option>
+            </select>
+        </form>
+        {% elif not is_free_tier %}
+        <span class="badge secondary" title="Upgrade to Pro for scheduled scans">Schedule: Pro+</span>
+        {% endif %}
         <span class="spacer"></span>
         <button class="outline" data-variant="danger"
                 data-delete-url="/targets/{{ item.pid }}"

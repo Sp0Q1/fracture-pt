@@ -46,10 +46,6 @@ fn is_valid_domain(domain: &str) -> bool {
 }
 
 /// `POST /free-scan` — validate domain, create a job, redirect to progress page.
-///
-/// # Errors
-///
-/// Returns an error if the domain is invalid or the platform admin org is not configured.
 #[debug_handler]
 pub async fn submit(
     State(ctx): State<AppContext>,
@@ -109,7 +105,6 @@ pub async fn submit(
     )
     .await?;
 
-    // Set access cookie so only the requester can view results
     let run_pid = run.pid.to_string();
     let mut cookie = Cookie::new("free_scan_token", run_pid.clone());
     cookie.set_path(format!("/free-scan/{run_pid}"));
@@ -126,10 +121,6 @@ pub async fn submit(
 }
 
 /// `GET /free-scan/:run_pid` — show scan progress / results.
-///
-/// # Errors
-///
-/// Returns an error if the scan is not found or the user is not authorised to view it.
 #[debug_handler]
 pub async fn results_page(
     Path(run_pid): Path<String>,
@@ -137,7 +128,6 @@ pub async fn results_page(
     State(ctx): State<AppContext>,
     jar: CookieJar,
 ) -> Result<Response> {
-    // Access control: allow if the user has the cookie OR is a platform admin
     let has_cookie = jar
         .get("free_scan_token")
         .is_some_and(|c| c.value() == run_pid);
@@ -164,6 +154,7 @@ pub async fn results_page(
     let config: serde_json::Value = serde_json::from_str(&definition.config)
         .map_err(|_| Error::BadRequest("Invalid job config".into()))?;
     let domain = config["hostname"].as_str().unwrap_or("unknown").to_string();
+    let org_id = definition.org_id;
 
     match run.status.as_str() {
         "completed" => {
@@ -171,12 +162,112 @@ pub async fn results_page(
                 .result_summary
                 .as_deref()
                 .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok());
-            views::free_scan::progress(&v, &domain, "completed", asm_result.as_ref(), None)
+
+            // Collect port scan results for this domain's resolved IPs
+            let port_data = collect_port_scans(&ctx.db, org_id, &domain).await;
+
+            // Keep refreshing if port scans are still running
+            let status = if port_data.any_running {
+                "port_scanning"
+            } else {
+                "completed"
+            };
+
+            views::free_scan::progress(
+                &v,
+                &domain,
+                status,
+                asm_result.as_ref(),
+                None,
+                &port_data.results,
+            )
         }
-        "failed" => {
-            views::free_scan::progress(&v, &domain, "failed", None, run.error_message.as_deref())
+        "failed" => views::free_scan::progress(
+            &v,
+            &domain,
+            "failed",
+            None,
+            run.error_message.as_deref(),
+            &[],
+        ),
+        _ => views::free_scan::progress(&v, &domain, &run.status, None, None, &[]),
+    }
+}
+
+/// Collected port scan results for a domain.
+struct PortScanData {
+    results: Vec<serde_json::Value>,
+    any_running: bool,
+}
+
+/// Find all port scan results for resolved IPs of a given domain.
+async fn collect_port_scans(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    domain: &str,
+) -> PortScanData {
+    let port_defs = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_id))
+        .filter(job_definitions::Column::JobType.eq("port_scan"))
+        .all(db)
+        .await
+        .unwrap_or_default();
+
+    let mut results = Vec::new();
+    let mut any_running = false;
+
+    for def in &port_defs {
+        let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) else {
+            continue;
+        };
+        let subdomain = cfg["subdomain"].as_str().unwrap_or("");
+        let hostname = cfg["hostname"].as_str().unwrap_or("");
+
+        // Only include scans related to this domain
+        let is_related = subdomain.ends_with(domain) || subdomain == domain || hostname == domain;
+        if !is_related {
+            continue;
         }
-        _ => views::free_scan::progress(&v, &domain, &run.status, None, None),
+
+        // Check for running/queued
+        let pending = job_runs::Entity::find()
+            .filter(job_runs::Column::JobDefinitionId.eq(def.id))
+            .filter(
+                job_runs::Column::Status
+                    .eq("queued")
+                    .or(job_runs::Column::Status.eq("running")),
+            )
+            .one(db)
+            .await
+            .ok()
+            .flatten();
+
+        if pending.is_some() {
+            any_running = true;
+            continue;
+        }
+
+        // Get latest completed run
+        if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def.id).await {
+            if let Some(summary) = run
+                .result_summary
+                .as_deref()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+            {
+                results.push(serde_json::json!({
+                    "target": hostname,
+                    "subdomain": subdomain,
+                    "ip": summary["ip"].as_str().unwrap_or(""),
+                    "total_open": summary["total_open"].as_u64().unwrap_or(0),
+                    "ports": summary["ports"],
+                }));
+            }
+        }
+    }
+
+    PortScanData {
+        results,
+        any_running,
     }
 }
 

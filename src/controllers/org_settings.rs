@@ -59,7 +59,6 @@ pub async fn settings(
         .max_targets()
         .map_or_else(|| "Unlimited".to_string(), |n| n.to_string()));
     tpl_ctx["scheduling_enabled"] = serde_json::json!(tier.scheduling_enabled());
-    tpl_ctx["port_scans_enabled"] = serde_json::json!(tier.port_scans_enabled());
     tpl_ctx["email_alerts_enabled"] = serde_json::json!(tier.email_alerts_enabled());
     tpl_ctx["alert_emails"] = serde_json::json!(alert_emails);
 
@@ -92,7 +91,7 @@ pub async fn update_settings(
     active.update(&ctx.db).await?;
 
     // Platform admins can change the org tier
-    let valid_tiers = ["free", "pro", "enterprise"];
+    let valid_tiers = ["free", "recon", "strike", "offensive", "enterprise"];
     if let Some(ref tier_str) = params.plan_tier {
         if org_ctx.is_platform_admin && valid_tiers.contains(&tier_str.as_str()) {
             org_model::Model::set_setting(
