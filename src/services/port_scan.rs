@@ -89,20 +89,27 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     let validated = validate_target(target)?;
 
     let target_clone = validated.clone();
+    let is_ipv6 = target_clone.contains(':');
     let handle = tokio::task::spawn_blocking(move || {
-        Command::new("nmap")
-            .args([
-                "--unprivileged",
-                "-sT",
-                "-sV",
-                "-T4",
-                "--top-ports",
-                "1000",
-                "-oX",
-                "-",
-                &target_clone,
-            ])
-            .output()
+        let mut args = vec![
+            "--unprivileged",
+            "-sT", // TCP connect scan (no raw sockets needed)
+            "-sV", // Service/version detection
+            "--version-intensity",
+            "2",   // Light probing (0-9, default 7 — too slow)
+            "-T4", // Aggressive timing
+            "--top-ports",
+            "1000",
+            "--host-timeout",
+            "120s", // Per-host timeout (catches filtered ports)
+            "-oX",
+            "-",
+        ];
+        if is_ipv6 {
+            args.push("-6");
+        }
+        args.push(&target_clone);
+        Command::new("nmap").args(&args).output()
     });
 
     let result = tokio::time::timeout(Duration::from_secs(300), handle)

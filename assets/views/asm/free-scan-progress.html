@@ -52,7 +52,7 @@
     </div>
 </section>
 
-{% elif scan_status == "completed" %}
+{% elif scan_status == "completed" or scan_status == "port_scanning" %}
 <section class="asm-hero">
     <span class="badge success asm-free-badge">Free Scan Results</span>
     <h1>Results for <span class="gradient-text">{{ domain }}</span></h1>
@@ -130,8 +130,12 @@
     <p class="section-subtitle">Port scan results for resolved IP addresses.</p>
     {% for ps in port_scans %}
     <article class="card card-accent mt-2">
-        <h4><code>{{ ps.target }}</code>{% if ps.subdomain %} <span class="text-muted">({{ ps.subdomain }})</span>{% endif %}{% if ps.ip %} &mdash; {{ ps.ip }}{% endif %}</h4>
+        <h4><code>{{ ps.ip }}</code>{% if ps.subdomains %} <span class="text-muted">&mdash; {{ ps.subdomains }}</span>{% endif %}</h4>
+        {% if ps.total_open > 0 %}
         <p>{{ ps.total_open }} open port{{ ps.total_open | pluralize }}</p>
+        {% elif ps.ports | length == 0 %}
+        <p class="text-muted">No open ports detected (host may be filtered or timed out)</p>
+        {% endif %}
         {% if ps.ports | length > 0 %}
         <table class="port-scan-table">
             <thead><tr><th>Port</th><th>Protocol</th><th>Service</th><th>Version</th></tr></thead>
