@@ -33,9 +33,10 @@ pub async fn settings(
     let org = org_model::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let membership = crate::models::org_members::Model::find_membership(&ctx.db, org.id, user.id)
-        .await
-        .ok_or_else(|| Error::NotFound)?;
+    let membership =
+        crate::models::org_members::Model::find_membership_or_admin(&ctx.db, org.id, user.id)
+            .await
+            .ok_or_else(|| Error::NotFound)?;
     let org_ctx =
         middleware::OrgContext::from_membership(&ctx.db, org.clone(), membership, user.id).await;
     require_role!(org_ctx, OrgRole::Admin);
@@ -78,9 +79,10 @@ pub async fn update_settings(
     let org = org_model::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let membership = crate::models::org_members::Model::find_membership(&ctx.db, org.id, user.id)
-        .await
-        .ok_or_else(|| Error::NotFound)?;
+    let membership =
+        crate::models::org_members::Model::find_membership_or_admin(&ctx.db, org.id, user.id)
+            .await
+            .ok_or_else(|| Error::NotFound)?;
     let org_ctx =
         middleware::OrgContext::from_membership(&ctx.db, org.clone(), membership, user.id).await;
     require_role!(org_ctx, OrgRole::Admin);
