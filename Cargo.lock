@@ -1600,7 +1600,7 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#5cdf34b782ab7c6b64f68285bae143fff759d65b"
+source = "git+https://github.com/Sp0Q1/fracture-cms#2b17a40a5d3cf3a5e280943959eec85b08c0db88"
 dependencies = [
  "async-trait",
  "axum",
@@ -1631,7 +1631,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#5cdf34b782ab7c6b64f68285bae143fff759d65b"
+source = "git+https://github.com/Sp0Q1/fracture-cms#2b17a40a5d3cf3a5e280943959eec85b08c0db88"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
