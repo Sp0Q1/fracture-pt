@@ -10,7 +10,6 @@ pub mod non_findings;
 pub mod pentester_assignments;
 pub mod pricing_tiers;
 pub mod reports;
-pub mod scan_jobs;
 pub mod scan_targets;
 pub mod services;
 pub mod subscriptions;
