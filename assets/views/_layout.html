@@ -38,13 +38,13 @@
 {% endblock structured_data %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/static/app.css?v=22" integrity="sha384-7hTkwNkEx5WJREAS+HHujIn4WNeL297GqRW/2y5NDrQ5mv32TheYJcUkNoKZeleb" crossorigin="anonymous">
+<link rel="stylesheet" href="/static/app.css?v=24" integrity="sha384-nbl15aQUGJ+pvCdMCGdN4gQw1369oa/8rsinx9/S7bDNX/SNyJzu7w2TdyZEEz4n" crossorigin="anonymous">
 {% endblock stylesheets %}
 
 {% block nav_auth_buttons %}
 <span class="nav-auth-buttons">
     <a href="/api/auth/oidc/authorize" class="button ghost small">Log In</a>
-    <a href="/api/auth/oidc/authorize" class="button small cta-button">Get Started</a>
+    <a href="/api/auth/oidc/authorize" class="button small cta-button">Sign Up</a>
 </span>
 {% endblock nav_auth_buttons %}
 
@@ -107,5 +107,5 @@
 
 {% block scripts %}
 <script src="/static/app.js?v=2" integrity="sha384-NhDWf/eg2gFEwsQofxLsIXDEoN2PrZyJATca2zMdANyq2tpZhy2QOO+GMUKsTAZ7" crossorigin="anonymous"></script>
-<script src="/static/table-sort.js?v=1" integrity="sha384-8E0bDXFrgq7wbcLaNIVtg8Wcu7LtE1VZj8rHMginS0qvZ+7i1PI4d+g1l5IPw4p+" crossorigin="anonymous"></script>
+<script src="/static/table-sort.js?v=2" integrity="sha384-2a/l2T+Jt+yq/pDCBCi04yy3hRP/GwAt7WfpGqULGB4w4JF/RCSeL+p2zlxi5rpM" crossorigin="anonymous"></script>
 {% endblock scripts %}

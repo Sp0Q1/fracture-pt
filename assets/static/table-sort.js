@@ -5,8 +5,8 @@
   function parseValue(text) {
     var s = text.trim();
     if (s === "" || s === "\u2014" || s === "-") return null;
-    /* Date: YYYY-MM-DD */
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { type: "date", v: s };
+    /* Date: YYYY-MM-DD or YYYY-MM-DD HH:MM(:SS) */
+    if (/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(s)) return { type: "date", v: s };
     /* Number (with optional comma thousands, currency symbols) */
     var n = parseFloat(s.replace(/[^0-9.\-]/g, ""));
     if (!isNaN(n) && /\d/.test(s)) return { type: "number", v: n };
@@ -96,6 +96,17 @@
           }
         });
       })(headers[i], i);
+    }
+
+    /* Default sort: if a "Created" column exists, sort descending (newest first) */
+    for (var j = 0; j < headers.length; j++) {
+      var text = headers[j].textContent.trim().toLowerCase();
+      if (text === "created" || text === "created at") {
+        headers[j].classList.add("desc");
+        headers[j].setAttribute("aria-sort", "descending");
+        sortTable(table, j, false);
+        break;
+      }
     }
   }
 

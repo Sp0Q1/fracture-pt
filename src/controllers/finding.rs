@@ -23,7 +23,7 @@ pub async fn list(
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Viewer);
     let items = findings::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
 
     // For admins/pentesters: provide in-progress engagements they can add findings to
     let is_admin =
@@ -83,7 +83,7 @@ pub async fn show(
     let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
     views::finding::show(&v, &user, &org_ctx, &user_orgs, &item)
 }
 

@@ -589,7 +589,7 @@ pub async fn index(
     match user {
         Some(user) => {
             let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-            let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+            let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
 
             let dashboard_data = if let Some(ref oc) = org_ctx {
                 let org_id = oc.org.id;

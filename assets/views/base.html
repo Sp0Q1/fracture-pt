@@ -17,7 +17,7 @@
   {% block structured_data %}{% endblock structured_data %}
   <link rel="stylesheet" href="/static/oat.min.css" integrity="sha384-Q7tDn81qF6GoBv+Rdj5l6JFr2qaiXG01Z5dT8jRpp5lE+6IZx8as9X/Igi7ISdBP" crossorigin="anonymous">
   {% block stylesheets %}
-  <link rel="stylesheet" href="/static/app.css?v=22" integrity="sha384-7hTkwNkEx5WJREAS+HHujIn4WNeL297GqRW/2y5NDrQ5mv32TheYJcUkNoKZeleb" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/app.css?v=24" integrity="sha384-nbl15aQUGJ+pvCdMCGdN4gQw1369oa/8rsinx9/S7bDNX/SNyJzu7w2TdyZEEz4n" crossorigin="anonymous">
   {% endblock stylesheets %}
   {% block head %}
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
@@ -99,12 +99,10 @@
             </button>
             {% else %}
             {% block nav_auth_buttons %}
-            <button class="icon ghost" popovertarget="account-menu" aria-label="Account menu">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
-                </svg>
-            </button>
+            <span class="nav-auth-buttons">
+                <a href="/api/auth/oidc/authorize" class="button ghost small">Log In</a>
+                <a href="/api/auth/oidc/authorize" class="button small cta-button">Sign Up</a>
+            </span>
             {% endblock nav_auth_buttons %}
             {% endif %}
             <div id="account-menu" popover>
@@ -184,7 +182,7 @@
   <script src="/static/oat.min.js" integrity="sha384-/Trl5iuXWQS6d7T9TWGsfbC7cIDm88CDZc+BdI3LCdclFglQVOz7AmU+M7R5IQE/" crossorigin="anonymous"></script>
   {% block scripts %}
   <script src="/static/app.js?v=2" integrity="sha384-NhDWf/eg2gFEwsQofxLsIXDEoN2PrZyJATca2zMdANyq2tpZhy2QOO+GMUKsTAZ7" crossorigin="anonymous"></script>
-  <script src="/static/table-sort.js?v=1" integrity="sha384-8E0bDXFrgq7wbcLaNIVtg8Wcu7LtE1VZj8rHMginS0qvZ+7i1PI4d+g1l5IPw4p+" crossorigin="anonymous"></script>
+  <script src="/static/table-sort.js?v=2" integrity="sha384-2a/l2T+Jt+yq/pDCBCi04yy3hRP/GwAt7WfpGqULGB4w4JF/RCSeL+p2zlxi5rpM" crossorigin="anonymous"></script>
   {% endblock scripts %}
   {% block js %}
   {% endblock js %}

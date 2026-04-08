@@ -39,7 +39,7 @@ pub async fn settings(
     let org_ctx =
         middleware::OrgContext::from_membership(&ctx.db, org.clone(), membership, user.id).await;
     require_role!(org_ctx, OrgRole::Admin);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
 
     let tier = PlanTier::from_org(&org);
     let alert_emails = org
