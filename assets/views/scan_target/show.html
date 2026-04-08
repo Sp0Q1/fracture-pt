@@ -58,6 +58,7 @@
     </div>
     <div class="form-actions">
         <a href="/targets" class="button" data-variant="secondary">Back to Targets</a>
+        <a href="/engagements/new?target={{ item.id }}" class="button" data-variant="secondary">Request Pentest</a>
         {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">

@@ -19,7 +19,7 @@ pub async fn list(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
 
     let items = users::Entity::find()
         .order_by_desc(users::Column::CreatedAt)
@@ -53,7 +53,7 @@ pub async fn show(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
 
     let target_user = crate::models::users::Model::find_by_pid(&ctx.db, &pid)
         .await

@@ -21,7 +21,7 @@ pub async fn list(
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Viewer);
     let items = subscriptions::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
     views::subscription::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 

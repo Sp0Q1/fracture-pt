@@ -36,9 +36,13 @@ pub fn request_form(
     org_ctx: &OrgContext,
     user_orgs: &[organizations::Model],
     all_services: &[services::Model],
+    org_targets: &[scan_targets::Model],
+    preselect_target_id: Option<i32>,
 ) -> Result<Response> {
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["services"] = serde_json::json!(all_services);
+    ctx["targets"] = serde_json::json!(org_targets);
+    ctx["preselect_target_id"] = serde_json::json!(preselect_target_id.unwrap_or(0));
     format::render().view(v, "engagement/request.html", data!(ctx))
 }
 

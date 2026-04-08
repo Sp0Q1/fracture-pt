@@ -81,7 +81,7 @@ pub async fn list(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
     let items = engagements::Model::find_all_pending(&ctx.db).await;
     let items_with_org = resolve_org_names(&ctx.db, &items).await;
     views::admin::engagement::list(&v, &user, &org_ctx, &user_orgs, &items_with_org)
@@ -98,7 +98,7 @@ pub async fn list_all(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
     let items = engagements::Entity::find()
         .order_by(engagements::Column::Id, Order::Desc)
         .all(&ctx.db)
@@ -120,7 +120,7 @@ pub async fn show(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_orgs_for_user(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;

@@ -29,6 +29,25 @@
         </div>
 
         <h3>Scope Definition</h3>
+
+        {% if targets | length > 0 %}
+        <div data-field>
+            <label>Link Existing Targets</label>
+            <div class="target-checklist">
+                {% for t in targets %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="link_target_ids" value="{{ t.id }}"
+                        {% if preselect_target_id == t.id %}checked{% endif %}>
+                    <code>{{ t.hostname | default(value=t.ip_address) }}</code>
+                    {% if t.label %}<span class="text-muted">— {{ t.label }}</span>{% endif %}
+                    <span class="badge secondary">{{ t.target_type }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <small data-hint>Select targets to include in the engagement scope. You can add more later.</small>
+        </div>
+        {% endif %}
+
         <div data-field>
             <label for="target_systems">Target Systems</label>
             <textarea id="target_systems" name="target_systems" rows="4" placeholder="Describe the systems, applications, and infrastructure to be tested..." required></textarea>
