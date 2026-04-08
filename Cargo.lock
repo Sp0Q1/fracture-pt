@@ -1600,7 +1600,6 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#030ed3e1fc6723ac65a61e7cc768992ea0b79287"
 dependencies = [
  "async-trait",
  "axum",
@@ -1608,7 +1607,7 @@ dependencies = [
  "chrono",
  "comrak",
  "form_urlencoded",
- "fracture-core-migration",
+ "fracture-core-migration 0.1.0",
  "include_dir",
  "jsonwebtoken 10.3.0",
  "loco-rs",
@@ -1626,6 +1625,14 @@ dependencies = [
  "tracing",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "fracture-core-migration"
+version = "0.1.0"
+dependencies = [
+ "loco-rs",
+ "sea-orm-migration",
 ]
 
 [[package]]
@@ -2838,7 +2845,7 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "fracture-core-migration",
+ "fracture-core-migration 0.1.0 (git+https://github.com/Sp0Q1/fracture-cms)",
  "loco-rs",
  "sea-orm",
  "sea-orm-migration",
