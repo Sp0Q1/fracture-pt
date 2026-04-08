@@ -339,6 +339,42 @@ pub async fn show(
         }
     };
 
+    // Determine current scan schedule (from any matching job definition)
+    let hostname = item
+        .hostname
+        .as_deref()
+        .or(item.ip_address.as_deref())
+        .unwrap_or("");
+    let current_schedule = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+        .all(&ctx.db)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .find_map(|def| {
+            let cfg = serde_json::from_str::<serde_json::Value>(&def.config).ok()?;
+            let matches = cfg["hostname"].as_str() == Some(hostname)
+                || cfg["target_id"]
+                    .as_i64()
+                    .is_some_and(|id| id == i64::from(item.id));
+            if matches {
+                def.schedule
+            } else {
+                None
+            }
+        })
+        .unwrap_or_default();
+
+    let schedule_label = match current_schedule.as_str() {
+        s if s.contains("* * *") && s.starts_with("0 3") => "daily",
+        s if s.contains("* * 1") => "weekly",
+        s if s.contains("1 * *") => "monthly",
+        "" => "off",
+        _ => "custom",
+    };
+
+    let tier = PlanTier::from_org(&org_ctx.org);
+
     let scan = views::scan_target::ScanState {
         asm_result: asm.result.as_ref(),
         status: asm.status.as_deref(),
@@ -346,6 +382,9 @@ pub async fn show(
         port_scan_result: port.result.as_ref(),
         port_scan_status: port.status.as_deref(),
         port_scan_error: port.error.as_deref(),
+        schedule: schedule_label,
+        scheduling_enabled: tier.scheduling_enabled(),
+        is_free_tier: matches!(tier, PlanTier::Free),
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
 }
@@ -481,13 +520,20 @@ pub async fn trigger_port_scan(
         .await
         .ok_or_else(|| Error::NotFound)?;
 
-    // Check tier allows port scans
+    // Free tier: only one completed scan allowed (the initial auto-scan)
     let tier = PlanTier::from_org(&org_ctx.org);
-    if !tier.port_scans_enabled() {
-        return Err(Error::BadRequest(
-            "Port scans are not available on the Free plan. Upgrade to Pro or Enterprise."
-                .to_string(),
-        ));
+    if matches!(tier, PlanTier::Free) {
+        let completed_count = job_runs::Entity::find()
+            .filter(job_runs::Column::OrgId.eq(org_ctx.org.id))
+            .filter(job_runs::Column::Status.eq("completed"))
+            .count(&ctx.db)
+            .await
+            .unwrap_or(0);
+        if completed_count > 0 {
+            return Err(Error::BadRequest(
+                "Free plan includes one scan. Upgrade to Pro for recurring scans.".into(),
+            ));
+        }
     }
 
     let scan_target_name = item
@@ -540,6 +586,75 @@ pub async fn trigger_port_scan(
     Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ScheduleParams {
+    pub schedule: String, // "off", "daily", "weekly", "monthly"
+}
+
+/// `POST /targets/:pid/schedule` — set scan schedule for a target.
+#[debug_handler]
+pub async fn set_schedule(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+    Form(params): Form<ScheduleParams>,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+
+    let tier = PlanTier::from_org(&org_ctx.org);
+    if !tier.scheduling_enabled() {
+        return Err(Error::BadRequest(
+            "Scheduled scans require a Pro or Enterprise plan.".into(),
+        ));
+    }
+
+    let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let hostname = item
+        .hostname
+        .as_deref()
+        .or(item.ip_address.as_deref())
+        .unwrap_or("unknown");
+
+    // Find ASM and port scan definitions for this target
+    let defs = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+        .all(&ctx.db)
+        .await
+        .unwrap_or_default();
+
+    let schedule_value = match params.schedule.as_str() {
+        "daily" => Some("0 3 * * *".to_string()),   // 3 AM daily
+        "weekly" => Some("0 3 * * 1".to_string()),  // 3 AM Monday
+        "monthly" => Some("0 3 1 * *".to_string()), // 3 AM 1st of month
+        _ => None,                                  // "off"
+    };
+
+    // Update all job definitions that match this target
+    for def in &defs {
+        if let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) {
+            let matches = cfg["hostname"].as_str() == Some(hostname)
+                || cfg["target_id"]
+                    .as_i64()
+                    .is_some_and(|id| id == i64::from(item.id));
+            if matches {
+                let mut active: job_definitions::ActiveModel = def.clone().into();
+                active.schedule = sea_orm::ActiveValue::Set(schedule_value.clone());
+                active.update(&ctx.db).await?;
+            }
+        }
+    }
+
+    Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/targets")
@@ -549,4 +664,5 @@ pub fn routes() -> Routes {
         .add("/{pid}", get(show))
         .add("/{pid}", delete(remove))
         .add("/{pid}/port-scan", post(trigger_port_scan))
+        .add("/{pid}/schedule", post(set_schedule))
 }

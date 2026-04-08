@@ -36,7 +36,7 @@
         </div>
         <div class="detail-row">
             <span class="detail-label">Port Scans</span>
-            <span class="detail-value">{% if port_scans_enabled %}Enabled{% else %}Upgrade to Pro{% endif %}</span>
+            <span class="detail-value">Included</span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Email Alerts</span>
@@ -56,7 +56,9 @@
                 <label for="plan_tier">Plan Tier</label>
                 <select id="plan_tier" name="plan_tier">
                     <option value="free"{% if plan_tier == "Free" %} selected{% endif %}>Free</option>
-                    <option value="pro"{% if plan_tier == "Pro" %} selected{% endif %}>Pro</option>
+                    <option value="recon"{% if plan_tier == "Recon" %} selected{% endif %}>Recon (€99/mo)</option>
+                    <option value="strike"{% if plan_tier == "Strike" %} selected{% endif %}>Strike (€299/mo)</option>
+                    <option value="offensive"{% if plan_tier == "Offensive" %} selected{% endif %}>Offensive (€499/mo)</option>
                     <option value="enterprise"{% if plan_tier == "Enterprise" %} selected{% endif %}>Enterprise</option>
                 </select>
             </div>

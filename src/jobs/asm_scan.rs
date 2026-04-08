@@ -2,14 +2,13 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use fracture_core::jobs::{JobDiff, JobExecutor, JobResult};
-use fracture_core::models::_entities::{job_definitions, job_runs, organizations};
+use fracture_core::models::_entities::{job_definitions, job_runs};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
 
 use crate::models::_entities::findings;
 use crate::services::asm::{self, ScanResult, SubdomainInfo};
-use crate::services::tier::PlanTier;
 
 const MAX_RETRIES: u32 = 3;
 
@@ -86,22 +85,16 @@ impl JobExecutor for AsmScanExecutor {
             "certs": scan_result.certs,
         });
 
-        // Enqueue port scans for resolved subdomains (if tier allows)
-        let org = organizations::Entity::find_by_id(org_id).one(db).await?;
-        if let Some(ref org) = org {
-            let tier = PlanTier::from_org(org);
-            if tier.port_scans_enabled() {
-                for info in &subdomain_infos {
-                    if info.resolved {
-                        if let Err(e) =
-                            enqueue_subdomain_port_scan(db, org_id, definition.id, info).await
-                        {
-                            tracing::warn!(
-                                subdomain = %info.name,
-                                error = %e,
-                                "Failed to enqueue subdomain port scan"
-                            );
-                        }
+        // Enqueue port scans for all resolved IPs — always, regardless of tier.
+        // Each resolved IP gets its own port scan for accurate per-IP results.
+        for info in &subdomain_infos {
+            if info.resolved {
+                for ip in &info.ips {
+                    if let Err(e) = enqueue_ip_port_scan(db, org_id, &info.name, ip).await {
+                        tracing::warn!(
+                            subdomain = %info.name, ip = %ip, error = %e,
+                            "Failed to enqueue IP port scan"
+                        );
                     }
                 }
             }
@@ -220,16 +213,15 @@ fn compute_diffs(
     diffs
 }
 
-/// Enqueue a port scan for a resolved subdomain.
-async fn enqueue_subdomain_port_scan(
+/// Enqueue a port scan for a specific IP address (associated with a subdomain).
+async fn enqueue_ip_port_scan(
     db: &sea_orm::DatabaseConnection,
     org_id: i32,
-    _parent_def_id: i32,
-    info: &SubdomainInfo,
+    subdomain: &str,
+    ip: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let def_name = format!("Port Scan: {}", info.name);
+    let def_name = format!("Port Scan: {ip} ({subdomain})");
 
-    // Find existing definition or create a new one
     let definition = if let Some(existing) = job_definitions::Entity::find()
         .filter(job_definitions::Column::OrgId.eq(org_id))
         .filter(job_definitions::Column::Name.eq(&def_name))
@@ -239,9 +231,10 @@ async fn enqueue_subdomain_port_scan(
         existing
     } else {
         let config = serde_json::json!({
-            "hostname": info.name,
+            "hostname": ip,
             "org_id": org_id,
-            "source": "asm_subdomain",
+            "source": "asm_resolved_ip",
+            "subdomain": subdomain,
         });
         job_definitions::ActiveModel {
             org_id: Set(org_id),
@@ -255,7 +248,7 @@ async fn enqueue_subdomain_port_scan(
         .await?
     };
 
-    // Check if there is already a pending run
+    // Skip if already queued/running
     let pending = job_runs::Entity::find()
         .filter(job_runs::Column::JobDefinitionId.eq(definition.id))
         .filter(
@@ -270,13 +263,11 @@ async fn enqueue_subdomain_port_scan(
         return Ok(());
     }
 
-    // Create a queued run -- the sequential JobDispatchWorker will pick it up
     let _run = job_runs::Model::create_queued(db, definition.id, org_id).await?;
 
     tracing::info!(
-        subdomain = %info.name,
-        job_definition_id = definition.id,
-        "Queued port scan for resolved subdomain"
+        ip = %ip, subdomain = %subdomain,
+        "Queued port scan for resolved IP"
     );
 
     Ok(())

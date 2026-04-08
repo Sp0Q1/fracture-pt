@@ -14,7 +14,7 @@
 {% endblock meta_description %}
 
 {% block head %}
-{% if scan_status == "queued" or scan_status == "running" %}
+{% if scan_status == "queued" or scan_status == "running" or scan_status == "port_scanning" %}
 <meta http-equiv="refresh" content="5">
 {% endif %}
 {% endblock head %}
@@ -110,6 +110,47 @@
         <p>No certificate transparency data found for <strong>{{ domain }}</strong>.</p>
         <p class="text-muted text-sm">This domain may not have any publicly issued TLS certificates, or it may be very new.</p>
     </div>
+</section>
+{% endif %}
+
+{% if scan_status == "port_scanning" %}
+<section class="asm-input-section">
+    <article class="card card-accent scan-progress-card">
+        <div class="scan-spinner"></div>
+        <h3>Port Scanning in Progress</h3>
+        <p>Scanning open ports and detecting services on resolved IP addresses&hellip;</p>
+        <p class="text-muted text-sm">This page refreshes automatically.</p>
+    </article>
+</section>
+{% endif %}
+
+{% if port_scans | length > 0 %}
+<section class="asm-results-section">
+    <h2>Open Ports &amp; Services</h2>
+    <p class="section-subtitle">Port scan results for resolved IP addresses.</p>
+    {% for ps in port_scans %}
+    <article class="card card-accent mt-2">
+        <h4><code>{{ ps.target }}</code>{% if ps.subdomain %} <span class="text-muted">({{ ps.subdomain }})</span>{% endif %}{% if ps.ip %} &mdash; {{ ps.ip }}{% endif %}</h4>
+        <p>{{ ps.total_open }} open port{{ ps.total_open | pluralize }}</p>
+        {% if ps.ports | length > 0 %}
+        <table class="port-scan-table">
+            <thead><tr><th>Port</th><th>Protocol</th><th>Service</th><th>Version</th></tr></thead>
+            <tbody>
+            {% for p in ps.ports %}
+            {% if p.state == "open" %}
+            <tr>
+                <td>{{ p.port }}</td>
+                <td>{{ p.protocol }}</td>
+                <td>{{ p.service }}</td>
+                <td>{% if p.version %}{{ p.version }}{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </article>
+    {% endfor %}
 </section>
 {% endif %}
 
