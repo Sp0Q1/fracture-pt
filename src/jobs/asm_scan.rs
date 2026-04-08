@@ -85,16 +85,18 @@ impl JobExecutor for AsmScanExecutor {
             "certs": scan_result.certs,
         });
 
-        // Enqueue port scans for all resolved IPs — always, regardless of tier.
-        // Each resolved IP gets its own port scan for accurate per-IP results.
+        // Enqueue port scans for unique resolved IPs (deduplicated).
+        let mut scanned_ips = std::collections::HashSet::new();
         for info in &subdomain_infos {
             if info.resolved {
                 for ip in &info.ips {
-                    if let Err(e) = enqueue_ip_port_scan(db, org_id, &info.name, ip).await {
-                        tracing::warn!(
-                            subdomain = %info.name, ip = %ip, error = %e,
-                            "Failed to enqueue IP port scan"
-                        );
+                    if scanned_ips.insert(ip.clone()) {
+                        if let Err(e) = enqueue_ip_port_scan(db, org_id, &info.name, ip).await {
+                            tracing::warn!(
+                                subdomain = %info.name, ip = %ip, error = %e,
+                                "Failed to enqueue IP port scan"
+                            );
+                        }
                     }
                 }
             }
@@ -248,7 +250,7 @@ async fn enqueue_ip_port_scan(
         .await?
     };
 
-    // Skip if already queued/running
+    // Check for existing queued/running jobs
     let pending = job_runs::Entity::find()
         .filter(job_runs::Column::JobDefinitionId.eq(definition.id))
         .filter(
@@ -259,8 +261,22 @@ async fn enqueue_ip_port_scan(
         .one(db)
         .await?;
 
-    if pending.is_some() {
-        return Ok(());
+    if let Some(run) = pending {
+        // If running >10 minutes, mark as failed (stuck) so we can re-enqueue
+        let is_stuck = run.started_at.as_ref().is_some_and(|started| {
+            let age = chrono::Utc::now() - started.with_timezone(&chrono::Utc);
+            age.num_minutes() > 10
+        });
+        if is_stuck {
+            let mut active: job_runs::ActiveModel = run.into();
+            active.status = Set("failed".to_string());
+            active.error_message = Set(Some("Timed out after 10 minutes".to_string()));
+            active.completed_at = Set(Some(chrono::Utc::now().into()));
+            active.update(db).await?;
+            tracing::warn!(ip = %ip, "Marked stuck port scan as failed, re-enqueuing");
+        } else {
+            return Ok(());
+        }
     }
 
     let _run = job_runs::Model::create_queued(db, definition.id, org_id).await?;

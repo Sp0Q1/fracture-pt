@@ -201,6 +201,8 @@ struct PortScanData {
 }
 
 /// Find all port scan results for resolved IPs of a given domain.
+/// Deduplicates by IP — if multiple subdomains resolve to the same IP,
+/// shows one entry with all associated subdomains listed.
 async fn collect_port_scans(
     db: &sea_orm::DatabaseConnection,
     org_id: i32,
@@ -213,61 +215,142 @@ async fn collect_port_scans(
         .await
         .unwrap_or_default();
 
-    let mut results = Vec::new();
+    let mut ip_results: std::collections::HashMap<
+        String,
+        (Vec<String>, Vec<serde_json::Value>, u64),
+    > = std::collections::HashMap::new();
     let mut any_running = false;
 
     for def in &port_defs {
         let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) else {
             continue;
         };
-        let subdomain = cfg["subdomain"].as_str().unwrap_or("");
+        let subdomain = cfg["subdomain"].as_str().unwrap_or("").to_string();
         let hostname = cfg["hostname"].as_str().unwrap_or("");
 
-        // Only include scans related to this domain
-        let is_related = subdomain.ends_with(domain) || subdomain == domain || hostname == domain;
-        if !is_related {
+        if !subdomain.ends_with(domain) && subdomain != domain && hostname != domain {
             continue;
         }
 
-        // Check for running/queued
-        let pending = job_runs::Entity::find()
-            .filter(job_runs::Column::JobDefinitionId.eq(def.id))
-            .filter(
-                job_runs::Column::Status
-                    .eq("queued")
-                    .or(job_runs::Column::Status.eq("running")),
-            )
-            .one(db)
-            .await
-            .ok()
-            .flatten();
-
-        if pending.is_some() {
-            any_running = true;
+        if is_job_pending(db, def.id, &mut any_running).await {
             continue;
         }
 
-        // Get latest completed run
-        if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def.id).await {
-            if let Some(summary) = run
-                .result_summary
-                .as_deref()
-                .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
-            {
-                results.push(serde_json::json!({
-                    "target": hostname,
-                    "subdomain": subdomain,
-                    "ip": summary["ip"].as_str().unwrap_or(""),
-                    "total_open": summary["total_open"].as_u64().unwrap_or(0),
-                    "ports": summary["ports"],
-                }));
-            }
-        }
+        collect_def_result(db, def.id, hostname, &subdomain, &mut ip_results).await;
     }
+
+    let mut results: Vec<serde_json::Value> = ip_results
+        .into_iter()
+        .map(|(ip, (subdomains, ports, total_open))| {
+            serde_json::json!({
+                "ip": ip,
+                "subdomains": subdomains.join(", "),
+                "total_open": total_open,
+                "ports": ports,
+            })
+        })
+        .collect();
+
+    // Sort by IP for stable display order
+    results.sort_by(|a, b| {
+        a["ip"]
+            .as_str()
+            .unwrap_or("")
+            .cmp(b["ip"].as_str().unwrap_or(""))
+    });
 
     PortScanData {
         results,
         any_running,
+    }
+}
+
+/// Check if a job definition has a pending (queued/running) run.
+/// Returns true if pending and not stuck (caller should skip).
+/// Updates `any_running` flag.
+async fn is_job_pending(
+    db: &sea_orm::DatabaseConnection,
+    def_id: i32,
+    any_running: &mut bool,
+) -> bool {
+    let pending = job_runs::Entity::find()
+        .filter(job_runs::Column::JobDefinitionId.eq(def_id))
+        .filter(
+            job_runs::Column::Status
+                .eq("queued")
+                .or(job_runs::Column::Status.eq("running")),
+        )
+        .one(db)
+        .await
+        .ok()
+        .flatten();
+
+    if let Some(ref p) = pending {
+        let is_stuck = p.started_at.as_ref().is_some_and(|started| {
+            let age = chrono::Utc::now() - started.with_timezone(&chrono::Utc);
+            age.num_minutes() > 10
+        });
+        if !is_stuck {
+            *any_running = true;
+            return true;
+        }
+    }
+    false
+}
+
+/// Collect completed or failed results for a job definition into the IP map.
+async fn collect_def_result(
+    db: &sea_orm::DatabaseConnection,
+    def_id: i32,
+    hostname: &str,
+    subdomain: &str,
+    ip_results: &mut std::collections::HashMap<String, (Vec<String>, Vec<serde_json::Value>, u64)>,
+) {
+    if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def_id).await {
+        if let Some(summary) = run
+            .result_summary
+            .as_deref()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(s).ok())
+        {
+            let ip = summary["ip"]
+                .as_str()
+                .filter(|s| !s.is_empty())
+                .unwrap_or(hostname)
+                .to_string();
+            if ip.is_empty() && summary["total_open"].as_u64().unwrap_or(0) == 0 {
+                return;
+            }
+            let total_open = summary["total_open"].as_u64().unwrap_or(0);
+            let ports = summary["ports"].as_array().cloned().unwrap_or_default();
+
+            let entry = ip_results
+                .entry(ip)
+                .or_insert_with(|| (Vec::new(), Vec::new(), 0));
+            if !subdomain.is_empty() && !entry.0.contains(&subdomain.to_string()) {
+                entry.0.push(subdomain.to_string());
+            }
+            if ports.len() > entry.1.len() {
+                entry.1 = ports;
+                entry.2 = total_open;
+            }
+        }
+    } else {
+        // Show failed scans so the user sees the target was attempted
+        let failed = job_runs::Entity::find()
+            .filter(job_runs::Column::JobDefinitionId.eq(def_id))
+            .filter(job_runs::Column::Status.eq("failed"))
+            .one(db)
+            .await
+            .ok()
+            .flatten();
+        if failed.is_some() {
+            let entry = ip_results
+                .entry(hostname.to_string())
+                .or_insert_with(|| (Vec::new(), Vec::new(), 0));
+            if !subdomain.is_empty() && !entry.0.contains(&subdomain.to_string()) {
+                entry.0.push(subdomain.to_string());
+            }
+        }
     }
 }
 
