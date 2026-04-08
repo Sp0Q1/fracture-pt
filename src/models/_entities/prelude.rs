@@ -7,7 +7,6 @@ pub use super::non_findings::Entity as NonFindings;
 pub use super::pentester_assignments::Entity as PentesterAssignments;
 pub use super::pricing_tiers::Entity as PricingTiers;
 pub use super::reports::Entity as Reports;
-pub use super::scan_jobs::Entity as ScanJobs;
 pub use super::scan_targets::Entity as ScanTargets;
 pub use super::services::Entity as Services;
 pub use super::subscriptions::Entity as Subscriptions;

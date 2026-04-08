@@ -54,12 +54,6 @@ pub enum Relation {
     )]
     Engagements,
     #[sea_orm(
-        belongs_to = "super::scan_jobs::Entity",
-        from = "Column::JobId",
-        to = "super::scan_jobs::Column::Id"
-    )]
-    ScanJobs,
-    #[sea_orm(
         belongs_to = "super::job_runs::Entity",
         from = "Column::JobRunId",
         to = "super::job_runs::Column::Id"
@@ -82,12 +76,6 @@ impl Related<super::organizations::Entity> for Entity {
 impl Related<super::engagements::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Engagements.def()
-    }
-}
-
-impl Related<super::scan_jobs::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ScanJobs.def()
     }
 }
 
