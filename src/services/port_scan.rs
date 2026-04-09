@@ -22,6 +22,7 @@ pub struct PortScanResult {
     pub os_guess: String,
     pub scan_time: String,
     pub total_open: usize,
+    pub raw_output: String,
 }
 
 /// Validates a scan target (hostname or IP) to prevent command injection and
@@ -118,13 +119,24 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
         .map_err(|e| format!("Task join error: {e}"))?
         .map_err(|e| format!("Failed to execute nmap: {e}"))?;
 
+    let stdout = String::from_utf8_lossy(&result.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&result.stderr).to_string();
+
     if !result.status.success() {
-        let stderr = String::from_utf8_lossy(&result.stderr);
         return Err(format!("nmap exited with error: {stderr}"));
     }
 
-    let xml = String::from_utf8_lossy(&result.stdout);
-    Ok(parse_nmap_xml(&xml, &validated))
+    let mut parsed = parse_nmap_xml(&stdout, &validated);
+    // Store raw output (truncated to avoid bloating the DB)
+    let mut raw = stdout;
+    if !stderr.is_empty() {
+        raw.push_str("\n--- stderr ---\n");
+        raw.push_str(&stderr);
+    }
+    // Cap at 100KB to prevent DB bloat
+    raw.truncate(100_000);
+    parsed.raw_output = raw;
+    Ok(parsed)
 }
 
 /// Parses nmap XML output using simple string matching.
@@ -225,6 +237,7 @@ fn parse_nmap_xml(xml: &str, target: &str) -> PortScanResult {
         os_guess,
         scan_time,
         total_open,
+        raw_output: String::new(),
     }
 }
 

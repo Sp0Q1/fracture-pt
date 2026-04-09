@@ -45,6 +45,7 @@ impl JobExecutor for PortScanExecutor {
             "scan_time": result.scan_time,
             "os_guess": result.os_guess,
             "ports": result.ports,
+            "raw_output": result.raw_output,
         });
 
         Ok(JobResult { summary, diffs })

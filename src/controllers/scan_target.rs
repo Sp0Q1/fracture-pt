@@ -272,6 +272,7 @@ async fn lookup_port_scan_status(
     db: &sea_orm::DatabaseConnection,
     org_id: i32,
     target_id: i32,
+    hostname: &str,
 ) -> JobScanStatus {
     let port_defs = job_definitions::Entity::find()
         .filter(job_definitions::Column::OrgId.eq(org_id))
@@ -280,6 +281,10 @@ async fn lookup_port_scan_status(
         .await
         .unwrap_or_default();
 
+    // Match by target_id OR by subdomain that is exactly our hostname
+    // or ends with .hostname (e.g. www.example.com for target example.com).
+    // Already filtered by org_id above — no cross-org leakage.
+    let dot_suffix = format!(".{hostname}");
     let matching_def = port_defs.into_iter().find(|d| {
         serde_json::from_str::<serde_json::Value>(&d.config)
             .ok()
@@ -287,6 +292,9 @@ async fn lookup_port_scan_status(
                 v["target_id"]
                     .as_i64()
                     .is_some_and(|id| id == i64::from(target_id))
+                    || v["subdomain"]
+                        .as_str()
+                        .is_some_and(|s| s == hostname || s.ends_with(&dot_suffix))
             })
     });
 
@@ -329,8 +337,13 @@ pub async fn show(
     };
 
     let has_target = item.hostname.is_some() || item.ip_address.is_some();
+    let target_hostname = item
+        .hostname
+        .as_deref()
+        .or(item.ip_address.as_deref())
+        .unwrap_or("");
     let port = if has_target {
-        lookup_port_scan_status(&ctx.db, org_ctx.org.id, item.id).await
+        lookup_port_scan_status(&ctx.db, org_ctx.org.id, item.id, target_hostname).await
     } else {
         JobScanStatus {
             result: None,
