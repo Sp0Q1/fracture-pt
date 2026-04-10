@@ -24,9 +24,21 @@
     </div>
 
     {% if items %}
+        {% if is_admin %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form id="bulk-delete-form" action="/findings/bulk-delete" method="post">
+        <div class="mb-2">
+            <button type="submit" class="button outline small" data-variant="danger" onclick="return confirm('Delete all selected findings?')" disabled id="bulk-delete-btn">Delete Selected</button>
+            <label class="checkbox-label d-inline" style="margin-left:.5rem">
+                <input type="checkbox" id="select-all"> Select all
+            </label>
+        </div>
+        {% endif %}
+
         <table class="clickable-rows">
             <thead>
                 <tr>
+                    {% if is_admin %}<th></th>{% endif %}
                     <th>Title</th>
                     <th>Severity</th>
                     <th>Category</th>
@@ -36,6 +48,11 @@
             <tbody>
                {% for item in items %}
                 <tr data-href="/findings/{{ item.pid }}">
+                    {% if is_admin %}
+                    <td onclick="event.stopPropagation()">
+                        <input type="checkbox" name="pids" value="{{ item.pid }}" class="finding-checkbox">
+                    </td>
+                    {% endif %}
                     <td>{{ item.title }}</td>
                     <td>
                         <span class="badge {% if item.severity == 'extreme' %}danger{% elif item.severity == 'high' %}warning{% elif item.severity == 'elevated' %}primary{% elif item.severity == 'moderate' %}secondary{% else %}secondary{% endif %}">
@@ -48,6 +65,10 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if is_admin %}
+        </form>
+        {% endif %}
     {% else %}
         <article class="card empty-state">
             <h3>No Findings</h3>
@@ -55,3 +76,27 @@
         </article>
     {% endif %}
 {% endblock content %}
+
+{% if is_admin %}
+{% block js %}
+<script>
+(function() {
+    var selectAll = document.getElementById("select-all");
+    var btn = document.getElementById("bulk-delete-btn");
+    var boxes = document.querySelectorAll(".finding-checkbox");
+    function updateBtn() {
+        var any = false;
+        boxes.forEach(function(b) { if (b.checked) any = true; });
+        btn.disabled = !any;
+    }
+    if (selectAll) {
+        selectAll.addEventListener("change", function() {
+            boxes.forEach(function(b) { b.checked = selectAll.checked; });
+            updateBtn();
+        });
+    }
+    boxes.forEach(function(b) { b.addEventListener("change", updateBtn); });
+})();
+</script>
+{% endblock js %}
+{% endif %}

@@ -1,6 +1,8 @@
+use axum::response::Redirect;
 use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+use serde::Deserialize;
 
 use super::middleware;
 use crate::models::_entities::{engagements, pentester_assignments};
@@ -63,6 +65,7 @@ pub async fn list(
         &user_orgs,
         &items,
         &editable_engagements,
+        is_admin,
     )
 }
 
@@ -84,12 +87,72 @@ pub async fn show(
         .await
         .ok_or_else(|| Error::NotFound)?;
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
-    views::finding::show(&v, &user, &org_ctx, &user_orgs, &item)
+    let is_admin =
+        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+    views::finding::show(&v, &user, &org_ctx, &user_orgs, &item, is_admin)
+}
+
+/// `POST /findings/:pid/delete` -- delete a single finding (admin only).
+#[debug_handler]
+pub async fn delete(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let is_admin =
+        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+    if !is_admin {
+        return Err(Error::NotFound);
+    }
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    item.delete(&ctx.db).await?;
+    Ok(Redirect::to("/findings").into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BulkDeleteParams {
+    pub pids: Vec<String>,
+}
+
+/// `POST /findings/bulk-delete` -- delete multiple findings (admin only).
+#[debug_handler]
+pub async fn bulk_delete(
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+    Form(params): Form<BulkDeleteParams>,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let is_admin =
+        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+    if !is_admin {
+        return Err(Error::NotFound);
+    }
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    for pid in &params.pids {
+        if let Some(item) = findings::Model::find_by_pid_and_org(&ctx.db, pid, org_ctx.org.id).await
+        {
+            let _ = item.delete(&ctx.db).await;
+        }
+    }
+    Ok(Redirect::to("/findings").into_response())
 }
 
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/findings")
         .add("/", get(list))
+        .add("/bulk-delete", post(bulk_delete))
         .add("/{pid}", get(show))
+        .add("/{pid}/delete", post(delete))
 }

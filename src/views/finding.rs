@@ -4,7 +4,7 @@ use crate::controllers::middleware::OrgContext;
 use crate::models::_entities::{engagements, findings, organizations, users};
 use crate::services::markdown;
 
-/// Render the finding list with optional "Add Finding" for admins/pentesters.
+/// Render the finding list with optional admin controls.
 pub fn list(
     v: &impl ViewRenderer,
     user: &users::Model,
@@ -12,6 +12,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[findings::Model],
     editable_engagements: &[engagements::Model],
+    is_admin: bool,
 ) -> Result<Response> {
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["items"] = serde_json::json!(items);
@@ -19,6 +20,7 @@ pub fn list(
         .iter()
         .map(|e| serde_json::json!({"pid": e.pid.to_string(), "title": e.title}))
         .collect::<Vec<_>>());
+    ctx["is_admin"] = serde_json::json!(is_admin);
     format::render().view(v, "finding/list.html", data!(ctx))
 }
 
@@ -29,9 +31,11 @@ pub fn show(
     org_ctx: &OrgContext,
     user_orgs: &[organizations::Model],
     item: &findings::Model,
+    is_admin: bool,
 ) -> Result<Response> {
     let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
     ctx["item"] = serde_json::json!(item);
+    ctx["is_admin"] = serde_json::json!(is_admin);
     ctx["description_html"] = serde_json::json!(markdown::render(&item.description));
     ctx["technical_description_html"] =
         serde_json::json!(item.technical_description.as_deref().map(markdown::render));
