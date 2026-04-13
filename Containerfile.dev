@@ -10,6 +10,8 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM chef AS builder
 RUN rustup component add rustfmt clippy
 COPY --from=planner /app/recipe.json recipe.json
+# Copy Cargo.toml so cargo-chef picks up [profile.dev] settings
+COPY Cargo.toml Cargo.lock ./
 RUN cargo chef cook --recipe-path recipe.json
 COPY . /app
 RUN cargo build
