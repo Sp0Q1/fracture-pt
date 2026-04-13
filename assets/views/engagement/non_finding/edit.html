@@ -41,7 +41,7 @@
     <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
     <form action="/engagements/{{ engagement.pid }}/non-findings/{{ non_finding.pid }}/delete" method="post">
         <div class="form-actions">
-            <button type="submit" data-variant="danger" onclick="return confirm('Are you sure you want to delete this non-finding?')">Delete Non-Finding</button>
+            <button type="submit" data-variant="danger" data-confirm="Are you sure you want to delete this non-finding?">Delete Non-Finding</button>
         </div>
     </form>
 </article>

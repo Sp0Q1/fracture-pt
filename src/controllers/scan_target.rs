@@ -268,12 +268,13 @@ async fn lookup_asm_status(
 }
 
 /// Looks up port scan status for a target by target ID.
-async fn lookup_port_scan_status(
+/// Collect ALL port scan results for a target (multiple IPs).
+async fn lookup_all_port_scans(
     db: &sea_orm::DatabaseConnection,
     org_id: i32,
     target_id: i32,
     hostname: &str,
-) -> JobScanStatus {
+) -> (Vec<serde_json::Value>, bool) {
     let port_defs = job_definitions::Entity::find()
         .filter(job_definitions::Column::OrgId.eq(org_id))
         .filter(job_definitions::Column::JobType.eq("port_scan"))
@@ -281,31 +282,34 @@ async fn lookup_port_scan_status(
         .await
         .unwrap_or_default();
 
-    // Match by target_id OR by subdomain that is exactly our hostname
-    // or ends with .hostname (e.g. www.example.com for target example.com).
-    // Already filtered by org_id above — no cross-org leakage.
     let dot_suffix = format!(".{hostname}");
-    let matching_def = port_defs.into_iter().find(|d| {
-        serde_json::from_str::<serde_json::Value>(&d.config)
-            .ok()
-            .is_some_and(|v| {
-                v["target_id"]
-                    .as_i64()
-                    .is_some_and(|id| id == i64::from(target_id))
-                    || v["subdomain"]
-                        .as_str()
-                        .is_some_and(|s| s == hostname || s.ends_with(&dot_suffix))
-            })
-    });
+    let mut results = Vec::new();
+    let mut any_running = false;
 
-    match matching_def {
-        Some(def) => lookup_job_run_status(db, &def).await,
-        None => JobScanStatus {
-            result: None,
-            status: None,
-            error: None,
-        },
+    for def in &port_defs {
+        let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) else {
+            continue;
+        };
+        let matches = cfg["target_id"]
+            .as_i64()
+            .is_some_and(|id| id == i64::from(target_id))
+            || cfg["subdomain"]
+                .as_str()
+                .is_some_and(|s| s == hostname || s.ends_with(&dot_suffix));
+        if !matches {
+            continue;
+        }
+
+        let status = lookup_job_run_status(db, def).await;
+        if status.status.as_deref() == Some("running") {
+            any_running = true;
+        }
+        if let Some(result) = status.result {
+            results.push(result);
+        }
     }
+
+    (results, any_running)
 }
 
 /// `GET /targets/:pid` -- target detail + verification status.
@@ -342,14 +346,10 @@ pub async fn show(
         .as_deref()
         .or(item.ip_address.as_deref())
         .unwrap_or("");
-    let port = if has_target {
-        lookup_port_scan_status(&ctx.db, org_ctx.org.id, item.id, target_hostname).await
+    let (port_scans, port_scans_running) = if has_target {
+        lookup_all_port_scans(&ctx.db, org_ctx.org.id, item.id, target_hostname).await
     } else {
-        JobScanStatus {
-            result: None,
-            status: None,
-            error: None,
-        }
+        (Vec::new(), false)
     };
 
     // Determine current scan schedule (from any matching job definition)
@@ -392,9 +392,8 @@ pub async fn show(
         asm_result: asm.result.as_ref(),
         status: asm.status.as_deref(),
         error: asm.error.as_deref(),
-        port_scan_result: port.result.as_ref(),
-        port_scan_status: port.status.as_deref(),
-        port_scan_error: port.error.as_deref(),
+        port_scans: &port_scans,
+        port_scans_running,
         schedule: schedule_label,
         scheduling_enabled: tier.scheduling_enabled(),
         is_free_tier: matches!(tier, PlanTier::Free),

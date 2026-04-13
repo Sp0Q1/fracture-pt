@@ -77,7 +77,7 @@
     <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
     <form action="/admin/users/{{ target_user.pid }}/delete" method="post">
         <div class="form-actions">
-            <button type="submit" data-variant="danger" onclick="return confirm('Delete {{ target_user.name }}? This removes all their org memberships and assignments. The IdP account will still exist.')">Delete User</button>
+            <button type="submit" data-variant="danger" data-confirm="Delete this user? This removes all their org memberships and assignments. The IdP account will still exist.">Delete User</button>
         </div>
     </form>
 </article>

@@ -38,6 +38,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Confirm dialogs: data-confirm on submit buttons replaces inline onclick
+    document.querySelectorAll('[data-confirm]').forEach(function (el) {
+        var form = el.closest('form');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!confirm(el.getAttribute('data-confirm'))) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+
+    // Auto-submit selects: data-auto-submit on <select> replaces inline onchange
+    document.querySelectorAll('select[data-auto-submit]').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+            sel.closest('form').submit();
+        });
+    });
+
     // Mobile menu toggle
     var menuToggle = document.getElementById('mobile-menu-toggle');
     if (menuToggle) {

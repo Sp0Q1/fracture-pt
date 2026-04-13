@@ -69,7 +69,7 @@
         {% if is_admin %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/findings/{{ item.pid }}/delete" method="post" class="d-inline">
-            <button type="submit" data-variant="danger" onclick="return confirm('Delete this finding permanently?')">Delete Finding</button>
+            <button type="submit" data-variant="danger" data-confirm="Delete this finding permanently?">Delete Finding</button>
         </form>
         {% endif %}
     </div>
