@@ -56,3 +56,28 @@ loco-rs = { workspace = true, features = ["testing"] }
 serial_test = { version = "3.4" }
 rstest = { version = "0.26" }
 insta = { version = "1.46", features = ["redactions", "yaml", "filters"] }
+
+# ---------------------------------------------------------------------------
+# Build profiles — see https://doc.rust-lang.org/cargo/reference/profiles.html
+# ---------------------------------------------------------------------------
+
+[profile.dev]
+# line-tables-only: backtraces still work, but debug info is much smaller
+# (~40% reduction), faster linking, smaller target/ directory.
+debug = "line-tables-only"
+# incremental is already true by default for dev, just being explicit.
+incremental = true
+
+[profile.dev.package."*"]
+# Optimize all dependencies (they compile once and get cached).
+# opt-level 2 makes serde, crypto, compression, parsing, etc. dramatically
+# faster at runtime with minimal compile-time cost (cached by cargo-chef).
+opt-level = 2
+
+[profile.release]
+# Thin LTO: good balance of binary size/speed improvement vs compile time.
+lto = "thin"
+# Single codegen unit for maximum optimization.
+codegen-units = 1
+# Strip debug info from the release binary (~50% smaller).
+strip = "debuginfo"
