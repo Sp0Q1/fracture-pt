@@ -69,7 +69,7 @@
         {% if scheduling_enabled %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/schedule" method="post" class="d-inline">
-            <select name="schedule" onchange="this.form.submit()">
+            <select name="schedule" data-auto-submit>
                 <option value="off"{% if schedule == "off" %} selected{% endif %}>No schedule</option>
                 <option value="daily"{% if schedule == "daily" %} selected{% endif %}>Daily</option>
                 <option value="weekly"{% if schedule == "weekly" %} selected{% endif %}>Weekly</option>
@@ -141,72 +141,46 @@
 </section>
 {% endif %}
 
-{% if port_scan %}
+{% if port_scans | length > 0 %}
 <section class="mt-4">
     <h3>Port Scan Results</h3>
-    {% if port_scan.target %}
-    <p class="page-subtitle">Target: <code>{{ port_scan.target }}</code>{% if port_scan.ip %} ({{ port_scan.ip }}){% endif %}</p>
-    {% endif %}
-    <div class="asm-summary-strip max-w-800">
-        <div class="asm-stat">
-            <span class="asm-stat-number blue">{{ port_scan.total_open | default(value=0) }}</span>
-            <span class="asm-stat-label">Open Ports</span>
-        </div>
-        <div class="asm-stat">
-            <span class="asm-stat-number green">{{ port_scan.scan_time | default(value="-") }}</span>
-            <span class="asm-stat-label">Scan Time</span>
-        </div>
-        {% if port_scan.os_guess %}
-        <div class="asm-stat">
-            <span class="asm-stat-label">OS Guess</span>
-            <span class="asm-stat-label">{{ port_scan.os_guess }}</span>
-        </div>
+    {% for ps in port_scans %}
+    <article class="card card-accent mt-2">
+        <h4><code>{{ ps.target }}</code>{% if ps.ip %} ({{ ps.ip }}){% endif %} &mdash; {{ ps.total_open | default(value=0) }} open port{{ ps.total_open | default(value=0) | pluralize }}</h4>
+        {% if ps.ports | length > 0 %}
+        <table class="port-scan-table">
+            <thead>
+                <tr><th>Port</th><th>Protocol</th><th>State</th><th>Service</th><th>Version</th></tr>
+            </thead>
+            <tbody>
+                {% for p in ps.ports %}
+                {% if p.state == "open" %}
+                <tr>
+                    <td><code>{{ p.port }}</code></td>
+                    <td>{{ p.protocol }}</td>
+                    <td><span class="badge success">{{ p.state }}</span></td>
+                    <td>{{ p.service }}</td>
+                    <td>{{ p.version }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No open ports detected</p>
         {% endif %}
-    </div>
-
-    {% if port_scan.ports and port_scan.ports | length > 0 %}
-    <table class="port-scan-table">
-        <thead>
-            <tr>
-                <th>Port</th>
-                <th>Protocol</th>
-                <th>State</th>
-                <th>Service</th>
-                <th>Version</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in port_scan.ports %}
-            <tr>
-                <td><code>{{ p.port }}</code></td>
-                <td>{{ p.protocol }}</td>
-                <td>
-                    <span class="badge {% if p.state == 'open' %}success{% elif p.state == 'filtered' %}warning{% else %}secondary{% endif %}">
-                        {{ p.state }}
-                    </span>
-                </td>
-                <td>{{ p.service }}</td>
-                <td>{{ p.version }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
+    </article>
+    {% endfor %}
 </section>
-{% elif port_scan_status == "running" %}
+{% endif %}
+
+{% if port_scan_status == "running" %}
 <section class="mt-4">
     <article class="card card-accent scan-progress-card">
         <div class="scan-spinner"></div>
         <h3>Port Scan in Progress</h3>
         <p>Running nmap TCP connect scan on top 1000 ports&hellip;</p>
         <p class="text-muted text-sm">This page refreshes automatically.</p>
-    </article>
-</section>
-{% elif port_scan_status == "failed" %}
-<section class="mt-4">
-    <article class="card card-accent scan-failed-card">
-        <h3>Port Scan Failed</h3>
-        <p>The port scan could not be completed.{% if port_scan_error %} <strong>Reason:</strong> {{ port_scan_error }}{% endif %}</p>
     </article>
 </section>
 {% endif %}

@@ -8,9 +8,8 @@ pub struct ScanState<'a> {
     pub asm_result: Option<&'a serde_json::Value>,
     pub status: Option<&'a str>,
     pub error: Option<&'a str>,
-    pub port_scan_result: Option<&'a serde_json::Value>,
-    pub port_scan_status: Option<&'a str>,
-    pub port_scan_error: Option<&'a str>,
+    pub port_scans: &'a [serde_json::Value],
+    pub port_scans_running: bool,
     pub schedule: &'a str,
     pub scheduling_enabled: bool,
     pub is_free_tier: bool,
@@ -60,11 +59,14 @@ pub fn show(
     }
     ctx["scan_status"] = serde_json::json!(scan.status.unwrap_or(""));
     ctx["scan_error"] = serde_json::json!(scan.error.unwrap_or(""));
-    if let Some(port_scan) = scan.port_scan_result {
-        ctx["port_scan"] = port_scan.clone();
-    }
-    ctx["port_scan_status"] = serde_json::json!(scan.port_scan_status.unwrap_or(""));
-    ctx["port_scan_error"] = serde_json::json!(scan.port_scan_error.unwrap_or(""));
+    ctx["port_scans"] = serde_json::json!(scan.port_scans);
+    ctx["port_scan_status"] = serde_json::json!(if scan.port_scans_running {
+        "running"
+    } else if scan.port_scans.is_empty() {
+        ""
+    } else {
+        "completed"
+    });
     ctx["schedule"] = serde_json::json!(scan.schedule);
     ctx["scheduling_enabled"] = serde_json::json!(scan.scheduling_enabled);
     ctx["is_free_tier"] = serde_json::json!(scan.is_free_tier);

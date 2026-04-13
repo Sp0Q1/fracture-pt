@@ -89,7 +89,7 @@
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/orgs/{{ org.pid }}/delete" method="post">
             <div class="form-actions">
-                <button type="submit" data-variant="danger" onclick="return confirm('WARNING: This will delete the organization AND the user account. The user can re-register by logging in again.\n\nAre you sure?')">Delete Organization &amp; User</button>
+                <button type="submit" data-variant="danger" data-confirm="WARNING: This will delete the organization AND the user account. The user can re-register by logging in again. Are you sure?">Delete Organization &amp; User</button>
             </div>
         </form>
         {% else %}
@@ -97,7 +97,7 @@
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/orgs/{{ org.pid }}/delete" method="post">
             <div class="form-actions">
-                <button type="submit" data-variant="danger" onclick="return confirm('Are you sure you want to delete {{ org.name }}? All targets, engagements, findings, and reports will be permanently removed.')">Delete Organization</button>
+                <button type="submit" data-variant="danger" data-confirm="Are you sure you want to delete {{ org.name }}? All targets, engagements, findings, and reports will be permanently removed.">Delete Organization</button>
             </div>
         </form>
         {% endif %}
