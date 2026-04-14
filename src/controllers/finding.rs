@@ -106,13 +106,22 @@ pub async fn bulk_delete(
     admin: PlatformAdmin,
     Form(params): Form<BulkDeleteParams>,
 ) -> Result<Response> {
-    for pid in &params.pids {
-        if let Some(item) =
-            findings::Model::find_by_pid_and_org(&ctx.db, pid, admin.org_ctx.org.id).await
-        {
-            let _ = item.delete(&ctx.db).await;
-        }
+    use crate::models::_entities::findings::{Column, Entity as FindingEntity};
+
+    let uuids: Vec<sea_orm::prelude::Uuid> = params
+        .pids
+        .iter()
+        .filter_map(|pid| sea_orm::prelude::Uuid::parse_str(pid).ok())
+        .collect();
+
+    if !uuids.is_empty() {
+        FindingEntity::delete_many()
+            .filter(Column::OrgId.eq(admin.org_ctx.org.id))
+            .filter(Column::Pid.is_in(uuids))
+            .exec(&ctx.db)
+            .await?;
     }
+
     Ok(Redirect::to("/findings").into_response())
 }
 
