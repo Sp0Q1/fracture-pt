@@ -79,7 +79,8 @@ pub fn show(
     ctx["current_user_id"] = serde_json::json!(user.id);
 
     // Compute unlinked targets (org targets not yet linked to this engagement)
-    let linked_ids: Vec<i32> = data.linked_targets.iter().map(|t| t.id).collect();
+    let linked_ids: std::collections::HashSet<i32> =
+        data.linked_targets.iter().map(|t| t.id).collect();
     let unlinked: Vec<&scan_targets::Model> = data
         .all_org_targets
         .iter()

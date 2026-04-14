@@ -19,6 +19,7 @@ mod m20260403_000001_add_job_run_id_to_findings;
 mod m20260403_000002_create_non_findings;
 mod m20260403_000003_create_engagement_targets;
 mod m20260407_000001_create_engagement_comments;
+mod m20260410_000001_add_query_indexes;
 
 pub struct Migrator;
 
@@ -44,6 +45,7 @@ impl MigratorTrait for Migrator {
                 Box::new(m20260403_000002_create_non_findings::Migration),
                 Box::new(m20260403_000003_create_engagement_targets::Migration),
                 Box::new(m20260407_000001_create_engagement_comments::Migration),
+                Box::new(m20260410_000001_add_query_indexes::Migration),
             ])
             .collect()
     }

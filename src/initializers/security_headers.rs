@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use axum::{
-    http::{header, HeaderName},
+    http::{header, HeaderName, HeaderValue},
     middleware,
     response::Response,
     Router as AxumRouter,
@@ -16,25 +16,28 @@ async fn set_security_headers(request: axum::extract::Request, next: middleware:
 
     headers.insert(
         header::CONTENT_SECURITY_POLICY,
-        "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
-         font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; \
-         frame-ancestors 'none'"
-            .parse()
-            .unwrap(),
+        HeaderValue::from_static(
+            "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
+             font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; \
+             frame-ancestors 'none'",
+        ),
     );
-    headers.insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
-    headers.insert(header::X_FRAME_OPTIONS, "DENY".parse().unwrap());
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
     headers.insert(
         header::REFERRER_POLICY,
-        "strict-origin-when-cross-origin".parse().unwrap(),
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
     headers.insert(
         HeaderName::from_static("x-permitted-cross-domain-policies"),
-        "none".parse().unwrap(),
+        HeaderValue::from_static("none"),
     );
     headers.insert(
         header::STRICT_TRANSPORT_SECURITY,
-        "max-age=63072000; includeSubDomains".parse().unwrap(),
+        HeaderValue::from_static("max-age=63072000; includeSubDomains"),
     );
 
     // Remove framework information leakage

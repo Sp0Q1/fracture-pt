@@ -436,7 +436,8 @@ pub async fn generate_report(
         .map_err(|e| format!("Failed to build ZIP: {e}"))?;
     std::fs::write(&zip_path, &zip_data).map_err(|e| format!("Failed to write ZIP: {e}"))?;
 
-    // Create report record in database (HTML as primary format)
+    // Create report record in database (HTML as primary format).
+    // If the DB insert fails, clean up the files we just wrote to avoid orphans.
     #[allow(clippy::default_trait_access)]
     let mut report: reports::ActiveModel = Default::default();
     report.org_id = Set(engagement.org_id);
@@ -446,10 +447,12 @@ pub async fn generate_report(
     report.format = Set("html".to_string());
     report.storage_path = Set(Some(html_path.to_string_lossy().to_string()));
     report.generated_at = Set(Some(chrono::Utc::now().into()));
-    report
-        .insert(db)
-        .await
-        .map_err(|e| format!("Failed to save report record: {e}"))?;
+    if let Err(e) = report.insert(db).await {
+        // DB insert failed — remove orphaned files before returning the error
+        let _ = std::fs::remove_file(&html_path);
+        let _ = std::fs::remove_file(&zip_path);
+        return Err(format!("Failed to save report record: {e}"));
+    }
 
     Ok(html_path.to_string_lossy().to_string())
 }

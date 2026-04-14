@@ -35,8 +35,7 @@ pub fn index(
     }
     ctx["active_engagements"] = serde_json::json!(data.active_engagements);
     ctx["attack_surface"] = serde_json::json!(data.attack_surface);
-    ctx["attack_surface_json"] =
-        serde_json::json!(serde_json::to_string(&data.attack_surface).unwrap_or_default());
+    ctx["attack_surface_json"] = serde_json::json!(&data.attack_surface);
     ctx["recent_findings"] = serde_json::json!(data.recent_findings);
     format::render().view(v, "home/index.html", data!(ctx))
 }

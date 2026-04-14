@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-use std::process::Command;
 use std::time::Duration;
+use tokio::process::Command;
 
 /// Information about a single discovered port.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -87,42 +87,68 @@ fn validate_target(target: &str) -> Result<String, String> {
 
 /// Runs an nmap TCP connect scan against the target.
 pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
+    use tokio::io::AsyncReadExt;
+
     let validated = validate_target(target)?;
 
-    let target_clone = validated.clone();
-    let is_ipv6 = target_clone.contains(':');
-    let handle = tokio::task::spawn_blocking(move || {
-        let mut args = vec![
-            "--unprivileged",
-            "-sT", // TCP connect scan (no raw sockets needed)
-            "-sV", // Service/version detection
-            "--version-intensity",
-            "2",   // Light probing (0-9, default 7 — too slow)
-            "-T4", // Aggressive timing
-            "--top-ports",
-            "1000",
-            "--host-timeout",
-            "120s", // Per-host timeout (catches filtered ports)
-            "-oX",
-            "-",
-        ];
-        if is_ipv6 {
-            args.push("-6");
-        }
-        args.push(&target_clone);
-        Command::new("nmap").args(&args).output()
-    });
+    let is_ipv6 = validated.contains(':');
+    let mut args = vec![
+        "--unprivileged",
+        "-sT", // TCP connect scan (no raw sockets needed)
+        "-sV", // Service/version detection
+        "--version-intensity",
+        "2",   // Light probing (0-9, default 7 — too slow)
+        "-T4", // Aggressive timing
+        "--top-ports",
+        "1000",
+        "--host-timeout",
+        "120s", // Per-host timeout (catches filtered ports)
+        "-oX",
+        "-",
+    ];
+    if is_ipv6 {
+        args.push("-6");
+    }
+    args.push(&validated);
 
-    let result = tokio::time::timeout(Duration::from_secs(300), handle)
-        .await
-        .map_err(|_| "Port scan timed out after 300 seconds".to_string())?
-        .map_err(|e| format!("Task join error: {e}"))?
+    let mut child = Command::new("nmap")
+        .args(&args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .map_err(|e| format!("Failed to execute nmap: {e}"))?;
 
-    let stdout = String::from_utf8_lossy(&result.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&result.stderr).to_string();
+    // Take stdout/stderr handles before waiting, so `child` stays alive for
+    // kill() on timeout.
+    let mut child_stdout = child.stdout.take();
+    let mut child_stderr = child.stderr.take();
 
-    if !result.status.success() {
+    let status =
+        if let Ok(result) = tokio::time::timeout(Duration::from_secs(300), child.wait()).await {
+            result.map_err(|e| format!("Failed to wait on nmap: {e}"))?
+        } else {
+            // Timeout — kill the nmap process to prevent zombies
+            let _ = child.kill().await;
+            return Err("Port scan timed out after 300 seconds".to_string());
+        };
+
+    // Read captured output (process has exited, so these reads complete immediately)
+    let stdout = if let Some(ref mut out) = child_stdout {
+        let mut buf = Vec::new();
+        let _ = out.read_to_end(&mut buf).await;
+        String::from_utf8_lossy(&buf).to_string()
+    } else {
+        String::new()
+    };
+    let stderr = if let Some(ref mut err) = child_stderr {
+        let mut buf = Vec::new();
+        let _ = err.read_to_end(&mut buf).await;
+        String::from_utf8_lossy(&buf).to_string()
+    } else {
+        String::new()
+    };
+
+    if !status.success() {
         return Err(format!("nmap exited with error: {stderr}"));
     }
 
