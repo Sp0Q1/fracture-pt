@@ -66,7 +66,7 @@ async fn test_create_subscription() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "createsub").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let org = &orgs[0];
     let (_svc, tier) = setup_service_and_tier(db, "createsub").await;
 
@@ -93,7 +93,7 @@ async fn test_subscription_sets_pid() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "subpid").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let (_svc, tier) = setup_service_and_tier(db, "subpid").await;
 
     let sub = subscriptions::ActiveModel {
@@ -117,7 +117,7 @@ async fn test_find_active_subscription_for_org() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "findactive").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let org = &orgs[0];
     let (_svc, tier) = setup_service_and_tier(db, "findactive").await;
 
@@ -149,7 +149,7 @@ async fn test_find_subscription_by_pid_and_org() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "bypidorg").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let org = &orgs[0];
     let (_svc, tier) = setup_service_and_tier(db, "bypidorg").await;
 
@@ -181,8 +181,8 @@ async fn test_subscription_cross_org_isolation() {
 
     let alice = create_test_user(db, "sub-iso-alice").await;
     let bob = create_test_user(db, "sub-iso-bob").await;
-    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await;
-    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await;
+    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await.unwrap();
+    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await.unwrap();
     let (_svc, tier) = setup_service_and_tier(db, "sub-iso").await;
 
     subscriptions::ActiveModel {

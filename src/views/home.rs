@@ -24,7 +24,7 @@ pub fn index(
     user_orgs: &[organizations::Model],
     data: &DashboardData,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["target_count"] = serde_json::json!(data.target_count);
     ctx["engagement_count"] = serde_json::json!(data.engagement_count);
     ctx["findings_count"] = serde_json::json!(data.findings_count);

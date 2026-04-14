@@ -32,7 +32,7 @@ pub async fn list(
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let items = scan_targets::Entity::find()
         .order_by_desc(scan_targets::Column::CreatedAt)

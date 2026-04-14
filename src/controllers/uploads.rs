@@ -79,7 +79,7 @@ pub async fn show(
     jar: CookieJar,
 ) -> Result<Response> {
     let upload = upload_model::Model::find_by_pid(&ctx.db, &pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
 
     let vis = upload_model::Visibility::parse(&upload.visibility);
@@ -159,7 +159,7 @@ pub async fn destroy(
     let user = require_user!(user);
 
     let upload = upload_model::Model::find_by_pid(&ctx.db, &pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
 
     let is_uploader = upload.uploaded_by == user.id;

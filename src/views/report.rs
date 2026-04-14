@@ -11,7 +11,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[reports::Model],
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["items"] = serde_json::json!(items);
     format::render().view(v, "report/list.html", data!(ctx))
 }
@@ -24,7 +24,7 @@ pub fn show(
     user_orgs: &[organizations::Model],
     item: &reports::Model,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["item"] = serde_json::json!(item);
     format::render().view(v, "report/show.html", data!(ctx))
 }

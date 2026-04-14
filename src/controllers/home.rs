@@ -134,7 +134,7 @@ async fn fetch_asm_summary(
         .unwrap_or_default();
 
     for def in &asm_defs {
-        let run = job_runs::Model::find_latest_completed_by_definition(db, def.id).await;
+        let run = job_runs::Model::find_latest_completed_by_definition(db, def.id).await.ok().flatten();
         if let Some(run) = run {
             if let Some(summary_str) = run.result_summary.as_deref() {
                 if let Ok(v) = serde_json::from_str::<serde_json::Value>(summary_str) {
@@ -589,7 +589,7 @@ pub async fn index(
     match user {
         Some(user) => {
             let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-            let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+            let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await.unwrap_or_default();
 
             let dashboard_data = if let Some(ref oc) = org_ctx {
                 let org_id = oc.org.id;

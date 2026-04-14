@@ -65,8 +65,8 @@ async fn setup_two_orgs(
 ) {
     let alice = create_user(db, "alice").await;
     let bob = create_user(db, "bob").await;
-    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await;
-    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await;
+    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await.unwrap();
+    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await.unwrap();
     let svc = create_service(db, "iso").await;
 
     let eng_a = engagements::ActiveModel {
@@ -274,7 +274,7 @@ async fn test_idor_uuid_guessing_returns_none() {
     let db = &boot.app_context.db;
 
     let user = create_user(db, "uuid-guess").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let org_id = orgs[0].id;
 
     // Random valid UUID that doesn't exist
@@ -304,7 +304,7 @@ async fn test_idor_invalid_uuid_returns_none() {
     let db = &boot.app_context.db;
 
     let user = create_user(db, "bad-uuid").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let org_id = orgs[0].id;
 
     // Invalid UUID string
@@ -339,8 +339,8 @@ async fn test_pentester_sees_only_assigned_engagements() {
     // Create two engagements in different orgs
     let user1 = create_user(db, "pt-org1").await;
     let user2 = create_user(db, "pt-org2").await;
-    let orgs1 = organizations::Model::find_orgs_for_user(db, user1.id).await;
-    let orgs2 = organizations::Model::find_orgs_for_user(db, user2.id).await;
+    let orgs1 = organizations::Model::find_orgs_for_user(db, user1.id).await.unwrap();
+    let orgs2 = organizations::Model::find_orgs_for_user(db, user2.id).await.unwrap();
     let svc = create_service(db, "pt-iso").await;
 
     let eng1 = engagements::ActiveModel {
@@ -402,7 +402,7 @@ async fn test_pentester_finding_scoped_to_engagement() {
     let db = &boot.app_context.db;
 
     let user = create_user(db, "pt-finding").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "pt-finding-svc").await;
 
     let eng1 = engagements::ActiveModel {
@@ -472,8 +472,8 @@ async fn test_subscription_cross_org_isolation() {
 
     let alice = create_user(db, "sub-alice").await;
     let bob = create_user(db, "sub-bob").await;
-    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await;
-    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await;
+    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await.unwrap();
+    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await.unwrap();
 
     let svc = create_service(db, "sub-iso").await;
     let tier = pricing_tiers::ActiveModel {
@@ -526,8 +526,8 @@ async fn test_admin_find_by_pid_sees_all_engagements() {
 
     let user1 = create_user(db, "admin-all-1").await;
     let user2 = create_user(db, "admin-all-2").await;
-    let orgs1 = organizations::Model::find_orgs_for_user(db, user1.id).await;
-    let orgs2 = organizations::Model::find_orgs_for_user(db, user2.id).await;
+    let orgs1 = organizations::Model::find_orgs_for_user(db, user1.id).await.unwrap();
+    let orgs2 = organizations::Model::find_orgs_for_user(db, user2.id).await.unwrap();
     let svc = create_service(db, "admin-all").await;
 
     let eng1 = engagements::ActiveModel {

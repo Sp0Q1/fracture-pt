@@ -67,7 +67,7 @@ async fn test_create_engagement() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "createeng").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "eng-svc").await;
     let eng = create_engagement(db, orgs[0].id, svc.id, "Test Pentest", "requested").await;
 
@@ -84,7 +84,7 @@ async fn test_engagement_sets_pid_on_insert() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "engpid").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "engpid-svc").await;
     let eng = create_engagement(db, orgs[0].id, svc.id, "PID Test", "requested").await;
     assert!(!eng.pid.is_nil());
@@ -97,7 +97,7 @@ async fn test_find_engagements_by_org() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "engbyorg").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "engbyorg-svc").await;
 
     create_engagement(db, orgs[0].id, svc.id, "Eng 1", "requested").await;
@@ -117,7 +117,7 @@ async fn test_find_engagement_by_pid_and_org() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "engpidorg").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "engpidorg-svc").await;
     let eng = create_engagement(db, orgs[0].id, svc.id, "Find Me", "requested").await;
 
@@ -139,8 +139,8 @@ async fn test_engagement_cross_org_isolation() {
 
     let alice = create_test_user(db, "eng-iso-alice").await;
     let bob = create_test_user(db, "eng-iso-bob").await;
-    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await;
-    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await;
+    let alice_orgs = organizations::Model::find_orgs_for_user(db, alice.id).await.unwrap();
+    let bob_orgs = organizations::Model::find_orgs_for_user(db, bob.id).await.unwrap();
     let svc = create_service(db, "eng-iso-svc").await;
 
     let alice_eng = create_engagement(db, alice_orgs[0].id, svc.id, "Alice Eng", "requested").await;
@@ -165,7 +165,7 @@ async fn test_find_all_pending_engagements() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "pending").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "pending-svc").await;
 
     create_engagement(db, orgs[0].id, svc.id, "Pending", "requested").await;
@@ -184,7 +184,7 @@ async fn test_find_engagements_by_status() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "bystatus").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "bystatus-svc").await;
 
     create_engagement(db, orgs[0].id, svc.id, "Req1", "requested").await;
@@ -204,7 +204,7 @@ async fn test_engagement_scope_fields() {
     let db = &boot.app_context.db;
 
     let user = create_test_user(db, "scope").await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = create_service(db, "scope-svc").await;
 
     let eng = engagements::ActiveModel {

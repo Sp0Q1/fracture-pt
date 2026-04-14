@@ -31,16 +31,16 @@ pub async fn settings(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org = org_model::Model::find_by_pid(&ctx.db, &pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
     let membership =
         crate::models::org_members::Model::find_membership_or_admin(&ctx.db, org.id, user.id)
-            .await
+            .await?
             .ok_or_else(|| Error::NotFound)?;
     let org_ctx =
         middleware::OrgContext::from_membership(&ctx.db, org.clone(), membership, user.id).await;
     require_role!(org_ctx, OrgRole::Admin);
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let tier = PlanTier::from_org(&org);
     let alert_emails = org
@@ -48,7 +48,7 @@ pub async fn settings(
         .and_then(|v| v.as_str().map(String::from))
         .unwrap_or_default();
 
-    let mut tpl_ctx = crate::views::base_context(&user, &Some(org_ctx.clone()), &user_orgs);
+    let mut tpl_ctx = crate::views::base_context(&user, Some(&org_ctx), &user_orgs);
     tpl_ctx["org"] = serde_json::json!({
         "name": org.name,
         "pid": org.pid.to_string(),
@@ -77,11 +77,11 @@ pub async fn update_settings(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org = org_model::Model::find_by_pid(&ctx.db, &pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
     let membership =
         crate::models::org_members::Model::find_membership_or_admin(&ctx.db, org.id, user.id)
-            .await
+            .await?
             .ok_or_else(|| Error::NotFound)?;
     let org_ctx =
         middleware::OrgContext::from_membership(&ctx.db, org.clone(), membership, user.id).await;
@@ -109,7 +109,7 @@ pub async fn update_settings(
 
     // Re-read org to get updated settings (tier may have just changed)
     let updated_org = org_model::Model::find_by_pid(&ctx.db, &pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
     let tier = PlanTier::from_org(&updated_org);
     if tier.email_alerts_enabled() {

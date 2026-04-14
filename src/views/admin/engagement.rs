@@ -13,7 +13,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[serde_json::Value],
 ) -> Result<Response> {
-    let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
+    let mut ctx = crate::views::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["items"] = serde_json::json!(items);
     format::render().view(v, "admin/engagement/list.html", data!(ctx))
 }
@@ -36,7 +36,7 @@ pub fn show(
     engagement_org_name: &str,
     data: &ShowViewData<'_>,
 ) -> Result<Response> {
-    let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
+    let mut ctx = crate::views::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["item"] = serde_json::json!(data.item);
     ctx["engagement_org_name"] = serde_json::json!(engagement_org_name);
     ctx["offers"] = serde_json::json!(data.offers);

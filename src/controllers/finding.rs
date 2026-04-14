@@ -17,7 +17,7 @@ pub async fn list(
     auth: OrgAuth<ViewerRole>,
 ) -> Result<Response> {
     let items = findings::Model::find_by_org(&ctx.db, auth.org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await?;
 
     // For admins/pentesters: provide in-progress engagements they can add findings to
     let is_admin = auth.is_platform_admin();
@@ -69,7 +69,7 @@ pub async fn show(
     let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, auth.org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await?;
     views::finding::show(
         &v,
         &auth.user,

@@ -143,7 +143,7 @@ pub async fn results_page(
     }
 
     let run = job_runs::Model::find_by_pid(&ctx.db, &run_pid)
-        .await
+        .await?
         .ok_or_else(|| Error::NotFound)?;
 
     let definition = job_definitions::Entity::find_by_id(run.job_definition_id)
@@ -306,7 +306,7 @@ async fn collect_def_result(
     subdomain: &str,
     ip_results: &mut std::collections::HashMap<String, (Vec<String>, Vec<serde_json::Value>, u64)>,
 ) {
-    if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def_id).await {
+    if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def_id).await.ok().flatten() {
         if let Some(summary) = run
             .result_summary
             .as_deref()
