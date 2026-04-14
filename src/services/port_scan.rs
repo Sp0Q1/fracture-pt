@@ -98,11 +98,11 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
         "-sV", // Service/version detection
         "--version-intensity",
         "2",   // Light probing (0-9, default 7 — too slow)
-        "-T4", // Aggressive timing
+        "-T3", // Normal timing — T4 too aggressive for unprivileged connect scans
         "--top-ports",
-        "1000",
+        "100", // Top 100 — connect scans timeout on 1000 against filtered hosts
         "--host-timeout",
-        "120s", // Per-host timeout (catches filtered ports)
+        "300s", // Per-host timeout — connect scans need more time against filtered hosts
         "-oX",
         "-",
     ];
@@ -124,12 +124,12 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     let mut child_stderr = child.stderr.take();
 
     let status =
-        if let Ok(result) = tokio::time::timeout(Duration::from_secs(300), child.wait()).await {
+        if let Ok(result) = tokio::time::timeout(Duration::from_secs(600), child.wait()).await {
             result.map_err(|e| format!("Failed to wait on nmap: {e}"))?
         } else {
             // Timeout — kill the nmap process to prevent zombies
             let _ = child.kill().await;
-            return Err("Port scan timed out after 300 seconds".to_string());
+            return Err("Port scan timed out after 600 seconds".to_string());
         };
 
     // Read captured output (process has exited, so these reads complete immediately)
