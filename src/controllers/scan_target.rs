@@ -201,7 +201,10 @@ async fn lookup_job_run_status(
     }
 
     // Check for latest completed run
-    let completed = job_runs::Model::find_latest_completed_by_definition(db, def.id).await.ok().flatten();
+    let completed = job_runs::Model::find_latest_completed_by_definition(db, def.id)
+        .await
+        .ok()
+        .flatten();
     if let Some(run) = completed {
         let result = run
             .result_summary

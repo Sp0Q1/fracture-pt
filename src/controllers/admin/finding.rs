@@ -1,10 +1,12 @@
-use axum_extra::extract::CookieJar;
+use axum::response::Redirect;
+use axum_extra::extract::{CookieJar, Form};
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use serde::Deserialize;
 use std::collections::HashMap;
 
 use crate::controllers::middleware;
-use crate::models::_entities::organizations;
+use crate::models::_entities::{findings as findings_entity, organizations};
 use crate::models::findings;
 use crate::models::organizations as org_model;
 use crate::{require_user, views};
@@ -99,9 +101,64 @@ pub async fn show(
     )
 }
 
+#[derive(Debug, Deserialize)]
+pub struct BulkDeleteParams {
+    pub pids: Vec<String>,
+}
+
+/// `POST /admin/findings/bulk-delete` -- delete multiple findings cross-org (admin only).
+#[debug_handler]
+pub async fn bulk_delete(
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+    Form(params): Form<BulkDeleteParams>,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
+
+    let uuids: Vec<sea_orm::prelude::Uuid> = params
+        .pids
+        .iter()
+        .filter_map(|pid| sea_orm::prelude::Uuid::parse_str(pid).ok())
+        .collect();
+
+    if !uuids.is_empty() {
+        findings_entity::Entity::delete_many()
+            .filter(findings_entity::Column::Pid.is_in(uuids))
+            .exec(&ctx.db)
+            .await?;
+    }
+
+    Ok(Redirect::to("/admin/findings").into_response())
+}
+
+/// `POST /admin/findings/:pid/delete` -- delete single finding (admin only).
+#[debug_handler]
+pub async fn delete(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
+    fracture_core::require_platform_admin!(org_ctx);
+
+    let item = findings::Model::find_by_pid(&ctx.db, &pid)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    item.delete(&ctx.db).await?;
+
+    Ok(Redirect::to("/admin/findings").into_response())
+}
+
 pub fn route_list() -> Vec<(String, axum::routing::MethodRouter<AppContext>)> {
     vec![
         ("/findings".to_string(), get(list)),
+        ("/findings/bulk-delete".to_string(), post(bulk_delete)),
         ("/findings/{pid}".to_string(), get(show)),
+        ("/findings/{pid}/delete".to_string(), post(delete)),
     ]
 }

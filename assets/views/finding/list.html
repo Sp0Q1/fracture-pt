@@ -29,7 +29,7 @@
         <form id="bulk-delete-form" action="/findings/bulk-delete" method="post">
         <div class="mb-2">
             <button type="submit" class="button outline small" data-variant="danger" data-confirm="Delete all selected findings?" disabled id="bulk-delete-btn">Delete Selected</button>
-            <label class="checkbox-label d-inline" style="margin-left:.5rem">
+            <label class="checkbox-label d-inline ml-2">
                 <input type="checkbox" id="select-all"> Select all
             </label>
         </div>
@@ -77,10 +77,8 @@
     {% endif %}
 {% endblock content %}
 
-{% if is_admin %}
 {% block scripts %}
 <script src="/static/app.js?v=2" integrity="sha384-ZSKiTmKMZ/Yl2MKDYv0YQGUPd426Nm5ei/lFNKs0JpkuF6wERVCCw1MAnz+Q6Njd" crossorigin="anonymous"></script>
 <script src="/static/table-sort.js?v=3" integrity="sha384-lwsK79oIUZ3aLDjcTrGQ9TWsK55gv5I9Ue28NTC+i7oX/qWliFecJNX5fJMabF8m" crossorigin="anonymous"></script>
 <script src="/static/bulk-select.js?v=1" integrity="sha384-d0Vb7vp3rqEE/DeAoBrg9uZqxkEyC+LzQj0lwuENCkM3B/LxT6L/V1j/aeUgcGmB" crossorigin="anonymous"></script>
 {% endblock scripts %}
-{% endif %}

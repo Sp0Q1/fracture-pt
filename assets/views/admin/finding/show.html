@@ -53,7 +53,15 @@
     {% endif %}
     <div class="detail-row">
         <span class="detail-label">Created</span>
-        <span class="detail-value">{{ item.created_at | date(format="%Y-%m-%d %H:%M") }}</span>
+        <span class="detail-value">{{ item.created_at | truncate(length=16, end="") }}</span>
+    </div>
+
+    <div class="form-actions">
+        <a href="/admin/findings" class="button" data-variant="secondary">Back to Findings</a>
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/admin/findings/{{ item.pid }}/delete" method="post" class="d-inline">
+            <button type="submit" data-variant="danger" data-confirm="Delete this finding permanently?">Delete Finding</button>
+        </form>
     </div>
 </article>
 

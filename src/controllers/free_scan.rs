@@ -306,7 +306,11 @@ async fn collect_def_result(
     subdomain: &str,
     ip_results: &mut std::collections::HashMap<String, (Vec<String>, Vec<serde_json::Value>, u64)>,
 ) {
-    if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def_id).await.ok().flatten() {
+    if let Some(run) = job_runs::Model::find_latest_completed_by_definition(db, def_id)
+        .await
+        .ok()
+        .flatten()
+    {
         if let Some(summary) = run
             .result_summary
             .as_deref()
