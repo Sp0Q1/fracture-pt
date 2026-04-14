@@ -157,6 +157,8 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
 .stat-card p { font-size:.875rem; color:var(--muted-foreground,#a1a1aa); margin:0 }
 .stat-card .stat-number { font-size:2rem; font-weight:700; color:#2563eb; line-height:1; margin-bottom:.25rem }
 .stat-card .stat-label { font-size:.875rem; color:var(--muted-foreground,#a1a1aa) }
+a.stat-card-link { text-decoration:none; color:inherit }
+a.stat-card-link:hover { border-color:var(--primary,#2563eb); transform:translateY(-2px); transition:all .15s ease }
 
 /* --- Page Header --- */
 .page-header { margin-bottom:2rem; padding-bottom:1rem; border-bottom:1px solid rgba(255,255,255,.1) }
@@ -526,7 +528,10 @@ nav[data-topnav] a[aria-current="page"] { color:#2563eb; border-bottom:2px solid
 .text-xs { font-size:.85rem }
 .mt-1 { margin-top:1rem }
 .mb-1 { margin-bottom:1rem }
+.ml-1 { margin-left:1rem }
+.ml-2 { margin-left:.5rem }
 .m-0 { margin:0 }
+.comment-header { justify-content:space-between; align-items:flex-start }
 .p-2 { padding:2rem }
 .max-w-800 { max-width:800px }
 .justify-center { justify-content:center }

@@ -333,10 +333,10 @@
 {% if comments | length > 0 %}
 {% for comment in comments %}
 <article class="card mb-4">
-    <div class="hstack" style="justify-content: space-between; align-items: flex-start;">
+    <div class="hstack comment-header">
         <div>
             <strong>{{ comment.author_name }}</strong>
-            <small class="text-muted" style="margin-left: 0.5rem;">{{ comment.created_at }}</small>
+            <small class="text-muted ml-2">{{ comment.created_at }}</small>
         </div>
         {% if comment.user_id == current_user_id or is_platform_admin %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
