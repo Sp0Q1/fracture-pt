@@ -24,7 +24,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[engagements::Model],
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["items"] = serde_json::json!(items);
     format::render().view(v, "engagement/list.html", data!(ctx))
 }
@@ -39,7 +39,7 @@ pub fn request_form(
     org_targets: &[scan_targets::Model],
     preselect_target_id: Option<i32>,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["services"] = serde_json::json!(all_services);
     ctx["targets"] = serde_json::json!(org_targets);
     ctx["preselect_target_id"] = serde_json::json!(preselect_target_id.unwrap_or(0));
@@ -67,7 +67,7 @@ pub fn show(
     user_orgs: &[organizations::Model],
     data: &EngagementShowData<'_>,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["item"] = serde_json::json!(data.item);
     ctx["offers"] = serde_json::json!(data.offers);
     ctx["findings"] = serde_json::json!(data.findings);
@@ -121,7 +121,7 @@ pub fn finding_form(
     } else {
         "engagement/finding/create.html"
     };
-    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["engagement"] = serde_json::json!(engagement);
     ctx["finding"] = serde_json::json!(finding);
     format::render().view(v, template, data!(ctx))
@@ -141,7 +141,7 @@ pub fn non_finding_form(
     } else {
         "engagement/non_finding/create.html"
     };
-    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["engagement"] = serde_json::json!(engagement);
     ctx["non_finding"] = serde_json::json!(non_finding);
     format::render().view(v, template, data!(ctx))
@@ -164,7 +164,7 @@ pub fn report_page(
     user_orgs: &[organizations::Model],
     data: &ReportPageData<'_>,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, org_ctx, user_orgs);
+    let mut ctx = super::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["item"] = serde_json::json!(data.item);
     ctx["finding_count"] = serde_json::json!(data.finding_count);
     ctx["non_finding_count"] = serde_json::json!(data.non_finding_count);

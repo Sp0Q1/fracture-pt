@@ -21,7 +21,7 @@ pub async fn list(
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Viewer);
     let items = reports::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     views::report::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 
@@ -42,7 +42,7 @@ pub async fn show(
     let item = reports::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     views::report::show(&v, &user, &org_ctx, &user_orgs, &item)
 }
 

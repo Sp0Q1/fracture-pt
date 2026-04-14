@@ -23,7 +23,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[scan_targets::Model],
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["items"] = serde_json::json!(items);
     format::render().view(v, "scan_target/list.html", data!(ctx))
 }
@@ -35,7 +35,7 @@ pub fn create(
     org_ctx: &OrgContext,
     user_orgs: &[organizations::Model],
 ) -> Result<Response> {
-    let ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let ctx = super::base_context(user, Some(org_ctx), user_orgs);
     format::render().view(v, "scan_target/create.html", data!(ctx))
 }
 
@@ -48,7 +48,7 @@ pub fn show(
     item: &scan_targets::Model,
     scan: &ScanState<'_>,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["item"] = serde_json::json!(item);
     if let Some(asm) = scan.asm_result {
         let mut asm_ctx = asm.clone();

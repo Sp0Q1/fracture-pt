@@ -47,6 +47,7 @@ async fn compute_access(
     let is_org_member =
         fracture_core::models::org_members::Model::find_membership(db, engagement.org_id, user_id)
             .await
+            .unwrap_or_default()
             .is_some();
     let is_assigned = pentester_assignments::Model::is_assigned(db, user_id, engagement.id).await;
     let is_admin =
@@ -168,7 +169,7 @@ pub async fn list(
         .ok_or_else(|| Error::NotFound)?;
     crate::require_role!(org_ctx, OrgRole::Viewer);
     let items = engagements::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     views::engagement::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 
@@ -192,7 +193,7 @@ pub async fn new(
         .await
         .ok_or_else(|| Error::NotFound)?;
     crate::require_role!(org_ctx, OrgRole::Member);
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let all_services = services::Model::find_active(&ctx.db).await;
     let org_targets = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
     views::engagement::request_form(
@@ -271,7 +272,7 @@ pub async fn show(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let (item, access) = load_engagement_with_access(&ctx.db, &pid, user.id).await?;
 
@@ -485,7 +486,7 @@ pub async fn new_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
     views::engagement::finding_form(&v, &user, &org_ctx, &user_orgs, &item, None)
 }
@@ -546,7 +547,7 @@ pub async fn edit_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
     let finding = findings::Model::find_by_pid_and_engagement(&ctx.db, &finding_pid, item.id)
         .await
@@ -635,7 +636,7 @@ pub async fn new_non_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
     views::engagement::non_finding_form(&v, &user, &org_ctx, &user_orgs, &item, None)
 }
@@ -675,7 +676,7 @@ pub async fn edit_non_finding(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
     let nf = non_findings::Model::find_by_pid_and_engagement(&ctx.db, &nf_pid, item.id)
         .await
@@ -810,7 +811,7 @@ pub async fn report_page(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = load_engagement_for_edit(&ctx.db, &pid, user.id).await?;
     let engagement_findings = findings::Model::find_by_engagement(&ctx.db, item.id).await;
     let engagement_non_findings = non_findings::Model::find_by_engagement(&ctx.db, item.id).await;

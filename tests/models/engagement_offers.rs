@@ -26,7 +26,7 @@ async fn setup_engagement(
     suffix: &str,
 ) -> (users::Model, engagements::Model) {
     let user = create_test_user(db, suffix).await;
-    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await;
+    let orgs = organizations::Model::find_orgs_for_user(db, user.id).await.unwrap();
     let svc = services::ActiveModel {
         name: Set(format!("Svc {suffix}")),
         slug: Set(format!("offer-svc-{suffix}")),

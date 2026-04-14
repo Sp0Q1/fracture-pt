@@ -11,7 +11,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[serde_json::Value],
 ) -> Result<Response> {
-    let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
+    let mut ctx = crate::views::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["items"] = serde_json::json!(items);
     format::render().view(v, "admin/subscription/list.html", data!(ctx))
 }

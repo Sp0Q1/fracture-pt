@@ -14,7 +14,7 @@ pub fn list(
     editable_engagements: &[engagements::Model],
     is_admin: bool,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["items"] = serde_json::json!(items);
     ctx["editable_engagements"] = serde_json::json!(editable_engagements
         .iter()
@@ -33,7 +33,7 @@ pub fn show(
     item: &findings::Model,
     is_admin: bool,
 ) -> Result<Response> {
-    let mut ctx = super::base_context(user, &Some(org_ctx.clone()), user_orgs);
+    let mut ctx = super::base_context(user, Some(org_ctx), user_orgs);
     ctx["item"] = serde_json::json!(item);
     ctx["is_admin"] = serde_json::json!(is_admin);
     ctx["description_html"] = serde_json::json!(markdown::render(&item.description));

@@ -193,7 +193,7 @@ impl BackgroundWorker<JobDispatchArgs> for JobDispatchWorker {
 
         // Find previous completed run for diff comparison
         let previous_run =
-            job_runs::Model::find_latest_completed_by_definition(db, args.job_definition_id).await;
+            job_runs::Model::find_latest_completed_by_definition(db, args.job_definition_id).await?;
 
         // Execute the job
         match executor

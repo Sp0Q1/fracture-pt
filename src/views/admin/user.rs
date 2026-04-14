@@ -11,7 +11,7 @@ pub fn list(
     user_orgs: &[organizations::Model],
     items: &[(users::Model, u64)],
 ) -> Result<Response> {
-    let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
+    let mut ctx = crate::views::base_context(user, org_ctx.as_ref(), user_orgs);
     let items_json: Vec<serde_json::Value> = items
         .iter()
         .map(|(u, org_count)| {
@@ -37,7 +37,7 @@ pub fn show(
     target_user: &users::Model,
     memberships: &[serde_json::Value],
 ) -> Result<Response> {
-    let mut ctx = crate::views::base_context(user, org_ctx, user_orgs);
+    let mut ctx = crate::views::base_context(user, org_ctx.as_ref(), user_orgs);
     ctx["target_user"] = serde_json::json!(target_user);
     ctx["memberships"] = serde_json::json!(memberships);
     format::render().view(v, "admin/user/show.html", data!(ctx))

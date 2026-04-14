@@ -38,7 +38,7 @@ pub async fn list(
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Viewer);
     let items = scan_targets::Model::find_by_org(&ctx.db, org_ctx.org.id).await;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     views::scan_target::list(&v, &user, &org_ctx, &user_orgs, &items)
 }
 
@@ -55,7 +55,7 @@ pub async fn new(
         .await
         .ok_or_else(|| Error::NotFound)?;
     require_role!(org_ctx, OrgRole::Member);
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     views::scan_target::create(&v, &user, &org_ctx, &user_orgs)
 }
 
@@ -201,7 +201,7 @@ async fn lookup_job_run_status(
     }
 
     // Check for latest completed run
-    let completed = job_runs::Model::find_latest_completed_by_definition(db, def.id).await;
+    let completed = job_runs::Model::find_latest_completed_by_definition(db, def.id).await.ok().flatten();
     if let Some(run) = completed {
         let result = run
             .result_summary
@@ -329,7 +329,7 @@ pub async fn show(
     let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
-    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await;
+    let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let asm = match item.hostname.as_deref() {
         Some(hostname) => lookup_asm_status(&ctx.db, org_ctx.org.id, hostname).await,
