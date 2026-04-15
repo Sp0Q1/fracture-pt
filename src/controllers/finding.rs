@@ -96,6 +96,10 @@ pub async fn delete(
 
 #[derive(Debug, Deserialize)]
 pub struct BulkDeleteParams {
+    #[serde(
+        deserialize_with = "crate::controllers::deserialize_one_or_many",
+        default
+    )]
     pub pids: Vec<String>,
 }
 
