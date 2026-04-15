@@ -108,22 +108,19 @@ pub struct BulkDeleteParams {
 pub async fn bulk_delete(
     State(ctx): State<AppContext>,
     auth: OrgAuth<AdminRole>,
-    Form(params): Form<BulkDeleteParams>,
+    body: String,
 ) -> Result<Response> {
-    use crate::models::_entities::findings::{Column, Entity as FindingEntity};
-
-    let uuids: Vec<sea_orm::prelude::Uuid> = params
-        .pids
-        .iter()
-        .filter_map(|pid| sea_orm::prelude::Uuid::parse_str(pid).ok())
+    let pids: Vec<String> = form_urlencoded::parse(body.as_bytes())
+        .filter(|(key, _)| key == "pids[]")
+        .map(|(_, val)| val.into_owned())
         .collect();
 
-    if !uuids.is_empty() {
-        FindingEntity::delete_many()
-            .filter(Column::OrgId.eq(auth.org_ctx.org.id))
-            .filter(Column::Pid.is_in(uuids))
-            .exec(&ctx.db)
-            .await?;
+    for pid in &pids {
+        if let Some(item) =
+            findings::Model::find_by_pid_and_org(&ctx.db, pid, auth.org_ctx.org.id).await
+        {
+            item.delete(&ctx.db).await?;
+        }
     }
 
     Ok(Redirect::to("/findings").into_response())
