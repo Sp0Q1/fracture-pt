@@ -1,6 +1,7 @@
 use axum::response::Redirect;
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+use serde::Deserialize;
 
 use super::auth::{OrgAuth, PlatformAdmin, ViewerRole};
 use crate::models::_entities::{engagements, pentester_assignments};
@@ -93,22 +94,25 @@ pub async fn delete(
     Ok(Redirect::to("/findings").into_response())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct BulkDeleteParams {
+    #[serde(default, rename = "pids[]")]
+    pub pids: Vec<String>,
+}
+
 /// `POST /findings/bulk-delete` -- delete multiple findings (admin only).
-///
-/// Uses `form_urlencoded` directly because neither `axum::Form` nor
-/// `axum_extra::Form` support repeated form keys (`pids=a&pids=b`),
-/// which is how HTML checkboxes with the same `name` attribute work.
 #[debug_handler]
 pub async fn bulk_delete(
     State(ctx): State<AppContext>,
     admin: PlatformAdmin,
-    body: axum::body::Bytes,
+    Form(params): Form<BulkDeleteParams>,
 ) -> Result<Response> {
     use crate::models::_entities::findings::{Column, Entity as FindingEntity};
 
-    let uuids: Vec<sea_orm::prelude::Uuid> = form_urlencoded::parse(&body)
-        .filter(|(key, _)| key == "pids")
-        .filter_map(|(_, val)| sea_orm::prelude::Uuid::parse_str(&val).ok())
+    let uuids: Vec<sea_orm::prelude::Uuid> = params
+        .pids
+        .iter()
+        .filter_map(|pid| sea_orm::prelude::Uuid::parse_str(pid).ok())
         .collect();
 
     if !uuids.is_empty() {

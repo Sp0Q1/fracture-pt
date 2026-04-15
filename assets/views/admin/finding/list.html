@@ -33,7 +33,7 @@
                {% for item in items %}
                 <tr data-href="/admin/findings/{{ item.pid }}">
                     <td class="no-navigate">
-                        <input type="checkbox" name="pids" value="{{ item.pid }}" class="finding-checkbox">
+                        <input type="checkbox" name="pids[]" value="{{ item.pid }}" class="finding-checkbox">
                     </td>
                     <td>{{ item.title }}</td>
                     <td>{{ item.org_name | default(value="Unknown") }}</td>
