@@ -3,7 +3,7 @@ use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
 use serde::Deserialize;
 
-use super::auth::{OrgAuth, PlatformAdmin, ViewerRole};
+use super::auth::{AdminRole, OrgAuth, ViewerRole};
 use crate::models::_entities::{engagements, pentester_assignments};
 use crate::models::findings;
 use crate::models::organizations as org_model;
@@ -20,7 +20,10 @@ pub async fn list(
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await?;
 
     // For admins/pentesters: provide in-progress engagements they can add findings to
-    let is_admin = auth.is_platform_admin();
+    let is_admin = auth
+        .org_ctx
+        .role
+        .at_least(crate::models::org_members::OrgRole::Admin);
     let editable_engagements = if is_admin {
         engagements::Entity::find()
             .filter(engagements::Column::OrgId.eq(auth.org_ctx.org.id))
@@ -80,14 +83,14 @@ pub async fn show(
     )
 }
 
-/// `POST /findings/:pid/delete` -- delete a single finding (admin only).
+/// `POST /findings/:pid/delete` -- delete a single finding (org admin+).
 #[debug_handler]
 pub async fn delete(
     Path(pid): Path<String>,
     State(ctx): State<AppContext>,
-    admin: PlatformAdmin,
+    auth: OrgAuth<AdminRole>,
 ) -> Result<Response> {
-    let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, admin.org_ctx.org.id)
+    let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, auth.org_ctx.org.id)
         .await
         .ok_or_else(|| Error::NotFound)?;
     item.delete(&ctx.db).await?;
@@ -100,11 +103,11 @@ pub struct BulkDeleteParams {
     pub pids: Vec<String>,
 }
 
-/// `POST /findings/bulk-delete` -- delete multiple findings (admin only).
+/// `POST /findings/bulk-delete` -- delete multiple findings (org admin+).
 #[debug_handler]
 pub async fn bulk_delete(
     State(ctx): State<AppContext>,
-    admin: PlatformAdmin,
+    auth: OrgAuth<AdminRole>,
     Form(params): Form<BulkDeleteParams>,
 ) -> Result<Response> {
     use crate::models::_entities::findings::{Column, Entity as FindingEntity};
@@ -117,7 +120,7 @@ pub async fn bulk_delete(
 
     if !uuids.is_empty() {
         FindingEntity::delete_many()
-            .filter(Column::OrgId.eq(admin.org_ctx.org.id))
+            .filter(Column::OrgId.eq(auth.org_ctx.org.id))
             .filter(Column::Pid.is_in(uuids))
             .exec(&ctx.db)
             .await?;
