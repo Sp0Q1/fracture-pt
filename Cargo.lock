@@ -1600,7 +1600,7 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#bd7d4fa7049afd1a9c79e3c62331753175b1cdcb"
+source = "git+https://github.com/Sp0Q1/fracture-cms#75d15dffdae2e6a869ae8d5d62642262d088d940"
 dependencies = [
  "async-trait",
  "axum",
@@ -1608,7 +1608,7 @@ dependencies = [
  "chrono",
  "comrak",
  "form_urlencoded",
- "fracture-core-migration 0.1.0 (git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling)",
+ "fracture-core-migration",
  "include_dir",
  "jsonwebtoken 10.3.0",
  "loco-rs",
@@ -1631,16 +1631,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#bd7d4fa7049afd1a9c79e3c62331753175b1cdcb"
-dependencies = [
- "loco-rs",
- "sea-orm-migration",
-]
-
-[[package]]
-name = "fracture-core-migration"
-version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms#53a006a9c51304cc454cffaec2c1a33e7f7d1234"
+source = "git+https://github.com/Sp0Q1/fracture-cms#75d15dffdae2e6a869ae8d5d62642262d088d940"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
@@ -2848,7 +2839,7 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "fracture-core-migration 0.1.0 (git+https://github.com/Sp0Q1/fracture-cms)",
+ "fracture-core-migration",
  "loco-rs",
  "sea-orm",
  "sea-orm-migration",
