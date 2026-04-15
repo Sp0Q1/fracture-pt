@@ -1,8 +1,7 @@
 use axum::response::Redirect;
-use axum_extra::extract::{CookieJar, Form};
+use axum_extra::extract::CookieJar;
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use serde::Deserialize;
 use std::collections::HashMap;
 
 use crate::controllers::middleware;
@@ -101,31 +100,21 @@ pub async fn show(
     )
 }
 
-#[derive(Debug, Deserialize)]
-pub struct BulkDeleteParams {
-    #[serde(
-        deserialize_with = "crate::controllers::deserialize_one_or_many",
-        default
-    )]
-    pub pids: Vec<String>,
-}
-
 /// `POST /admin/findings/bulk-delete` -- delete multiple findings cross-org (admin only).
 #[debug_handler]
 pub async fn bulk_delete(
     State(ctx): State<AppContext>,
     jar: CookieJar,
-    Form(params): Form<BulkDeleteParams>,
+    body: axum::body::Bytes,
 ) -> Result<Response> {
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
     fracture_core::require_platform_admin!(org_ctx);
 
-    let uuids: Vec<sea_orm::prelude::Uuid> = params
-        .pids
-        .iter()
-        .filter_map(|pid| sea_orm::prelude::Uuid::parse_str(pid).ok())
+    let uuids: Vec<sea_orm::prelude::Uuid> = form_urlencoded::parse(&body)
+        .filter(|(key, _)| key == "pids")
+        .filter_map(|(_, val)| sea_orm::prelude::Uuid::parse_str(&val).ok())
         .collect();
 
     if !uuids.is_empty() {
