@@ -1,11 +1,11 @@
 use axum::response::Redirect;
 use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
-use serde::Deserialize;
 
 use super::auth::{AdminRole, OrgAuth, ViewerRole};
 use crate::models::_entities::{engagements, pentester_assignments};
 use crate::models::findings;
+use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
 use crate::views;
 
@@ -19,11 +19,7 @@ pub async fn list(
     let items = findings::Model::find_by_org(&ctx.db, auth.org_ctx.org.id).await;
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await?;
 
-    // For admins/pentesters: provide in-progress engagements they can add findings to
-    let is_admin = auth
-        .org_ctx
-        .role
-        .at_least(crate::models::org_members::OrgRole::Admin);
+    let is_admin = auth.org_ctx.role.at_least(OrgRole::Admin);
     let editable_engagements = if is_admin {
         engagements::Entity::find()
             .filter(engagements::Column::OrgId.eq(auth.org_ctx.org.id))
@@ -97,13 +93,11 @@ pub async fn delete(
     Ok(Redirect::to("/findings").into_response())
 }
 
-#[derive(Debug, Deserialize)]
-pub struct BulkDeleteParams {
-    #[serde(default, rename = "pids[]")]
-    pub pids: Vec<String>,
-}
-
 /// `POST /findings/bulk-delete` -- delete multiple findings (org admin+).
+///
+/// HTML checkboxes with `name="pids[]"` produce repeated form keys which
+/// serde cannot deserialize into a struct. We parse the URL-encoded body
+/// directly with `form_urlencoded`.
 #[debug_handler]
 pub async fn bulk_delete(
     State(ctx): State<AppContext>,
