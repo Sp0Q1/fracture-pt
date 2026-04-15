@@ -1600,7 +1600,7 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#de8f6633ab62cc37a8cebc4f2c8eb55505b54317"
+source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#bd7d4fa7049afd1a9c79e3c62331753175b1cdcb"
 dependencies = [
  "async-trait",
  "axum",
@@ -1631,7 +1631,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#de8f6633ab62cc37a8cebc4f2c8eb55505b54317"
+source = "git+https://github.com/Sp0Q1/fracture-cms?branch=fix%2Fbase-context-and-error-handling#bd7d4fa7049afd1a9c79e3c62331753175b1cdcb"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
