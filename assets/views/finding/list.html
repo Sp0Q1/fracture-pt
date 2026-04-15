@@ -50,7 +50,7 @@
                 <tr data-href="/findings/{{ item.pid }}">
                     {% if is_admin %}
                     <td class="no-navigate">
-                        <input type="checkbox" name="pids" value="{{ item.pid }}" class="finding-checkbox">
+                        <input type="checkbox" name="pids[]" value="{{ item.pid }}" class="finding-checkbox">
                     </td>
                     {% endif %}
                     <td>{{ item.title }}</td>
