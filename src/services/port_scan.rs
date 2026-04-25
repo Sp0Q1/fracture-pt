@@ -124,7 +124,7 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     let mut child_stderr = child.stderr.take();
 
     let status =
-        if let Ok(result) = tokio::time::timeout(Duration::from_secs(600), child.wait()).await {
+        if let Ok(result) = tokio::time::timeout(Duration::from_mins(10), child.wait()).await {
             result.map_err(|e| format!("Failed to wait on nmap: {e}"))?
         } else {
             // Timeout — kill the nmap process to prevent zombies

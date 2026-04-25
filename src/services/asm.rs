@@ -132,8 +132,7 @@ pub fn process_results(domain: &str, entries: &[CrtEntry]) -> ScanResult {
         let is_wildcard = cn.starts_with("*.");
         let is_expired =
             chrono::NaiveDateTime::parse_from_str(&entry.not_after, "%Y-%m-%dT%H:%M:%S")
-                .map(|dt| dt < now)
-                .unwrap_or(false);
+                .is_ok_and(|dt| dt < now);
 
         if is_expired {
             expired_count += 1;
