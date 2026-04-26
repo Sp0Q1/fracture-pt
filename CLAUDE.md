@@ -55,7 +55,11 @@ Never `--no-verify`. Never weaken the audit ignore list without an issue link.
   - `require_user!(user)` — must be authenticated
   - `require_role!(org_ctx, OrgRole::Viewer | Member | Admin)` — role gate
   - `require_platform_admin!(org_ctx)` — platform-admin gate
-- **Pentester role is per-engagement, not per-org.** It lives in CMS as `ResourceAssignment` (after PR-4). PT consumes it via `auth::can_edit_findings(user_id, engagement_id)` etc. Do not introduce a new pentester table in PT.
+- **Pentester role is a PT-domain concept; the assignment mechanism is CMS infrastructure.**
+  - The role identifier (`"pentester"`) and its semantics (can edit findings on the engagement, can comment, cannot manage org membership) are defined here in PT, in `src/auth/roles.rs`.
+  - The *infrastructure* — the `ResourceAssignment` model, the assign/revoke/check helpers, and the IDOR-safe enforcement — comes from `fracture-core`. PT calls into it; PT does NOT introduce a parallel assignment table.
+  - The legacy `pentester_assignments` table is migrated into the generic `resource_assignments` table (see PR-5). Once that lands, no PT-specific assignment table exists.
+  - All access checks go through PT's role helpers (`auth::can_edit_findings(user_id, engagement_id)`, `auth::can_view_engagement(...)`) which are thin wrappers over `ResourceAssignment::has_assignment(...)`.
 - **Return 404 (not 403)** when access is denied — match the existing pattern.
 - **Free-scan flow** is the only public scan entry point and is rate-limited and CAPTCHA-gated. Do not add additional unauthenticated scan endpoints.
 
