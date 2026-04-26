@@ -177,7 +177,7 @@ async fn enqueue_one(
         .and_then(Value::as_i64)
         .and_then(|n| i32::try_from(n).ok())
         .ok_or_else(|| {
-            sea_orm::DbErr::Custom(format!("stage `{}` config missing org_id", stage.name,))
+            sea_orm::DbErr::Custom(format!("stage `{}` config missing org_id", stage.name))
         })?;
 
     let definition = upsert_definition(db, org_id, stage).await?;
