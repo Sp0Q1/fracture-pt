@@ -63,7 +63,7 @@
 {% endblock content %}
 
 {% block scripts %}
-<script src="/static/app.js?v=2" integrity="sha384-ZSKiTmKMZ/Yl2MKDYv0YQGUPd426Nm5ei/lFNKs0JpkuF6wERVCCw1MAnz+Q6Njd" crossorigin="anonymous"></script>
-<script src="/static/table-sort.js?v=3" integrity="sha384-lwsK79oIUZ3aLDjcTrGQ9TWsK55gv5I9Ue28NTC+i7oX/qWliFecJNX5fJMabF8m" crossorigin="anonymous"></script>
-<script src="/static/bulk-select.js?v=1" integrity="sha384-d0Vb7vp3rqEE/DeAoBrg9uZqxkEyC+LzQj0lwuENCkM3B/LxT6L/V1j/aeUgcGmB" crossorigin="anonymous"></script>
+<script src="/static/app.js" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
+<script src="/static/table-sort.js" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
+<script src="/static/bulk-select.js" integrity="{{ sri(path='/static/bulk-select.js') | safe }}" crossorigin="anonymous"></script>
 {% endblock scripts %}
