@@ -38,7 +38,7 @@
 {% endblock structured_data %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/static/app.css?v=25" integrity="sha384-xj1rYrpXFpQtlbO72K2tXt1n8czuofhaq6e7n2Kqyb9GWGlPOIdH+hRphCkmnA8E" crossorigin="anonymous">
+<link rel="stylesheet" href="/static/app.css" integrity="{{ sri(path='/static/app.css') | safe }}" crossorigin="anonymous">
 {% endblock stylesheets %}
 
 {% block nav_auth_buttons %}
@@ -106,6 +106,6 @@
 {% endblock footer %}
 
 {% block scripts %}
-<script src="/static/app.js?v=2" integrity="sha384-ZSKiTmKMZ/Yl2MKDYv0YQGUPd426Nm5ei/lFNKs0JpkuF6wERVCCw1MAnz+Q6Njd" crossorigin="anonymous"></script>
-<script src="/static/table-sort.js?v=3" integrity="sha384-lwsK79oIUZ3aLDjcTrGQ9TWsK55gv5I9Ue28NTC+i7oX/qWliFecJNX5fJMabF8m" crossorigin="anonymous"></script>
+<script src="/static/app.js" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
+<script src="/static/table-sort.js" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
 {% endblock scripts %}
