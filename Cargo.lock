@@ -1670,6 +1670,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "slug",
+ "tera",
  "tokio",
  "tracing",
  "tracing-subscriber",
