@@ -12,8 +12,8 @@
 
 use fracture_pt::app::App;
 use fracture_pt::models::{
-    engagements, findings, organizations, pentester_assignments, pricing_tiers, reports,
-    scan_targets, services, subscriptions,
+    engagements, findings, job_definitions, job_runs, organizations, pentester_assignments,
+    pricing_tiers, reports, scan_targets, services, subscriptions,
     users::{self, OidcUserInfo},
 };
 use loco_rs::testing::prelude::*;
@@ -594,4 +594,135 @@ async fn test_admin_find_by_pid_sees_all_engagements() {
     // find_all_pending sees both
     let pending = engagements::Model::find_all_pending(db).await;
     assert!(pending.len() >= 2);
+}
+
+// ─── Job IDOR tests ──────────────────────────────────────────────────
+//
+// `/jobs` and `/jobs/{pid}/runs/{run_pid}` are served by fracture-core's
+// `org_show` / `org_run_show` controllers. They scope by the active
+// `org_ctx.org.id`, which middleware constructs only from validated
+// memberships. These tests pin the model-layer guarantees those
+// controllers depend on.
+
+async fn create_job_def(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    name: &str,
+    job_type: &str,
+) -> job_definitions::Model {
+    job_definitions::ActiveModel {
+        org_id: Set(org_id),
+        name: Set(name.to_string()),
+        job_type: Set(job_type.to_string()),
+        config: Set("{}".to_string()),
+        enabled: Set(true),
+        ..Default::default()
+    }
+    .insert(db)
+    .await
+    .expect("create job_definition")
+}
+
+#[tokio::test]
+#[serial]
+async fn test_idor_job_definition_by_pid_and_org() {
+    let boot = boot_test::<App>().await.unwrap();
+    let db = &boot.app_context.db;
+
+    let alice = create_user(db, "jd-alice").await;
+    let bob = create_user(db, "jd-bob").await;
+    let alice_org = organizations::Model::find_orgs_for_user(db, alice.id)
+        .await
+        .unwrap()[0]
+        .id;
+    let bob_org = organizations::Model::find_orgs_for_user(db, bob.id)
+        .await
+        .unwrap()[0]
+        .id;
+
+    let def = create_job_def(db, alice_org, "Alice IP Enum", "ip_enum").await;
+
+    // Alice's org sees it.
+    let visible = job_definitions::Model::find_by_pid_and_org(db, &def.pid.to_string(), alice_org)
+        .await
+        .unwrap();
+    assert!(visible.is_some(), "owner org must see its own definition");
+
+    // Bob's org cannot — even with the correct pid.
+    let leaked = job_definitions::Model::find_by_pid_and_org(db, &def.pid.to_string(), bob_org)
+        .await
+        .unwrap();
+    assert!(
+        leaked.is_none(),
+        "IDOR: definition must not surface to a non-owning org"
+    );
+}
+
+#[tokio::test]
+#[serial]
+async fn test_idor_job_definitions_list_does_not_leak_cross_org() {
+    let boot = boot_test::<App>().await.unwrap();
+    let db = &boot.app_context.db;
+
+    let alice = create_user(db, "jl-alice").await;
+    let bob = create_user(db, "jl-bob").await;
+    let alice_org = organizations::Model::find_orgs_for_user(db, alice.id)
+        .await
+        .unwrap()[0]
+        .id;
+    let bob_org = organizations::Model::find_orgs_for_user(db, bob.id)
+        .await
+        .unwrap()[0]
+        .id;
+
+    create_job_def(db, alice_org, "Alice asm_scan", "asm_scan").await;
+    create_job_def(db, alice_org, "Alice ip_enum", "ip_enum").await;
+
+    // Bob lists his org's job_definitions — must be empty.
+    let bob_list = job_definitions::Model::find_all_by_org(db, bob_org)
+        .await
+        .unwrap();
+    assert!(
+        bob_list.is_empty(),
+        "IDOR: Bob's listing must not include Alice's definitions, got {} rows",
+        bob_list.len()
+    );
+
+    // Alice sees both of hers.
+    let alice_list = job_definitions::Model::find_all_by_org(db, alice_org)
+        .await
+        .unwrap();
+    assert_eq!(alice_list.len(), 2);
+}
+
+#[tokio::test]
+#[serial]
+async fn test_idor_job_run_carries_org_id_for_cross_org_check() {
+    // job_runs::find_by_pid intentionally does NOT take org_id (admin path).
+    // The HTTP handler `org_run_show` re-filters by `definition.org_id`
+    // before rendering. This test asserts the row's stored org_id matches
+    // the definition's org_id, so the controller's check is enforceable.
+    let boot = boot_test::<App>().await.unwrap();
+    let db = &boot.app_context.db;
+
+    let alice = create_user(db, "jr-alice").await;
+    let alice_org = organizations::Model::find_orgs_for_user(db, alice.id)
+        .await
+        .unwrap()[0]
+        .id;
+
+    let def = create_job_def(db, alice_org, "Alice run", "ip_enum").await;
+    let run = job_runs::Model::create_queued(db, def.id, alice_org)
+        .await
+        .unwrap();
+
+    let fetched = job_runs::Model::find_by_pid(db, &run.pid.to_string())
+        .await
+        .unwrap()
+        .expect("run must exist");
+    assert_eq!(
+        fetched.org_id, alice_org,
+        "job_run.org_id must match the definition's org_id (controller relies on this)"
+    );
+    assert_eq!(fetched.job_definition_id, def.id);
 }
