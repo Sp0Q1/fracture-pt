@@ -20,8 +20,8 @@ use loco_rs::bgworker::BackgroundWorker;
 use crate::{
     controllers, initializers,
     jobs::{
-        asm_scan::AsmScanExecutor, ip_enum::IpEnumExecutor, port_scan::PortScanExecutor,
-        report_build::ReportBuildExecutor,
+        amass::AmassExecutor, asm_scan::AsmScanExecutor, ip_enum::IpEnumExecutor,
+        port_scan::PortScanExecutor, report_build::ReportBuildExecutor,
     },
     models::_entities::{
         blog_posts, engagement_comments, engagement_offers, engagement_targets, engagements,
@@ -248,6 +248,7 @@ impl Hooks for App {
         job_reg.register(Box::new(PortScanExecutor));
         job_reg.register(Box::new(ReportBuildExecutor));
         job_reg.register(Box::new(IpEnumExecutor));
+        job_reg.register(Box::new(AmassExecutor));
         init_job_registry(job_reg);
 
         AppRoutes::with_default_routes()
