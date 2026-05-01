@@ -62,10 +62,13 @@
         {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">
-            <button type="submit"{% if port_scan_status == "running" %} disabled{% endif %}{% if is_free_tier %} title="Free plan: one scan included"{% endif %}>
-                {% if port_scan_status == "running" %}Port Scan Running&hellip;{% else %}Run Port Scan{% endif %}
+            <button type="submit" {% if port_scan_block_reason %}disabled title="{{ port_scan_block_reason }}"{% endif %}>
+                {{ port_scan_button_label }}
             </button>
         </form>
+        {% if port_scan_block_reason and is_free_tier %}
+        <a href="/pricing" class="button outline small" data-variant="primary">Upgrade</a>
+        {% endif %}
         {% if scheduling_enabled %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/schedule" method="post" class="d-inline">
