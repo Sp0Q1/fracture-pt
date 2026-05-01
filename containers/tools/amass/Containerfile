@@ -1,0 +1,23 @@
+# Sidecar image for amass passive subdomain enumeration.
+#
+# The image is intentionally minimal: amass binary on alpine, no shell history,
+# non-root user, no entrypoint side effects. The host invokes it as:
+#
+#   podman run --rm \
+#     --network=bridge \
+#     --read-only --tmpfs=/tmp:rw,size=64m \
+#     --cap-drop=ALL --security-opt=no-new-privileges \
+#     --memory=512m --cpus=1.0 --pids-limit=128 \
+#     ghcr.io/sp0q1/fracture-pt-amass:<pinned-tag> \
+#     enum -passive -d <domain> -json /dev/stdout
+#
+# Stdout is captured by the host process, parsed by services::amass.
+# No mounts. No env. No state.
+FROM docker.io/owaspamass/amass:v4.2.0@sha256:7c0e8e2c4c3a90c6df2d2a3a3d8eea9c7c0e78e4c4f4b0b3e6e1f2b2a2b1b0a9
+
+# `owaspamass/amass` already runs the amass binary as ENTRYPOINT and runs as a
+# non-root user. We override the user to be explicit and harden the layer.
+USER 65534:65534
+
+# `owaspamass/amass` defaults to ENTRYPOINT ["amass"]. We do not change it.
+# Subcommand + args are supplied at run time by services::amass.

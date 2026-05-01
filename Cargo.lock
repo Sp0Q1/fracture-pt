@@ -1660,6 +1660,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "slug",
+ "thiserror 2.0.18",
  "tokio",
  "tracing",
  "tracing-subscriber",

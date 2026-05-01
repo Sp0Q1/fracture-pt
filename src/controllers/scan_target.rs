@@ -601,6 +601,74 @@ pub async fn trigger_port_scan(
     Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
 }
 
+/// `POST /targets/:pid/amass-passive` — trigger a passive amass run.
+///
+/// Passive amass uses public OSINT only (no traffic to the target itself),
+/// so it's allowed for any Member+ on a hostname target. Active amass
+/// (brute force, DNS resolution at scale) lands in a follow-up gated by
+/// `services::scan_authz`.
+#[debug_handler]
+pub async fn trigger_amass_passive(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+    let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let domain = item
+        .hostname
+        .as_deref()
+        .ok_or_else(|| Error::BadRequest("amass passive requires a hostname target".into()))?
+        .to_string();
+
+    let def_name = format!("Amass Passive: {domain}");
+
+    let definition = if let Some(existing) = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+        .filter(job_definitions::Column::Name.eq(&def_name))
+        .one(&ctx.db)
+        .await?
+    {
+        existing
+    } else {
+        let config = serde_json::json!({
+            "target_id": item.id,
+            "domain": domain,
+            "org_id": org_ctx.org.id,
+        });
+        job_definitions::ActiveModel {
+            org_id: Set(org_ctx.org.id),
+            name: Set(def_name),
+            job_type: Set("amass_passive".to_string()),
+            config: Set(config.to_string()),
+            enabled: Set(true),
+            ..Default::default()
+        }
+        .insert(&ctx.db)
+        .await?
+    };
+
+    let run = job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
+    JobDispatchWorker::perform_later(
+        &ctx,
+        JobDispatchArgs {
+            job_run_id: run.id,
+            job_definition_id: definition.id,
+        },
+    )
+    .await?;
+
+    Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScheduleParams {
     pub schedule: String, // "off", "daily", "weekly", "monthly"
@@ -679,5 +747,6 @@ pub fn routes() -> Routes {
         .add("/{pid}", get(show))
         .add("/{pid}", delete(remove))
         .add("/{pid}/port-scan", post(trigger_port_scan))
+        .add("/{pid}/amass-passive", post(trigger_amass_passive))
         .add("/{pid}/schedule", post(set_schedule))
 }

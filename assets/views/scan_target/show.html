@@ -66,6 +66,12 @@
                 {% if port_scan_status == "running" %}Port Scan Running&hellip;{% else %}Run Port Scan{% endif %}
             </button>
         </form>
+        {% if item.hostname %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/targets/{{ item.pid }}/amass-passive" method="post" class="d-inline">
+            <button type="submit" title="Passive subdomain enumeration via amass (OSINT only, no traffic to target).">Run Amass Passive</button>
+        </form>
+        {% endif %}
         {% if scheduling_enabled %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/schedule" method="post" class="d-inline">
