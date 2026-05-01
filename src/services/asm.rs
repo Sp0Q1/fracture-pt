@@ -61,6 +61,12 @@ pub async fn query_crtsh(domain: &str) -> std::result::Result<Vec<CrtEntry>, Str
         .await
         .map_err(|e| format!("crt.sh request failed: {e}"))?;
 
+    // crt.sh returns 404 for domains with no logged certificates — that's
+    // "no data", not an error. Treat as an empty result so callers see
+    // an empty subdomain list instead of a retry loop and a failed job.
+    if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(vec![]);
+    }
     if !resp.status().is_success() {
         return Err(format!("crt.sh returned status {}", resp.status()));
     }
@@ -275,4 +281,32 @@ fn extract_issuer_cn(issuer_name: &str) -> String {
         }
     }
     issuer_name.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn process_results_handles_empty_entries() {
+        // crt.sh 404 maps to Ok(vec![]) — `process_results` must produce a
+        // sane summary with zero counts and no panics.
+        let result = process_results("example.com", &[]);
+        assert_eq!(result.domain, "example.com");
+        assert_eq!(result.subdomain_count, 0);
+        assert_eq!(result.cert_count, 0);
+        assert_eq!(result.expired_count, 0);
+        assert_eq!(result.wildcard_count, 0);
+        assert!(result.subdomains.is_empty());
+        assert!(result.certs.is_empty());
+    }
+
+    #[test]
+    fn belongs_to_domain_exact_and_subdomain() {
+        assert!(belongs_to_domain("example.com", ".example.com"));
+        assert!(belongs_to_domain("api.example.com", ".example.com"));
+        assert!(belongs_to_domain("a.b.example.com", ".example.com"));
+        assert!(!belongs_to_domain("not-example.com", ".example.com"));
+        assert!(!belongs_to_domain("example.org", ".example.com"));
+    }
 }
