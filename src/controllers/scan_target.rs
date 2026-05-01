@@ -390,6 +390,8 @@ pub async fn show(
     };
 
     let tier = PlanTier::from_org(&org_ctx.org);
+    let port_scan_block_reason =
+        port_scan_block_reason(&ctx.db, org_ctx.org.id, tier, port_scans_running).await;
 
     let scan = views::scan_target::ScanState {
         asm_result: asm.result.as_ref(),
@@ -400,8 +402,35 @@ pub async fn show(
         schedule: schedule_label,
         scheduling_enabled: tier.scheduling_enabled(),
         is_free_tier: matches!(tier, PlanTier::Free),
+        port_scan_block_reason,
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
+}
+
+/// Reason the "Run Port Scan" button must render disabled, or `None` when
+/// the action is allowed. Mirrors the server-side gate in
+/// [`trigger_port_scan`] so the UI never offers an action the controller
+/// would refuse.
+async fn port_scan_block_reason(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    tier: PlanTier,
+    port_scans_running: bool,
+) -> Option<&'static str> {
+    if port_scans_running {
+        return Some("A port scan is already running for this target.");
+    }
+    if !matches!(tier, PlanTier::Free) {
+        return None;
+    }
+    let completed_count = job_runs::Entity::find()
+        .filter(job_runs::Column::OrgId.eq(org_id))
+        .filter(job_runs::Column::Status.eq("completed"))
+        .count(db)
+        .await
+        .unwrap_or(0);
+    (completed_count > 0)
+        .then_some("Free plan includes one scan. Upgrade to Recon or higher to re-run.")
 }
 
 /// `DELETE /targets/:pid` -- remove target.
