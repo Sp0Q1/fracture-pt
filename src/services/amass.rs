@@ -28,8 +28,8 @@ use crate::services::tool_runner::{self, RunError, RunSpec};
 /// digest and this constant in lock-step.
 pub const IMAGE: &str = "ghcr.io/sp0q1/fracture-pt-amass:v4.2.0";
 
-/// Total wall-clock the sidecar is allowed to run.
-pub const TIMEOUT: Duration = Duration::from_secs(600);
+/// Total wall-clock the sidecar is allowed to run (10 minutes).
+pub const TIMEOUT: Duration = Duration::from_mins(10);
 
 /// Reserved / non-public suffixes the validator refuses. Mirrors the list
 /// in `services::port_scan::validate_target` so the two stages refuse the
