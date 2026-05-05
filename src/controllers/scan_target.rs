@@ -118,53 +118,83 @@ pub async fn add(
     item.label = Set(params.label);
     let target = item.insert(&ctx.db).await?;
 
-    // If the target has a hostname, enqueue an ASM scan via the jobs system
+    // Free initial passive recon for every hostname target. We don't ask
+    // the user to click anything — the new target page will already show
+    // results filling in. Only passive sources (no traffic to the target),
+    // so no tier or scope-verification gate.
     if let Some(ref hostname) = params.hostname {
         let hostname = hostname.trim().to_lowercase();
         if !hostname.is_empty() {
-            let def_name = format!("ASM: {hostname}");
-
-            // Find existing definition or create a new one
-            let definition = if let Some(existing) = job_definitions::Entity::find()
-                .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
-                .filter(job_definitions::Column::Name.eq(&def_name))
-                .one(&ctx.db)
-                .await?
-            {
-                existing
-            } else {
-                let config = serde_json::json!({
-                    "target_id": target.id,
-                    "hostname": hostname,
-                    "org_id": org_ctx.org.id,
-                });
-                job_definitions::ActiveModel {
-                    org_id: Set(org_ctx.org.id),
-                    name: Set(def_name),
-                    job_type: Set("asm_scan".to_string()),
-                    config: Set(config.to_string()),
-                    enabled: Set(true),
-                    ..Default::default()
-                }
-                .insert(&ctx.db)
-                .await?
-            };
-
-            let run =
-                job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
-
-            JobDispatchWorker::perform_later(
-                &ctx,
-                JobDispatchArgs {
-                    job_run_id: run.id,
-                    job_definition_id: definition.id,
-                },
-            )
-            .await?;
+            enqueue_passive_recon(&ctx, org_ctx.org.id, target.id, &hostname).await?;
         }
     }
 
     Ok(Redirect::to(&format!("/targets/{}", target.pid)).into_response())
+}
+
+/// One job definition specification (a row in our recon graph).
+struct PassiveJob<'a> {
+    name: String,
+    job_type: &'a str,
+}
+
+/// Enqueue every passive-recon stage we run for free on a hostname target.
+/// Today: crt.sh-based ASM + amass passive. Future passive tools (viewdns,
+/// rdap) plug in by extending the slice.
+async fn enqueue_passive_recon(
+    ctx: &AppContext,
+    org_id: i32,
+    target_id: i32,
+    hostname: &str,
+) -> Result<()> {
+    let stages = [
+        PassiveJob {
+            name: format!("ASM: {hostname}"),
+            job_type: "asm_scan",
+        },
+        PassiveJob {
+            name: format!("Amass Passive: {hostname}"),
+            job_type: "amass_passive",
+        },
+    ];
+
+    for stage in &stages {
+        let definition = if let Some(existing) = job_definitions::Entity::find()
+            .filter(job_definitions::Column::OrgId.eq(org_id))
+            .filter(job_definitions::Column::Name.eq(&stage.name))
+            .one(&ctx.db)
+            .await?
+        {
+            existing
+        } else {
+            let config = serde_json::json!({
+                "target_id": target_id,
+                "hostname": hostname,
+                "domain": hostname, // amass_passive reads `domain`
+                "org_id": org_id,
+            });
+            job_definitions::ActiveModel {
+                org_id: Set(org_id),
+                name: Set(stage.name.clone()),
+                job_type: Set(stage.job_type.to_string()),
+                config: Set(config.to_string()),
+                enabled: Set(true),
+                ..Default::default()
+            }
+            .insert(&ctx.db)
+            .await?
+        };
+        let run = job_runs::Model::create_queued(&ctx.db, definition.id, org_id).await?;
+        JobDispatchWorker::perform_later(
+            ctx,
+            JobDispatchArgs {
+                job_run_id: run.id,
+                job_definition_id: definition.id,
+            },
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 /// Status of a job-based scan lookup.

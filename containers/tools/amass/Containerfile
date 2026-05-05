@@ -13,7 +13,7 @@
 #
 # Stdout is captured by the host process, parsed by services::amass.
 # No mounts. No env. No state.
-FROM docker.io/owaspamass/amass:v4.2.0@sha256:7c0e8e2c4c3a90c6df2d2a3a3d8eea9c7c0e78e4c4f4b0b3e6e1f2b2a2b1b0a9
+FROM docker.io/caffix/amass:v4.2.0
 
 # `owaspamass/amass` already runs the amass binary as ENTRYPOINT and runs as a
 # non-root user. We override the user to be explicit and harden the layer.

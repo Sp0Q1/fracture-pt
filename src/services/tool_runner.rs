@@ -97,6 +97,12 @@ pub async fn run(spec: RunSpec<'_>) -> Result<RunOutput, RunError> {
         .arg(format!("--cpus={}", spec.cpus))
         .arg(format!("--pids-limit={}", spec.pids))
         .arg("--log-driver=none") // don't fill /var/lib with tool output
+        // Operators must pre-pull/build the pinned image. `--pull=never`
+        // prevents podman from contacting a registry at job time, which
+        // (a) avoids registry-auth failures masquerading as tool errors,
+        // (b) ensures the image actually running matches the operator's
+        //     pinned, audited copy — no surprise tag drift.
+        .arg("--pull=never")
         .arg(spec.image)
         .args(spec.args)
         .stdin(std::process::Stdio::null())
