@@ -1,22 +1,30 @@
-//! amass — passive subdomain enumeration.
+//! Passive subdomain enumeration.
 //!
-//! Runs the `owasp-amass/amass:v4.2.0` sidecar in passive mode and parses the
-//! JSONL output into a structured `AmassResult` consumable by the dashboard.
+//! ## Implementation note
+//!
+//! The module name and the public `amass_passive` job-type identifier are
+//! historical; the actual binary used is `projectdiscovery/subfinder`.
+//! amass v4 removed the `-json` flag (output now goes to a sqlite graph DB
+//! only), which is incompatible with the sidecar / stdout-capture model.
+//! subfinder fills the same niche — OSINT-only passive subdomain
+//! enumeration — with a stable JSONL output format on stdout.
 //!
 //! ## Why passive only here
 //!
-//! Active amass (brute force, DNS resolution at scale) hits real
+//! Active subdomain enumeration (DNS brute force, AXFR attempts) hits real
 //! infrastructure and must go through `services::scan_authz`'s active gate.
 //! That wiring lands in a follow-up. This module exposes only the passive
-//! mode, which uses public CT logs / OSINT only.
+//! mode, which uses public CT logs and OSINT only.
 //!
 //! ## Invocation contract
 //!
 //! - Domain is validated by [`crate::services::port_scan::validate_target`]
 //!   before it reaches us. We re-check the basic shape (host-only, no
 //!   slashes / spaces / shell metacharacters) as a defence in depth.
-//! - argv: `["enum", "-passive", "-d", <domain>, "-json", "/dev/stdout",
-//!    "-timeout", "10"]`. Static; no caller-supplied flags.
+//! - argv: `["-d", <domain>, "-silent", "-oJ", "-timeout", "30"]`. Static; no
+//!   caller-supplied flags.
+//! - subfinder writes one JSON object per line to stdout, shape:
+//!   `{"host": "<sub>", "input": "<domain>", "source": "<osint-source>"}`.
 
 use std::time::Duration;
 
@@ -25,10 +33,12 @@ use serde::{Deserialize, Serialize};
 use crate::services::tool_runner::{self, RunError, RunSpec};
 
 /// Pinned upstream image. Bumping requires updating both the `Containerfile`
-/// digest and this constant in lock-step.
-pub const IMAGE: &str = "ghcr.io/sp0q1/fracture-pt-amass:v4.2.0";
+/// FROM line and this constant in lock-step.
+pub const IMAGE: &str = "ghcr.io/sp0q1/fracture-pt-subfinder:v2.6.6";
 
-/// Total wall-clock the sidecar is allowed to run (10 minutes).
+/// Total wall-clock the sidecar is allowed to run (10 minutes). subfinder
+/// typically finishes in <60s on free OSINT sources, but a stalled upstream
+/// can drag a single source out for minutes.
 pub const TIMEOUT: Duration = Duration::from_mins(10);
 
 /// Reserved / non-public suffixes the validator refuses. Mirrors the list
@@ -36,9 +46,11 @@ pub const TIMEOUT: Duration = Duration::from_mins(10);
 /// same set of targets.
 const RESERVED_SUFFIXES: &[&str] = &[".local", ".internal", ".onion", ".example", ".invalid"];
 
-/// Structured per-host record extracted from amass JSONL. The shape mirrors
-/// the parts of amass's output we surface in the UI; unknown fields are
-/// dropped on parse.
+/// Structured per-host record extracted from subfinder JSONL. `addresses`
+/// is intentionally kept (always empty) to preserve the on-disk shape of
+/// older `amass`-era job runs — the topology view in `controllers::home`
+/// reads it to mark a subdomain as resolved. With subfinder, resolution
+/// status comes from `asm_scan` (DNS lookups happen there).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DiscoveredHost {
     pub name: String,
@@ -46,7 +58,7 @@ pub struct DiscoveredHost {
     pub sources: Vec<String>,
 }
 
-/// Aggregated result persisted as `result_summary` of an amass job run.
+/// Aggregated result persisted as `result_summary` of an `amass_passive` run.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AmassResult {
     pub domain: String,
@@ -62,11 +74,11 @@ pub enum AmassError {
     InvalidDomain(String),
     #[error(transparent)]
     Run(#[from] RunError),
-    #[error("amass exited with status {0:?}")]
+    #[error("subfinder exited with status {0:?}")]
     NonZeroExit(Option<i32>),
 }
 
-/// Run amass passive against `domain`, return the parsed result.
+/// Run subfinder against `domain` (passive sources only), return parsed result.
 ///
 /// # Errors
 ///
@@ -74,19 +86,10 @@ pub enum AmassError {
 /// `Run`/`NonZeroExit` on container-level failures.
 pub async fn run_passive(domain: &str) -> Result<AmassResult, AmassError> {
     let domain = sanitize_domain(domain)?;
-    let args = [
-        "enum",
-        "-passive",
-        "-d",
-        &domain,
-        "-json",
-        "/dev/stdout",
-        "-timeout",
-        "10",
-    ];
+    let args = ["-d", &domain, "-silent", "-oJ", "-timeout", "30"];
     let out = tool_runner::run(RunSpec {
         image: IMAGE,
-        tool_name: "amass",
+        tool_name: "subfinder",
         args: &args,
         wall_clock: TIMEOUT,
         memory: "512m",
@@ -95,13 +98,14 @@ pub async fn run_passive(domain: &str) -> Result<AmassResult, AmassError> {
     })
     .await?;
     if out.exit_code != Some(0) {
-        // amass writes diagnostics to stderr; surface a short prefix without
-        // the user-supplied target (which is already in the job_definition).
+        // subfinder writes diagnostics to stderr; surface a short prefix
+        // without the user-supplied target (which is already in the
+        // job_definition).
         tracing::warn!(
             target: "amass",
             exit = ?out.exit_code,
             stderr_preview = %out.stderr.chars().take(200).collect::<String>(),
-            "amass exited non-zero"
+            "subfinder exited non-zero"
         );
         return Err(AmassError::NonZeroExit(out.exit_code));
     }
@@ -133,82 +137,67 @@ fn sanitize_domain(domain: &str) -> Result<String, AmassError> {
     }
     if domain.parse::<std::net::IpAddr>().is_ok() {
         return Err(AmassError::InvalidDomain(
-            "amass passive expects a domain, not an IP".into(),
+            "passive enum expects a domain, not an IP".into(),
         ));
     }
     Ok(domain)
 }
 
-/// Parse amass JSONL output into [`AmassResult`].
+/// Parse subfinder JSONL output into [`AmassResult`].
 ///
-/// amass writes one JSON object per line. Each object describes a discovered
-/// name with its observed addresses and the OSINT sources that found it.
-/// Lines that fail to parse are silently skipped (amass occasionally emits
-/// non-JSON status lines on stderr, but we redirect to /dev/stdout so we
-/// must be tolerant). The result is deduplicated by hostname.
+/// subfinder writes one JSON object per line, shape:
+/// `{"host": "<name>", "input": "<root>", "source": "<osint-source>"}`.
+/// Multiple lines per host are common (one source each) — we deduplicate
+/// by hostname and aggregate the source list. Lines that fail to parse
+/// or that have an empty `host` are silently skipped.
 #[must_use]
 pub fn parse_jsonl(domain: &str, stdout: &str) -> AmassResult {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeMap;
 
     #[derive(Deserialize)]
-    struct AmassEvent {
+    struct SubfinderEvent {
         #[serde(default)]
-        name: String,
+        host: String,
         #[serde(default)]
-        addresses: Vec<AmassAddr>,
-        #[serde(default)]
-        sources: Vec<String>,
-    }
-    #[derive(Deserialize)]
-    struct AmassAddr {
-        #[serde(default)]
-        ip: String,
+        source: String,
     }
 
     let mut by_name: BTreeMap<String, DiscoveredHost> = BTreeMap::new();
-    let mut all_ips: BTreeSet<String> = BTreeSet::new();
 
     for line in stdout.lines() {
         let line = line.trim();
         if line.is_empty() || !line.starts_with('{') {
             continue;
         }
-        let Ok(ev) = serde_json::from_str::<AmassEvent>(line) else {
+        let Ok(ev) = serde_json::from_str::<SubfinderEvent>(line) else {
             continue;
         };
-        if ev.name.is_empty() {
+        if ev.host.is_empty() {
             continue;
         }
         let entry = by_name
-            .entry(ev.name.to_lowercase())
+            .entry(ev.host.to_lowercase())
             .or_insert_with(|| DiscoveredHost {
-                name: ev.name.to_lowercase(),
+                name: ev.host.to_lowercase(),
                 addresses: Vec::new(),
                 sources: Vec::new(),
             });
-        for addr in &ev.addresses {
-            if !addr.ip.is_empty() && !entry.addresses.contains(&addr.ip) {
-                entry.addresses.push(addr.ip.clone());
-                all_ips.insert(addr.ip.clone());
-            }
-        }
-        for src in &ev.sources {
-            if !src.is_empty() && !entry.sources.contains(src) {
-                entry.sources.push(src.clone());
-            }
+        if !ev.source.is_empty() && !entry.sources.contains(&ev.source) {
+            entry.sources.push(ev.source);
         }
     }
 
     let mut hosts: Vec<DiscoveredHost> = by_name.into_values().collect();
     hosts.sort_by(|a, b| a.name.cmp(&b.name));
     let host_count = hosts.len();
-    let unique_ips: Vec<String> = all_ips.into_iter().collect();
 
     AmassResult {
         domain: domain.to_string(),
         hosts,
         host_count,
-        unique_ips,
+        // subfinder is enumeration-only; address resolution lives in
+        // services::asm_scan (DNS A/AAAA lookups).
+        unique_ips: Vec::new(),
     }
 }
 
@@ -269,23 +258,23 @@ mod tests {
 
     #[test]
     fn parse_jsonl_skips_non_json_noise() {
-        let stdout = "OWASP Amass v4.2.0\n\
-            Querying sources...\n\
-            {\"name\":\"foo.example.com\",\"addresses\":[{\"ip\":\"1.2.3.4\"}],\"sources\":[\"crtsh\"]}\n";
+        let stdout = "subfinder v2.6.6 starting\n\
+            {\"host\":\"foo.example.com\",\"input\":\"example.com\",\"source\":\"crtsh\"}\n";
         let r = parse_jsonl("example.com", stdout);
         assert_eq!(r.host_count, 1);
         assert_eq!(r.hosts[0].name, "foo.example.com");
-        assert_eq!(r.hosts[0].addresses, vec!["1.2.3.4"]);
         assert_eq!(r.hosts[0].sources, vec!["crtsh"]);
-        assert_eq!(r.unique_ips, vec!["1.2.3.4"]);
+        // subfinder doesn't resolve; addresses stay empty.
+        assert!(r.hosts[0].addresses.is_empty());
+        assert!(r.unique_ips.is_empty());
     }
 
     #[test]
-    fn parse_jsonl_dedupes_by_name_aggregates_addresses_and_sources() {
+    fn parse_jsonl_dedupes_by_name_aggregates_sources() {
         let stdout = "\
-            {\"name\":\"FOO.example.com\",\"addresses\":[{\"ip\":\"1.2.3.4\"}],\"sources\":[\"crtsh\"]}\n\
-            {\"name\":\"foo.example.com\",\"addresses\":[{\"ip\":\"5.6.7.8\"}],\"sources\":[\"dnsdumpster\"]}\n\
-            {\"name\":\"bar.example.com\",\"addresses\":[{\"ip\":\"5.6.7.8\"}],\"sources\":[\"crtsh\"]}\n";
+            {\"host\":\"FOO.example.com\",\"input\":\"example.com\",\"source\":\"crtsh\"}\n\
+            {\"host\":\"foo.example.com\",\"input\":\"example.com\",\"source\":\"dnsdumpster\"}\n\
+            {\"host\":\"bar.example.com\",\"input\":\"example.com\",\"source\":\"crtsh\"}\n";
         let r = parse_jsonl("example.com", stdout);
         assert_eq!(r.host_count, 2, "FOO and foo collapse");
         let foo = r
@@ -293,9 +282,7 @@ mod tests {
             .iter()
             .find(|h| h.name == "foo.example.com")
             .unwrap();
-        assert_eq!(foo.addresses, vec!["1.2.3.4", "5.6.7.8"]);
         assert_eq!(foo.sources, vec!["crtsh", "dnsdumpster"]);
-        assert_eq!(r.unique_ips, vec!["1.2.3.4", "5.6.7.8"]);
     }
 
     #[test]
@@ -303,8 +290,8 @@ mod tests {
         let stdout = "\
             {bad json\n\
             \n\
-            {\"name\":\"\",\"addresses\":[],\"sources\":[]}\n\
-            {\"name\":\"good.example.com\",\"addresses\":[],\"sources\":[]}\n";
+            {\"host\":\"\",\"source\":\"crtsh\"}\n\
+            {\"host\":\"good.example.com\",\"source\":\"crtsh\"}\n";
         let r = parse_jsonl("example.com", stdout);
         assert_eq!(r.host_count, 1);
         assert_eq!(r.hosts[0].name, "good.example.com");
