@@ -296,7 +296,7 @@ impl Hooks for App {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             loop {
                 workers::job_dispatcher::sweep_queued_runs(&pump_ctx).await;
-                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                tokio::time::sleep(std::time::Duration::from_mins(1)).await;
             }
         });
 
