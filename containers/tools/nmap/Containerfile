@@ -1,0 +1,15 @@
+# Sidecar image for nmap TCP connect + service-version scanning.
+#
+# nmap is run **unprivileged** (-sT, no raw sockets). That lets us drop
+# all capabilities and run as a non-root UID. The host invokes the image
+# via services::tool_runner with the standard hardened flags.
+#
+# Stdout is captured by the host process and parsed by services::port_scan.
+FROM docker.io/instrumentisto/nmap:7.97
+
+# Run as a non-root, unprivileged user so the runner's --cap-drop=ALL +
+# --security-opt=no-new-privileges flags are sufficient for safety.
+USER 65534:65534
+
+# `instrumentisto/nmap` sets ENTRYPOINT ["nmap"]. We do not change it.
+# The runner appends nmap argv at run time.

@@ -1,7 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::time::Duration;
-use tokio::process::Command;
+
+use crate::services::tool_runner::{self, RunError, RunSpec};
+
+/// Pinned upstream nmap image. Bumping requires updating the Containerfile
+/// in lock-step.
+const NMAP_IMAGE: &str = "ghcr.io/sp0q1/fracture-pt-nmap:7.97";
+
+/// Total wall-clock budget for one nmap run (matches the per-host
+/// `--host-timeout=300s` flag with headroom).
+const NMAP_TIMEOUT: Duration = Duration::from_mins(10);
 
 /// Information about a single discovered port.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,10 +94,13 @@ fn validate_target(target: &str) -> Result<String, String> {
     Ok(target)
 }
 
-/// Runs an nmap TCP connect scan against the target.
+/// Run an nmap TCP-connect + service-version scan against the target.
+///
+/// The scan executes in the per-tool sidecar container; the host process
+/// never invokes the nmap binary directly. That ensures resource limits,
+/// dropped capabilities, and a sealed filesystem are always applied
+/// regardless of host hygiene.
 pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
-    use tokio::io::AsyncReadExt;
-
     let validated = validate_target(target)?;
 
     let is_ipv6 = validated.contains(':');
@@ -111,45 +123,35 @@ pub async fn run_nmap(target: &str) -> Result<PortScanResult, String> {
     }
     args.push(&validated);
 
-    let mut child = Command::new("nmap")
-        .args(&args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to execute nmap: {e}"))?;
+    let out = tool_runner::run(RunSpec {
+        image: NMAP_IMAGE,
+        tool_name: "nmap",
+        args: &args,
+        wall_clock: NMAP_TIMEOUT,
+        memory: "512m",
+        cpus: "1.0",
+        pids: 128,
+    })
+    .await
+    .map_err(|e| match e {
+        RunError::PodmanMissing(_) => {
+            "podman not found on PATH; install podman to run port scans".to_string()
+        }
+        RunError::Timeout { limit_secs, .. } => {
+            format!("port scan timed out after {limit_secs}s")
+        }
+        other => format!("nmap sidecar failed: {other}"),
+    })?;
 
-    // Take stdout/stderr handles before waiting, so `child` stays alive for
-    // kill() on timeout.
-    let mut child_stdout = child.stdout.take();
-    let mut child_stderr = child.stderr.take();
+    let stdout = out.stdout;
+    let stderr = out.stderr;
 
-    let status =
-        if let Ok(result) = tokio::time::timeout(Duration::from_mins(10), child.wait()).await {
-            result.map_err(|e| format!("Failed to wait on nmap: {e}"))?
-        } else {
-            // Timeout — kill the nmap process to prevent zombies
-            let _ = child.kill().await;
-            return Err("Port scan timed out after 600 seconds".to_string());
-        };
-
-    // Read captured output (process has exited, so these reads complete immediately)
-    let stdout = if let Some(ref mut out) = child_stdout {
-        let mut buf = Vec::new();
-        let _ = out.read_to_end(&mut buf).await;
-        String::from_utf8_lossy(&buf).to_string()
-    } else {
-        String::new()
-    };
-    let stderr = if let Some(ref mut err) = child_stderr {
-        let mut buf = Vec::new();
-        let _ = err.read_to_end(&mut buf).await;
-        String::from_utf8_lossy(&buf).to_string()
-    } else {
-        String::new()
-    };
-
-    if !status.success() {
-        return Err(format!("nmap exited with error: {stderr}"));
+    if out.exit_code != Some(0) {
+        return Err(format!(
+            "nmap exited with status {:?}: {}",
+            out.exit_code,
+            stderr.chars().take(400).collect::<String>()
+        ));
     }
 
     let mut parsed = parse_nmap_xml(&stdout, &validated);
