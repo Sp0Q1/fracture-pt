@@ -43,43 +43,53 @@ pub struct JobDispatchWorker {
     pub ctx: AppContext,
 }
 
-impl JobDispatchWorker {
-    /// Dispatch any queued runs that were created during job execution
-    /// (e.g. subdomain port scans created by the ASM executor).
-    async fn dispatch_queued_runs(&self) {
-        let db = &self.ctx.db;
-
-        let queued_runs = match job_runs::Entity::find()
-            .filter(job_runs::Column::Status.eq("queued"))
-            .filter(job_runs::Column::StartedAt.is_null())
-            .limit(50)
-            .all(db)
-            .await
-        {
-            Ok(runs) => runs,
-            Err(e) => {
-                tracing::warn!(error = %e, "Failed to query queued runs");
-                return;
-            }
-        };
-
-        for run in queued_runs {
-            if let Err(e) = Self::perform_later(
-                &self.ctx,
-                JobDispatchArgs {
-                    job_run_id: run.id,
-                    job_definition_id: run.job_definition_id,
-                },
-            )
-            .await
-            {
-                tracing::warn!(
-                    job_run_id = run.id,
-                    error = %e,
-                    "Failed to dispatch queued run"
-                );
-            }
+/// Drain `status='queued' AND started_at IS NULL` job_runs by handing each
+/// to the dispatcher worker. Called from two places:
+/// 1. After every successful job finishes (existing behaviour) — picks up
+///    runs the just-completed job created via the pipeline orchestrator.
+/// 2. From a periodic tokio task started in app.rs, every 60s, so orphan
+///    runs from a prior boot (or runs queued while no other job was
+///    completing) eventually get picked up. Without this tick, the queue
+///    sits forever after a restart.
+pub async fn sweep_queued_runs(ctx: &AppContext) {
+    let queued_runs = match job_runs::Entity::find()
+        .filter(job_runs::Column::Status.eq("queued"))
+        .filter(job_runs::Column::StartedAt.is_null())
+        .limit(50)
+        .all(&ctx.db)
+        .await
+    {
+        Ok(runs) => runs,
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to query queued runs");
+            return;
         }
+    };
+
+    for run in queued_runs {
+        if let Err(e) = JobDispatchWorker::perform_later(
+            ctx,
+            JobDispatchArgs {
+                job_run_id: run.id,
+                job_definition_id: run.job_definition_id,
+            },
+        )
+        .await
+        {
+            tracing::warn!(
+                job_run_id = run.id,
+                error = %e,
+                "Failed to dispatch queued run"
+            );
+        }
+    }
+}
+
+impl JobDispatchWorker {
+    /// Same as the free `sweep_queued_runs`, but reachable from instance
+    /// methods that already hold `&self.ctx`.
+    async fn dispatch_queued_runs(&self) {
+        sweep_queued_runs(&self.ctx).await;
     }
 
     /// Fire-and-forget email alerts for job diffs.
