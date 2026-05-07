@@ -3,9 +3,7 @@ use std::fmt::Write as _;
 
 use fracture_core::jobs::{JobDiff, JobExecutor, JobResult};
 use fracture_core::models::_entities::{job_definitions, job_runs};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
 
 use crate::models::_entities::findings;
 use crate::services::asm::{self, ScanResult, SubdomainInfo};
@@ -85,22 +83,11 @@ impl JobExecutor for AsmScanExecutor {
             "certs": scan_result.certs,
         });
 
-        // Enqueue port scans for unique resolved IPs (deduplicated).
-        let mut scanned_ips = std::collections::HashSet::new();
-        for info in &subdomain_infos {
-            if info.resolved {
-                for ip in &info.ips {
-                    if scanned_ips.insert(ip.clone()) {
-                        if let Err(e) = enqueue_ip_port_scan(db, org_id, &info.name, ip).await {
-                            tracing::warn!(
-                                subdomain = %info.name, ip = %ip, error = %e,
-                                "Failed to enqueue IP port scan"
-                            );
-                        }
-                    }
-                }
-            }
-        }
+        // Follow-up stages (port scan + ip_enum per resolved IP) are now
+        // enqueued by the pipeline orchestrator in
+        // `crate::services::pipeline::on_complete`, called by the job
+        // dispatcher after this returns. That keeps stage chaining
+        // declarative and out of every executor.
 
         Ok(JobResult { summary, diffs })
     }
@@ -213,80 +200,6 @@ fn compute_diffs(
     }
 
     diffs
-}
-
-/// Enqueue a port scan for a specific IP address (associated with a subdomain).
-async fn enqueue_ip_port_scan(
-    db: &sea_orm::DatabaseConnection,
-    org_id: i32,
-    subdomain: &str,
-    ip: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let def_name = format!("Port Scan: {ip} ({subdomain})");
-
-    let definition = if let Some(existing) = job_definitions::Entity::find()
-        .filter(job_definitions::Column::OrgId.eq(org_id))
-        .filter(job_definitions::Column::Name.eq(&def_name))
-        .one(db)
-        .await?
-    {
-        existing
-    } else {
-        let config = serde_json::json!({
-            "hostname": ip,
-            "org_id": org_id,
-            "source": "asm_resolved_ip",
-            "subdomain": subdomain,
-        });
-        job_definitions::ActiveModel {
-            org_id: Set(org_id),
-            name: Set(def_name),
-            job_type: Set("port_scan".to_string()),
-            config: Set(config.to_string()),
-            enabled: Set(true),
-            ..Default::default()
-        }
-        .insert(db)
-        .await?
-    };
-
-    // Check for existing queued/running jobs
-    let pending = job_runs::Entity::find()
-        .filter(job_runs::Column::JobDefinitionId.eq(definition.id))
-        .filter(
-            job_runs::Column::Status
-                .eq("queued")
-                .or(job_runs::Column::Status.eq("running")),
-        )
-        .one(db)
-        .await?;
-
-    if let Some(run) = pending {
-        // If running >10 minutes, mark as failed (stuck) so we can re-enqueue
-        let is_stuck = run.started_at.as_ref().is_some_and(|started| {
-            let age = chrono::Utc::now() - started.with_timezone(&chrono::Utc);
-            age.num_minutes() > 10
-        });
-        if is_stuck {
-            let mut active: job_runs::ActiveModel = run.into();
-            active.status = Set("failed".to_string());
-            active.error_message = Set(Some("Timed out after 10 minutes".to_string()));
-            active.completed_at = Set(Some(chrono::Utc::now().into()));
-            active.update(db).await?;
-            tracing::warn!(ip = %ip, "Marked stuck port scan as failed, re-enqueuing");
-        } else {
-            return Ok(());
-        }
-    }
-
-    let _run = job_runs::Model::create_queued(db, definition.id, org_id).await?;
-
-    tracing::info!(
-        ip = %ip, subdomain = %subdomain,
-        "Queued port scan for resolved IP"
-    );
-
-    Ok(())
 }
 
 async fn create_cert_findings(

@@ -118,53 +118,83 @@ pub async fn add(
     item.label = Set(params.label);
     let target = item.insert(&ctx.db).await?;
 
-    // If the target has a hostname, enqueue an ASM scan via the jobs system
+    // Free initial passive recon for every hostname target. We don't ask
+    // the user to click anything — the new target page will already show
+    // results filling in. Only passive sources (no traffic to the target),
+    // so no tier or scope-verification gate.
     if let Some(ref hostname) = params.hostname {
         let hostname = hostname.trim().to_lowercase();
         if !hostname.is_empty() {
-            let def_name = format!("ASM: {hostname}");
-
-            // Find existing definition or create a new one
-            let definition = if let Some(existing) = job_definitions::Entity::find()
-                .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
-                .filter(job_definitions::Column::Name.eq(&def_name))
-                .one(&ctx.db)
-                .await?
-            {
-                existing
-            } else {
-                let config = serde_json::json!({
-                    "target_id": target.id,
-                    "hostname": hostname,
-                    "org_id": org_ctx.org.id,
-                });
-                job_definitions::ActiveModel {
-                    org_id: Set(org_ctx.org.id),
-                    name: Set(def_name),
-                    job_type: Set("asm_scan".to_string()),
-                    config: Set(config.to_string()),
-                    enabled: Set(true),
-                    ..Default::default()
-                }
-                .insert(&ctx.db)
-                .await?
-            };
-
-            let run =
-                job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
-
-            JobDispatchWorker::perform_later(
-                &ctx,
-                JobDispatchArgs {
-                    job_run_id: run.id,
-                    job_definition_id: definition.id,
-                },
-            )
-            .await?;
+            enqueue_passive_recon(&ctx, org_ctx.org.id, target.id, &hostname).await?;
         }
     }
 
     Ok(Redirect::to(&format!("/targets/{}", target.pid)).into_response())
+}
+
+/// One job definition specification (a row in our recon graph).
+struct PassiveJob<'a> {
+    name: String,
+    job_type: &'a str,
+}
+
+/// Enqueue every passive-recon stage we run for free on a hostname target.
+/// Today: crt.sh-based ASM + amass passive. Future passive tools (viewdns,
+/// rdap) plug in by extending the slice.
+async fn enqueue_passive_recon(
+    ctx: &AppContext,
+    org_id: i32,
+    target_id: i32,
+    hostname: &str,
+) -> Result<()> {
+    let stages = [
+        PassiveJob {
+            name: format!("ASM: {hostname}"),
+            job_type: "asm_scan",
+        },
+        PassiveJob {
+            name: format!("Amass Passive: {hostname}"),
+            job_type: "amass_passive",
+        },
+    ];
+
+    for stage in &stages {
+        let definition = if let Some(existing) = job_definitions::Entity::find()
+            .filter(job_definitions::Column::OrgId.eq(org_id))
+            .filter(job_definitions::Column::Name.eq(&stage.name))
+            .one(&ctx.db)
+            .await?
+        {
+            existing
+        } else {
+            let config = serde_json::json!({
+                "target_id": target_id,
+                "hostname": hostname,
+                "domain": hostname, // amass_passive reads `domain`
+                "org_id": org_id,
+            });
+            job_definitions::ActiveModel {
+                org_id: Set(org_id),
+                name: Set(stage.name.clone()),
+                job_type: Set(stage.job_type.to_string()),
+                config: Set(config.to_string()),
+                enabled: Set(true),
+                ..Default::default()
+            }
+            .insert(&ctx.db)
+            .await?
+        };
+        let run = job_runs::Model::create_queued(&ctx.db, definition.id, org_id).await?;
+        JobDispatchWorker::perform_later(
+            ctx,
+            JobDispatchArgs {
+                job_run_id: run.id,
+                job_definition_id: definition.id,
+            },
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 /// Status of a job-based scan lookup.
@@ -390,6 +420,8 @@ pub async fn show(
     };
 
     let tier = PlanTier::from_org(&org_ctx.org);
+    let port_scan_block_reason =
+        port_scan_block_reason(&ctx.db, org_ctx.org.id, tier, port_scans_running).await;
 
     let scan = views::scan_target::ScanState {
         asm_result: asm.result.as_ref(),
@@ -400,8 +432,35 @@ pub async fn show(
         schedule: schedule_label,
         scheduling_enabled: tier.scheduling_enabled(),
         is_free_tier: matches!(tier, PlanTier::Free),
+        port_scan_block_reason,
     };
     views::scan_target::show(&v, &user, &org_ctx, &user_orgs, &item, &scan)
+}
+
+/// Reason the "Run Port Scan" button must render disabled, or `None` when
+/// the action is allowed. Mirrors the server-side gate in
+/// [`trigger_port_scan`] so the UI never offers an action the controller
+/// would refuse.
+async fn port_scan_block_reason(
+    db: &sea_orm::DatabaseConnection,
+    org_id: i32,
+    tier: PlanTier,
+    port_scans_running: bool,
+) -> Option<&'static str> {
+    if port_scans_running {
+        return Some("A port scan is already running for this target.");
+    }
+    if !matches!(tier, PlanTier::Free) {
+        return None;
+    }
+    let completed_count = job_runs::Entity::find()
+        .filter(job_runs::Column::OrgId.eq(org_id))
+        .filter(job_runs::Column::Status.eq("completed"))
+        .count(db)
+        .await
+        .unwrap_or(0);
+    (completed_count > 0)
+        .then_some("Free plan includes one scan. Upgrade to Recon or higher to re-run.")
 }
 
 /// `DELETE /targets/:pid` -- remove target.
@@ -601,6 +660,74 @@ pub async fn trigger_port_scan(
     Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
 }
 
+/// `POST /targets/:pid/amass-passive` — trigger a passive amass run.
+///
+/// Passive amass uses public OSINT only (no traffic to the target itself),
+/// so it's allowed for any Member+ on a hostname target. Active amass
+/// (brute force, DNS resolution at scale) lands in a follow-up gated by
+/// `services::scan_authz`.
+#[debug_handler]
+pub async fn trigger_amass_passive(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    jar: CookieJar,
+) -> Result<Response> {
+    let user = middleware::get_current_user(&jar, &ctx).await;
+    let user = require_user!(user);
+    let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    require_role!(org_ctx, OrgRole::Member);
+    let item = scan_targets::Model::find_by_pid_and_org(&ctx.db, &pid, org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+
+    let domain = item
+        .hostname
+        .as_deref()
+        .ok_or_else(|| Error::BadRequest("amass passive requires a hostname target".into()))?
+        .to_string();
+
+    let def_name = format!("Amass Passive: {domain}");
+
+    let definition = if let Some(existing) = job_definitions::Entity::find()
+        .filter(job_definitions::Column::OrgId.eq(org_ctx.org.id))
+        .filter(job_definitions::Column::Name.eq(&def_name))
+        .one(&ctx.db)
+        .await?
+    {
+        existing
+    } else {
+        let config = serde_json::json!({
+            "target_id": item.id,
+            "domain": domain,
+            "org_id": org_ctx.org.id,
+        });
+        job_definitions::ActiveModel {
+            org_id: Set(org_ctx.org.id),
+            name: Set(def_name),
+            job_type: Set("amass_passive".to_string()),
+            config: Set(config.to_string()),
+            enabled: Set(true),
+            ..Default::default()
+        }
+        .insert(&ctx.db)
+        .await?
+    };
+
+    let run = job_runs::Model::create_queued(&ctx.db, definition.id, org_ctx.org.id).await?;
+    JobDispatchWorker::perform_later(
+        &ctx,
+        JobDispatchArgs {
+            job_run_id: run.id,
+            job_definition_id: definition.id,
+        },
+    )
+    .await?;
+
+    Ok(Redirect::to(&format!("/targets/{pid}")).into_response())
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScheduleParams {
     pub schedule: String, // "off", "daily", "weekly", "monthly"
@@ -679,5 +806,6 @@ pub fn routes() -> Routes {
         .add("/{pid}", get(show))
         .add("/{pid}", delete(remove))
         .add("/{pid}/port-scan", post(trigger_port_scan))
+        .add("/{pid}/amass-passive", post(trigger_amass_passive))
         .add("/{pid}/schedule", post(set_schedule))
 }

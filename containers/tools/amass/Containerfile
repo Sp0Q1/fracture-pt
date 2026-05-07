@@ -1,0 +1,41 @@
+# Sidecar image for passive subdomain enumeration.
+#
+# History: this slot used to ship amass v4.2.0, but amass v4 dropped the
+# `-json` flag (output now goes to a sqlite/graph DB only), making it
+# unsuitable for sidecar use. We use projectdiscovery/subfinder instead —
+# same OSINT-only function, stable JSONL via `-oJ`, faster, smaller image.
+#
+# The image is intentionally minimal: subfinder binary on alpine, no shell
+# history, non-root user, no entrypoint side effects. The host invokes it as:
+#
+#   podman run --rm \
+#     --network=bridge \
+#     --read-only --tmpfs=/tmp:rw,size=64m \
+#     --cap-drop=ALL --security-opt=no-new-privileges \
+#     --memory=512m --cpus=1.0 --pids-limit=128 \
+#     ghcr.io/sp0q1/fracture-pt-subfinder:<pinned-tag> \
+#     -d <domain> -silent -oJ
+#
+# Stdout is captured by the host process, parsed by services::amass.
+# No mounts. No env. No state.
+FROM docker.io/projectdiscovery/subfinder:v2.6.6
+
+# subfinder reads config from `$HOME/.config/subfinder/`. With the
+# read-only FS we use at runtime, it cannot create the default file on
+# first run, so we pre-bake empty placeholders at the path it expects.
+# `nobody` (UID 65534) on alpine has HOME=/, so the lookup hits
+# `/.config/subfinder/`.
+USER 0:0
+RUN mkdir -p /.config/subfinder \
+    && echo "# placeholder — only public OSINT sources used" > /.config/subfinder/config.yaml \
+    && echo "# no provider keys configured (free OSINT sources only)" > /.config/subfinder/provider-config.yaml \
+    && chmod 0444 /.config/subfinder/*.yaml \
+    && chmod 0555 /.config/subfinder /.config
+
+# Run as a fixed non-root UID. The upstream image already sets a non-root
+# user, but we pin it explicitly to make audits trivial.
+USER 65534:65534
+
+# The upstream image's ENTRYPOINT is `subfinder`. Subcommand-style invocation
+# is unsupported (subfinder is a single-purpose binary), so the host passes
+# only flags. We do not override ENTRYPOINT.

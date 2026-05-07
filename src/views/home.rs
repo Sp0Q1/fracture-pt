@@ -35,7 +35,11 @@ pub fn index(
     }
     ctx["active_engagements"] = serde_json::json!(data.active_engagements);
     ctx["attack_surface"] = serde_json::json!(data.attack_surface);
-    ctx["attack_surface_json"] = serde_json::json!(&data.attack_surface);
+    // network-map.js reads `data-targets="<JSON>"` from the DOM. Serialize
+    // to a string so Tera renders the JSON literal, not the Vec's Debug form.
+    ctx["attack_surface_json"] = serde_json::Value::String(
+        serde_json::to_string(&data.attack_surface).unwrap_or_else(|_| "[]".to_string()),
+    );
     ctx["recent_findings"] = serde_json::json!(data.recent_findings);
     format::render().view(v, "home/index.html", data!(ctx))
 }
