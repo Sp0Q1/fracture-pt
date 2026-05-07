@@ -35,7 +35,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 migration = { path = "migration" }
 # Pinned to CMS PR #71's tip until that PR merges and dependabot bumps it.
 # After CMS #71 lands, restore this to the unpinned form so dependabot tracks main again.
-fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms", rev = "3d08d8321716e0911456db8274c1ccccb5366426" }
+fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms", rev = "ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91" }
 sea-orm = { workspace = true }
 chrono = { version = "0.4" }
 zip = { version = "8", default-features = false, features = ["deflate"] }
