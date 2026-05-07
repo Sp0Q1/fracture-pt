@@ -13,6 +13,11 @@ pub struct ScanState<'a> {
     pub schedule: &'a str,
     pub scheduling_enabled: bool,
     pub is_free_tier: bool,
+    /// When `Some`, the "Run Port Scan" button must render disabled with
+    /// this string in the `title` attribute. `None` means the action is
+    /// allowed. The reason covers every blocker (tier, in-progress scan,
+    /// future gates), so the template needs only one branch.
+    pub port_scan_block_reason: Option<&'a str>,
 }
 
 /// Render the scan target list.
@@ -67,8 +72,14 @@ pub fn show(
     } else {
         "completed"
     });
+    ctx["port_scan_button_label"] = serde_json::json!(if scan.port_scans_running {
+        "Port Scan Running…"
+    } else {
+        "Run Port Scan"
+    });
     ctx["schedule"] = serde_json::json!(scan.schedule);
     ctx["scheduling_enabled"] = serde_json::json!(scan.scheduling_enabled);
     ctx["is_free_tier"] = serde_json::json!(scan.is_free_tier);
+    ctx["port_scan_block_reason"] = serde_json::json!(scan.port_scan_block_reason);
     format::render().view(v, "scan_target/show.html", data!(ctx))
 }

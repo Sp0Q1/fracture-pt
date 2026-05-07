@@ -358,29 +358,31 @@ async fn fetch_attack_surface(
         }
     }
 
-    // --- Fetch ASM + port scan summaries per target ---
+    // --- Fetch ASM + amass + port scan summaries per target ---
     let all_defs = job_definitions::Entity::find()
         .filter(job_definitions::Column::OrgId.eq(org_id))
         .filter(
             job_definitions::Column::JobType
                 .eq("asm_scan")
-                .or(job_definitions::Column::JobType.eq("port_scan")),
+                .or(job_definitions::Column::JobType.eq("port_scan"))
+                .or(job_definitions::Column::JobType.eq("amass_passive")),
         )
         .all(db)
         .await
         .unwrap_or_default();
 
     // Group definitions by target — match by target_id from config,
-    // or by hostname if target_id is missing (e.g. free scans).
+    // or by hostname/domain if target_id is missing (e.g. free scans).
     let hostname_to_target_id: HashMap<&str, i32> = targets
         .iter()
         .filter_map(|t| t.hostname.as_deref().map(|h| (h, t.id)))
         .collect();
     let mut asm_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
+    let mut amass_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
     let mut port_defs_by_target: HashMap<i32, Vec<i32>> = HashMap::new();
     for def in &all_defs {
         if let Ok(cfg) = serde_json::from_str::<serde_json::Value>(&def.config) {
-            // Try matching by target_id first, fall back to hostname
+            // Try matching by target_id first, fall back to hostname / domain.
             let tid = cfg["target_id"]
                 .as_i64()
                 .map(|id| {
@@ -391,14 +393,16 @@ async fn fetch_attack_surface(
                 .or_else(|| {
                     cfg["hostname"]
                         .as_str()
+                        .or_else(|| cfg["domain"].as_str())
                         .and_then(|h| hostname_to_target_id.get(h))
                         .copied()
                 });
             if let Some(tid) = tid {
-                if def.job_type == "asm_scan" {
-                    asm_defs_by_target.entry(tid).or_default().push(def.id);
-                } else {
-                    port_defs_by_target.entry(tid).or_default().push(def.id);
+                match def.job_type.as_str() {
+                    "asm_scan" => asm_defs_by_target.entry(tid).or_default().push(def.id),
+                    "amass_passive" => amass_defs_by_target.entry(tid).or_default().push(def.id),
+                    "port_scan" => port_defs_by_target.entry(tid).or_default().push(def.id),
+                    _ => {}
                 }
             }
         }
@@ -436,38 +440,77 @@ async fn fetch_attack_surface(
             .or(target.ip_address.as_deref())
             .unwrap_or("unknown");
 
-        // Subdomain count + list from latest ASM scan
-        let (subdomain_count, subdomains_list) = asm_defs_by_target
-            .get(&target.id)
-            .and_then(|def_ids| {
-                def_ids.iter().find_map(|did| {
-                    let run = latest_run_by_def.get(did)?;
-                    let summary = run.result_summary.as_deref()?;
-                    let v = serde_json::from_str::<serde_json::Value>(summary).ok()?;
-                    let count = v
-                        .get("subdomain_count")
-                        .and_then(serde_json::Value::as_u64)?;
-                    let subs = v
-                        .get("subdomains")
-                        .and_then(serde_json::Value::as_array)
-                        .map(|arr| {
-                            arr.iter()
-                                .take(30)
-                                .filter_map(|s| {
-                                    let name = s.get("name")?.as_str()?;
-                                    let resolved = s
-                                        .get("resolved")
-                                        .and_then(serde_json::Value::as_bool)
-                                        .unwrap_or(false);
-                                    Some(serde_json::json!({"name": name, "resolved": resolved}))
-                                })
-                                .collect::<Vec<_>>()
-                        })
-                        .unwrap_or_default();
-                    Some((count, subs))
-                })
-            })
-            .unwrap_or((0, Vec::new()));
+        // Subdomain set: union of latest ASM scan + latest amass passive,
+        // deduplicated by name. Either source alone often misses entries
+        // the other found (CT logs vs OSINT), so the union is what the
+        // dashboard topology should display.
+        let mut by_name: std::collections::BTreeMap<String, bool> =
+            std::collections::BTreeMap::new();
+
+        // From asm_scan: take {name, resolved}
+        if let Some(def_ids) = asm_defs_by_target.get(&target.id) {
+            for did in def_ids {
+                let Some(run) = latest_run_by_def.get(did) else {
+                    continue;
+                };
+                let Some(summary) = run.result_summary.as_deref() else {
+                    continue;
+                };
+                let Ok(v) = serde_json::from_str::<serde_json::Value>(summary) else {
+                    continue;
+                };
+                if let Some(arr) = v.get("subdomains").and_then(serde_json::Value::as_array) {
+                    for s in arr {
+                        if let Some(name) = s.get("name").and_then(serde_json::Value::as_str) {
+                            let resolved = s
+                                .get("resolved")
+                                .and_then(serde_json::Value::as_bool)
+                                .unwrap_or(false);
+                            by_name
+                                .entry(name.to_string())
+                                .and_modify(|r| *r = *r || resolved)
+                                .or_insert(resolved);
+                        }
+                    }
+                }
+            }
+        }
+
+        // From amass_passive: take hosts[].name; addresses non-empty == resolved
+        if let Some(def_ids) = amass_defs_by_target.get(&target.id) {
+            for did in def_ids {
+                let Some(run) = latest_run_by_def.get(did) else {
+                    continue;
+                };
+                let Some(summary) = run.result_summary.as_deref() else {
+                    continue;
+                };
+                let Ok(v) = serde_json::from_str::<serde_json::Value>(summary) else {
+                    continue;
+                };
+                if let Some(arr) = v.get("hosts").and_then(serde_json::Value::as_array) {
+                    for h in arr {
+                        if let Some(name) = h.get("name").and_then(serde_json::Value::as_str) {
+                            let resolved = h
+                                .get("addresses")
+                                .and_then(serde_json::Value::as_array)
+                                .is_some_and(|a| !a.is_empty());
+                            by_name
+                                .entry(name.to_string())
+                                .and_modify(|r| *r = *r || resolved)
+                                .or_insert(resolved);
+                        }
+                    }
+                }
+            }
+        }
+
+        let subdomain_count = u64::try_from(by_name.len()).unwrap_or(u64::MAX);
+        let subdomains_list: Vec<serde_json::Value> = by_name
+            .into_iter()
+            .take(30)
+            .map(|(name, resolved)| serde_json::json!({"name": name, "resolved": resolved}))
+            .collect();
 
         // Open port count from latest port scan
         let open_ports = port_defs_by_target

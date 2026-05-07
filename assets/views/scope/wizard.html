@@ -200,5 +200,5 @@
 {% endblock content %}
 
 {% block js %}
-<script src="/static/scope-wizard.js?v=3" integrity="sha384-8el8qmWHYKjBFyEP9Htrl+OXSc4vbzEziiH0vhHgUScvFFMwcUJITZ2OWKT5vE0s" crossorigin="anonymous"></script>
+<script src="/static/scope-wizard.js" integrity="{{ sri(path='/static/scope-wizard.js') | safe }}" crossorigin="anonymous"></script>
 {% endblock js %}

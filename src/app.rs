@@ -20,7 +20,8 @@ use loco_rs::bgworker::BackgroundWorker;
 use crate::{
     controllers, initializers,
     jobs::{
-        asm_scan::AsmScanExecutor, port_scan::PortScanExecutor, report_build::ReportBuildExecutor,
+        amass::AmassExecutor, asm_scan::AsmScanExecutor, ip_enum::IpEnumExecutor,
+        port_scan::PortScanExecutor, report_build::ReportBuildExecutor,
     },
     models::_entities::{
         blog_posts, engagement_comments, engagement_offers, engagement_targets, engagements,
@@ -246,6 +247,8 @@ impl Hooks for App {
         job_reg.register(Box::new(AsmScanExecutor));
         job_reg.register(Box::new(PortScanExecutor));
         job_reg.register(Box::new(ReportBuildExecutor));
+        job_reg.register(Box::new(IpEnumExecutor));
+        job_reg.register(Box::new(AmassExecutor));
         init_job_registry(job_reg);
 
         AppRoutes::with_default_routes()
@@ -280,6 +283,23 @@ impl Hooks for App {
     async fn after_routes(router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Auto-seed development data if the services table is empty
         Self::seed(ctx, Path::new(".")).await.ok();
+
+        // Drain the job queue periodically. Queued runs from a prior boot
+        // (or runs created while no other job was finishing — which is what
+        // calls dispatch_queued_runs in the dispatcher's success path) would
+        // otherwise sit forever. The pump runs every 60s for the lifetime
+        // of the app process; one-time spawn, no shutdown signal needed.
+        let pump_ctx = ctx.clone();
+        tokio::spawn(async move {
+            // First sweep ~5s after boot so any orphans get picked up
+            // promptly without blocking the listen() call.
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            loop {
+                workers::job_dispatcher::sweep_queued_runs(&pump_ctx).await;
+                tokio::time::sleep(std::time::Duration::from_mins(1)).await;
+            }
+        });
+
         Ok(router.fallback(controllers::fallback::not_found))
     }
 

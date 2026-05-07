@@ -33,13 +33,17 @@ axum = { version = "0.8" }
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 migration = { path = "migration" }
-fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms" }
+# Pinned to CMS PR #71's tip until that PR merges and dependabot bumps it.
+# After CMS #71 lands, restore this to the unpinned form so dependabot tracks main again.
+fracture-core = { git = "https://github.com/Sp0Q1/fracture-cms", rev = "3d08d8321716e0911456db8274c1ccccb5366426" }
 sea-orm = { workspace = true }
 chrono = { version = "0.4" }
 zip = { version = "8", default-features = false, features = ["deflate"] }
 comrak = { version = "0.52", default-features = false }
 uuid = { version = "1.22", features = ["v4"] }
 fluent-templates = { version = "0.13", features = ["tera"] }
+tera = { version = "1" }
+thiserror = "2"
 unic-langid = { version = "0.9" }
 axum-extra = { version = "0.12", features = ["form", "cookie"] }
 slug = { version = "0.1" }

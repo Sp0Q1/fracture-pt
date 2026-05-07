@@ -2,6 +2,16 @@
 
 Open-source penetration testing platform built on [fracture-core](https://github.com/Sp0Q1/fracture-cms). Manages engagements, findings, scan targets, reports, and team collaboration for security assessments.
 
+## Documentation
+
+| Document | What's in it |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Invariants every contributor (human or otherwise) must preserve |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Domain model, scan pipeline (current + target state), sequence diagrams, future architecture |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Local setup, debug, test, daily workflow, file layout |
+| [`docs/USE_CASES.md`](docs/USE_CASES.md) | Named user journeys (free scan, signup, engagement-driven pentest, etc.) including the negative cases |
+| [`docs/SCAN_AUTHZ.md`](docs/SCAN_AUTHZ.md) | Tiered passive-vs-active scan authorization gate |
+
 ## Architecture
 
 ```

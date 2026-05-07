@@ -60,24 +60,24 @@
         <a href="/targets" class="button" data-variant="secondary">Back to Targets</a>
         <a href="/engagements/new?target={{ item.id }}" class="button" data-variant="secondary">Request Pentest</a>
         {% if user_role == "member" or user_role == "admin" or user_role == "owner" %}
-        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
-        <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">
-            <button type="submit"{% if port_scan_status == "running" %} disabled{% endif %}{% if is_free_tier %} title="Free plan: one scan included"{% endif %}>
-                {% if port_scan_status == "running" %}Port Scan Running&hellip;{% else %}Run Port Scan{% endif %}
-            </button>
-        </form>
+        {# Recon runs automatically on add. Re-runs are scheduled, not clicked.
+           Manual triggers were exposing tooling internals (amass / nmap) to
+           non-technical users; they're now admin-only diagnostics, hidden
+           inside the Debug disclosure further down. #}
         {% if scheduling_enabled %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/targets/{{ item.pid }}/schedule" method="post" class="d-inline">
-            <select name="schedule" data-auto-submit>
-                <option value="off"{% if schedule == "off" %} selected{% endif %}>No schedule</option>
+            <label for="recon-schedule" class="form-label">Continuous recon</label>
+            <select id="recon-schedule" name="schedule" data-auto-submit>
+                <option value="off"{% if schedule == "off" %} selected{% endif %}>Off</option>
                 <option value="daily"{% if schedule == "daily" %} selected{% endif %}>Daily</option>
                 <option value="weekly"{% if schedule == "weekly" %} selected{% endif %}>Weekly</option>
                 <option value="monthly"{% if schedule == "monthly" %} selected{% endif %}>Monthly</option>
             </select>
         </form>
-        {% elif not is_free_tier %}
-        <span class="badge secondary" title="Upgrade to Pro for scheduled scans">Schedule: Pro+</span>
+        {% elif is_free_tier %}
+        <a href="/pricing" class="button outline small" data-variant="primary"
+           title="Continuous recon is included on Recon and higher.">Upgrade for continuous recon</a>
         {% endif %}
         <span class="spacer"></span>
         <button class="outline" data-variant="danger"
@@ -86,6 +86,27 @@
         {% endif %}
     </div>
 </article>
+
+{% if is_platform_admin %}
+<details class="mt-3">
+    <summary class="text-muted text-sm">Debug (platform admin only)</summary>
+    <div class="form-actions mt-2">
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/targets/{{ item.pid }}/port-scan" method="post" class="d-inline">
+            <button type="submit" class="outline small"
+                    {% if port_scan_block_reason %}disabled title="{{ port_scan_block_reason }}"{% endif %}>
+                {{ port_scan_button_label }}
+            </button>
+        </form>
+        {% if item.hostname %}
+        <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+        <form action="/targets/{{ item.pid }}/amass-passive" method="post" class="d-inline">
+            <button type="submit" class="outline small">Re-run amass passive</button>
+        </form>
+        {% endif %}
+    </div>
+</details>
+{% endif %}
 
 {% if asm %}
 <section class="mt-4">
