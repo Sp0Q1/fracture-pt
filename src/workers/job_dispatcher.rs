@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use loco_rs::{app::AppContext, bgworker::BackgroundWorker, Result};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QuerySelect,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    QuerySelect,
 };
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +44,32 @@ pub struct JobDispatchWorker {
     pub ctx: AppContext,
 }
 
+/// Atomically claim a queued job_run by transitioning `queued → running`.
+///
+/// Returns `Ok(true)` if this caller won the race and should proceed with
+/// execution; `Ok(false)` if another dispatcher already claimed it (caller
+/// bails without re-running the underlying tool).
+///
+/// Why: two callsites enqueue dispatcher work — `dispatch_queued_runs`
+/// after every successful job, and the periodic `sweep_queued_runs`
+/// tokio task in `app.rs`. Without atomic claim, both can pick up the
+/// same row and execute the same scan twice. The conditional `WHERE`
+/// clause makes the transition idempotent under concurrent callers.
+pub async fn claim_run(db: &DatabaseConnection, run_id: i32) -> Result<bool> {
+    let result = job_runs::Entity::update_many()
+        .set(job_runs::ActiveModel {
+            status: Set("running".to_string()),
+            started_at: Set(Some(chrono::Utc::now().into())),
+            ..Default::default()
+        })
+        .filter(job_runs::Column::Id.eq(run_id))
+        .filter(job_runs::Column::Status.eq("queued"))
+        .filter(job_runs::Column::StartedAt.is_null())
+        .exec(db)
+        .await?;
+    Ok(result.rows_affected == 1)
+}
+
 /// Drain `status='queued' AND started_at IS NULL` job_runs by handing each
 /// to the dispatcher worker. Called from two places:
 /// 1. After every successful job finishes (existing behaviour) — picks up
@@ -51,6 +78,9 @@ pub struct JobDispatchWorker {
 ///    runs from a prior boot (or runs queued while no other job was
 ///    completing) eventually get picked up. Without this tick, the queue
 ///    sits forever after a restart.
+///
+/// Both callsites can race with each other; `JobDispatchWorker::perform`
+/// guards against double-execution via [`claim_run`].
 pub async fn sweep_queued_runs(ctx: &AppContext) {
     let queued_runs = match job_runs::Entity::find()
         .filter(job_runs::Column::Status.eq("queued"))
@@ -192,14 +222,17 @@ impl BackgroundWorker<JobDispatchArgs> for JobDispatchWorker {
             ))
         })?;
 
-        // Mark run as "running"
-        let run_update = job_runs::ActiveModel {
-            id: Set(args.job_run_id),
-            status: Set("running".to_string()),
-            started_at: Set(Some(chrono::Utc::now().into())),
-            ..Default::default()
-        };
-        run_update.update(db).await?;
+        // Atomically transition queued → running. If a second dispatcher
+        // raced to the same row (the post-job dispatch_queued_runs and
+        // the periodic sweep_queued_runs can both pick up the same run),
+        // the loser sees rows_affected == 0 and bails — no re-execution.
+        if !claim_run(db, args.job_run_id).await? {
+            tracing::debug!(
+                job_run_id = args.job_run_id,
+                "Run already claimed by another dispatcher; skipping"
+            );
+            return Ok(());
+        }
 
         // Find previous completed run for diff comparison
         let previous_run =
