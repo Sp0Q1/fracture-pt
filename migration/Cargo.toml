@@ -12,7 +12,7 @@ path = "src/lib.rs"
 
 [dependencies]
 loco-rs = { workspace = true }
-fracture-core-migration = { git = "https://github.com/Sp0Q1/fracture-cms" }
+fracture-core-migration = { git = "https://github.com/Sp0Q1/fracture-cms", rev = "ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91" }
 sea-orm = { workspace = true }
 uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
