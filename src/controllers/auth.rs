@@ -135,8 +135,8 @@ pub struct OrgAuth<R: RoleRequirement> {
 
 impl<R: RoleRequirement> OrgAuth<R> {
     /// Convenience: whether this user is a platform admin.
-    pub const fn is_platform_admin(&self) -> bool {
-        self.org_ctx.is_platform_admin
+    pub const fn is_staff(&self) -> bool {
+        self.org_ctx.is_staff
     }
 }
 
@@ -192,7 +192,7 @@ impl FromRequestParts<AppContext> for PlatformAdmin {
         else {
             return Err(not_found());
         };
-        if !org_ctx.is_platform_admin {
+        if !org_ctx.is_staff {
             return Err(not_found());
         }
         Ok(Self { user, org_ctx })

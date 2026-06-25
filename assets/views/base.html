@@ -15,9 +15,9 @@
   <meta name="twitter:card" content="summary">
   {% endblock og_tags %}
   {% block structured_data %}{% endblock structured_data %}
-  <link rel="stylesheet" href="/static/oat.min.css" integrity="{{ sri(path='/static/oat.min.css') | safe }}" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ asset(path='/static/oat.min.css') | safe }}" integrity="{{ sri(path='/static/oat.min.css') | safe }}" crossorigin="anonymous">
   {% block stylesheets %}
-  <link rel="stylesheet" href="/static/app.css" integrity="{{ sri(path='/static/app.css') | safe }}" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ asset(path='/static/app.css') | safe }}" integrity="{{ sri(path='/static/app.css') | safe }}" crossorigin="anonymous">
   {% endblock stylesheets %}
   {% block head %}
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
@@ -180,10 +180,10 @@
         </div>
         {% endblock footer %}
     </footer>
-  <script src="/static/oat.min.js" integrity="{{ sri(path='/static/oat.min.js') | safe }}" crossorigin="anonymous"></script>
+  <script src="{{ asset(path='/static/oat.min.js') | safe }}" integrity="{{ sri(path='/static/oat.min.js') | safe }}" crossorigin="anonymous"></script>
   {% block scripts %}
-  <script src="/static/app.js" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
-  <script src="/static/table-sort.js" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
+  <script src="{{ asset(path='/static/app.js') | safe }}" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
+  <script src="{{ asset(path='/static/table-sort.js') | safe }}" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
   {% endblock scripts %}
   {% block js %}
   {% endblock js %}

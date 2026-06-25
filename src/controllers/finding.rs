@@ -75,7 +75,7 @@ pub async fn show(
         &auth.org_ctx,
         &user_orgs,
         &item,
-        auth.is_platform_admin(),
+        auth.is_staff(),
     )
 }
 

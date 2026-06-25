@@ -235,10 +235,18 @@ impl Hooks for App {
             Box::new(initializers::view_engine::TemplateInitializer),
             Box::new(initializers::oidc::OidcInitializer),
             Box::new(initializers::security_headers::SecurityHeadersInitializer),
+            // Executes queued job runs and evaluates cron schedules. Without it
+            // the registered scan/report executors never run.
+            Box::new(fracture_core::jobs::runner::JobRunnerInitializer),
         ])
     }
 
-    fn routes(_ctx: &AppContext) -> AppRoutes {
+    fn routes(ctx: &AppContext) -> AppRoutes {
+        // Feature flags (e.g. settings.blog.enabled) gate routes and nav.
+        fracture_core::features::init_features(fracture_core::features::from_settings(
+            ctx.config.settings.as_ref(),
+        ));
+
         // Initialise the entity registry with gethacked-specific entities
         fracture_core::entity_registry::init_entity_registry(build_entity_registry());
 

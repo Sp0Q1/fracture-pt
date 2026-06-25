@@ -18,17 +18,28 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use serial_test::serial;
 
 async fn user(db: &sea_orm::DatabaseConnection, suffix: &str) -> users::Model {
-    users::Model::find_or_create_from_oidc(
+    let user = users::Model::find_or_create_from_oidc(
         db,
         &OidcUserInfo {
             provider: "test".to_string(),
             subject: format!("test-az-{suffix}"),
             email: format!("az-{suffix}@example.com"),
             name: Some(format!("AZ User {suffix}")),
+            email_verified: true,
         },
     )
     .await
-    .expect("create user")
+    .expect("create user");
+    organizations::Model::ensure_default_membership(
+        db,
+        &format!("test-org-{suffix}"),
+        &format!("Test Org {suffix}"),
+        fracture_pt::models::org_members::OrgRole::Owner,
+        user.id,
+    )
+    .await
+    .expect("ensure org membership");
+    user
 }
 
 async fn org(db: &sea_orm::DatabaseConnection, user_id: i32) -> organizations::Model {
@@ -117,17 +128,17 @@ async fn link_target(
 
 const MEMBER: ScanCaller = ScanCaller {
     has_member_role: true,
-    is_platform_admin: false,
+    is_staff: false,
 };
 
 const ADMIN: ScanCaller = ScanCaller {
     has_member_role: true,
-    is_platform_admin: true,
+    is_staff: true,
 };
 
 const NO_ROLE: ScanCaller = ScanCaller {
     has_member_role: false,
-    is_platform_admin: false,
+    is_staff: false,
 };
 
 #[tokio::test]

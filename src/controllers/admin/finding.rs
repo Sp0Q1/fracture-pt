@@ -20,7 +20,7 @@ pub async fn list(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let items = findings::Model::find_all(&ctx.db).await;
 
@@ -63,7 +63,7 @@ pub async fn show(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = findings::Model::find_by_pid(&ctx.db, &pid)
         .await
@@ -110,7 +110,7 @@ pub async fn bulk_delete(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
 
     let pids: Vec<String> = form_urlencoded::parse(body.as_bytes())
         .filter(|(key, _)| key == "pids[]")
@@ -136,7 +136,7 @@ pub async fn delete(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
 
     let item = findings::Model::find_by_pid(&ctx.db, &pid)
         .await

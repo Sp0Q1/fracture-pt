@@ -95,7 +95,7 @@ pub async fn update_settings(
     // Platform admins can change the org tier
     let valid_tiers = ["free", "recon", "strike", "offensive", "enterprise"];
     if let Some(ref tier_str) = params.plan_tier {
-        if org_ctx.is_platform_admin && valid_tiers.contains(&tier_str.as_str()) {
+        if org_ctx.is_staff && valid_tiers.contains(&tier_str.as_str()) {
             org_model::Model::set_setting(
                 &ctx.db,
                 org.id,

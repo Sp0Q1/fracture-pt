@@ -38,7 +38,7 @@
 {% endblock structured_data %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/static/app.css" integrity="{{ sri(path='/static/app.css') | safe }}" crossorigin="anonymous">
+<link rel="stylesheet" href="{{ asset(path='/static/app.css') | safe }}" integrity="{{ sri(path='/static/app.css') | safe }}" crossorigin="anonymous">
 {% endblock stylesheets %}
 
 {% block nav_auth_buttons %}
@@ -106,6 +106,6 @@
 {% endblock footer %}
 
 {% block scripts %}
-<script src="/static/app.js" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
-<script src="/static/table-sort.js" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/app.js') | safe }}" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/table-sort.js') | safe }}" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
 {% endblock scripts %}

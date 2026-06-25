@@ -547,6 +547,6 @@
 
 {% block js %}
 {% if user_name and attack_surface | length > 0 %}
-<script src="/static/network-map.js" integrity="{{ sri(path='/static/network-map.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/network-map.js') | safe }}" integrity="{{ sri(path='/static/network-map.js') | safe }}" crossorigin="anonymous"></script>
 {% endif %}
 {% endblock js %}

@@ -48,6 +48,13 @@ settings:
       - image/svg+xml
   blog:
     org_slug: "gethacked-admin"
+  # Onboarding: new OIDC users join one shared default client org (the staff
+  # org "gethacked-admin" is separate). Staff create isolated per-client orgs
+  # and invite clients into them; invites are auto-accepted on first login.
+  org:
+    default_slug: {{ get_env(name="DEFAULT_ORG_SLUG", default="gethacked-clients") }}
+    default_name: {{ get_env(name="DEFAULT_ORG_NAME", default="GetHacked Clients") }}
+    default_role: {{ get_env(name="DEFAULT_ORG_ROLE", default="member") }}
   oidc:
     provider_name: {{ get_env(name="OIDC_PROVIDER_NAME", default="zitadel") }}
     issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="") }}

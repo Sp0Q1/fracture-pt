@@ -18,7 +18,7 @@ pub async fn list(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let items = users::Entity::find()
@@ -52,7 +52,7 @@ pub async fn show(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
 
     let target_user = crate::models::users::Model::find_by_pid(&ctx.db, &pid)
@@ -106,7 +106,7 @@ pub async fn delete(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
 
     let target_user = crate::models::users::Model::find_by_pid(&ctx.db, &pid)
         .await

@@ -64,6 +64,7 @@ impl Initializer for TemplateInitializer {
             engines::TeraView::build()?.post_process(move |tera| {
                 tera.register_function("t", FluentLoader::new(arc.clone()));
                 register_sri_function(tera, sri.clone());
+                fracture_core::features::register_feature_function(tera);
                 tera.register_filter("from_json", from_json_filter);
                 fracture_core::register_templates(tera)
                     .map_err(|e| loco_rs::Error::string(&e.to_string()))?;
@@ -73,6 +74,7 @@ impl Initializer for TemplateInitializer {
             let sri = sri_index;
             engines::TeraView::build()?.post_process(move |tera| {
                 register_sri_function(tera, sri.clone());
+                fracture_core::features::register_feature_function(tera);
                 tera.register_filter("from_json", from_json_filter);
                 fracture_core::register_templates(tera)
                     .map_err(|e| loco_rs::Error::string(&e.to_string()))?;

@@ -73,7 +73,7 @@ sequenceDiagram
 ## Caller responsibilities
 
 1. **Resolve org membership and role first.** The gate trusts that the controller has already verified the caller is a Member+ of the target's owning org via `require_role!(org_ctx, OrgRole::Member)`. The gate's `has_member_role` field reflects that decision.
-2. **Pass the right caller record.** Construct `ScanCaller { has_member_role, is_platform_admin }` from the resolved org context.
+2. **Pass the right caller record.** Construct `ScanCaller { has_member_role, is_staff }` from the resolved org context.
 3. **Render the denial reason if denied.** `DenialReason::user_message()` returns text safe to show to end users.
 4. **Log platform-admin overrides.** When `unlock_reasons` contains `PlatformAdminOverride`, an audit log entry must be written. (Pending follow-up PR.)
 

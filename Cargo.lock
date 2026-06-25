@@ -912,6 +912,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cron"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "089df96cf6a25253b4b6b6744d86f91150a3d4df546f31a95def47976b8cba97"
+dependencies = [
+ "chrono",
+ "once_cell",
+ "phf 0.11.3",
+ "winnow 0.7.15",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1594,7 +1606,7 @@ dependencies = [
 [[package]]
 name = "fracture-core"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?rev=ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91#ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91"
+source = "git+https://github.com/Sp0Q1/fracture-cms?rev=46952ce2ef632e2689003c61a94b7355110f0295#46952ce2ef632e2689003c61a94b7355110f0295"
 dependencies = [
  "async-trait",
  "axum",
@@ -1602,6 +1614,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "comrak",
+ "cron 0.16.0",
  "form_urlencoded",
  "fracture-core-migration",
  "include_dir",
@@ -1626,7 +1639,7 @@ dependencies = [
 [[package]]
 name = "fracture-core-migration"
 version = "0.1.0"
-source = "git+https://github.com/Sp0Q1/fracture-cms?rev=ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91#ace9c8b3b06f2df9fc0a61d2c93fa6055e58dd91"
+source = "git+https://github.com/Sp0Q1/fracture-cms?rev=46952ce2ef632e2689003c61a94b7355110f0295#46952ce2ef632e2689003c61a94b7355110f0295"
 dependencies = [
  "loco-rs",
  "sea-orm-migration",
@@ -3660,9 +3673,9 @@ dependencies = [
 
 [[package]]
 name = "quinn-proto"
-version = "0.11.14"
+version = "0.11.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
+checksum = "4fcb935c5bec503c2f0e306bdd3e58bb9029dcb14fa8d9ac76e3a5256ac0763e"
 dependencies = [
  "bytes",
  "getrandom 0.3.4",
@@ -5428,7 +5441,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2594dd7c2abbbafbb1c78d167fd10860dc7bd75f814cb051a1e0d3e796b9702"
 dependencies = [
  "chrono",
- "cron",
+ "cron 0.12.1",
  "num-derive",
  "num-traits",
  "tokio",

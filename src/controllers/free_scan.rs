@@ -63,7 +63,7 @@ pub async fn submit(
     }
 
     let admin_org = organizations::Entity::find()
-        .filter(organizations::Column::IsPlatformAdmin.eq(true))
+        .filter(organizations::Column::IsStaff.eq(true))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| Error::BadRequest("Platform admin org not configured".into()))?;
@@ -133,7 +133,7 @@ pub async fn results_page(
         .is_some_and(|c| c.value() == run_pid);
     let is_admin = if let Some(user) = middleware::get_current_user(&jar, &ctx).await {
         let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-        org_ctx.is_some_and(|o| o.is_platform_admin)
+        org_ctx.is_some_and(|o| o.is_staff)
     } else {
         false
     };

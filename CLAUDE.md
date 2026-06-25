@@ -54,7 +54,7 @@ Never `--no-verify`. Never weaken the audit ignore list without an issue link.
 - **Use core macros for auth gates:**
   - `require_user!(user)` — must be authenticated
   - `require_role!(org_ctx, OrgRole::Viewer | Member | Admin)` — role gate
-  - `require_platform_admin!(org_ctx)` — platform-admin gate
+  - `require_staff!(org_ctx)` — platform-admin (staff) gate
 - **Pentester role is a PT-domain concept; the assignment mechanism is CMS infrastructure.**
   - The role identifier (`"pentester"`) and its semantics (can edit findings on the engagement, can comment, cannot manage org membership) are defined here in PT, in `src/auth/roles.rs`.
   - The *infrastructure* — the `ResourceAssignment` model, the assign/revoke/check helpers, and the IDOR-safe enforcement — comes from `fracture-core`. PT calls into it; PT does NOT introduce a parallel assignment table.
