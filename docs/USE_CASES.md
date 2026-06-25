@@ -170,7 +170,7 @@ sequenceDiagram
     participant AuditLog
 
     Admin->>Portal: trigger active scan on customer target
-    Portal->>ScanAuthz: evaluate(target, caller{is_platform_admin: true})
+    Portal->>ScanAuthz: evaluate(target, caller{is_staff: true})
     ScanAuthz-->>Portal: active allowed (PlatformAdminOverride)
     Portal->>AuditLog: log override (actor, target, reason)
     Portal->>Portal: enqueue active job

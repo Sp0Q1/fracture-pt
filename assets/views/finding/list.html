@@ -78,7 +78,7 @@
 {% endblock content %}
 
 {% block scripts %}
-<script src="/static/app.js" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
-<script src="/static/table-sort.js" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
-<script src="/static/bulk-select.js" integrity="{{ sri(path='/static/bulk-select.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/app.js') | safe }}" integrity="{{ sri(path='/static/app.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/table-sort.js') | safe }}" integrity="{{ sri(path='/static/table-sort.js') | safe }}" crossorigin="anonymous"></script>
+<script src="{{ asset(path='/static/bulk-select.js') | safe }}" integrity="{{ sri(path='/static/bulk-select.js') | safe }}" crossorigin="anonymous"></script>
 {% endblock scripts %}

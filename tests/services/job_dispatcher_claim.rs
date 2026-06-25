@@ -22,7 +22,7 @@ async fn setup_queued_run(db: &DatabaseConnection) -> i32 {
         name: Set("claim-test-org".into()),
         slug: Set(format!("claim-test-{}", Uuid::new_v4())),
         is_personal: Set(false),
-        is_platform_admin: Set(false),
+        is_staff: Set(false),
         ..Default::default()
     }
     .insert(db)

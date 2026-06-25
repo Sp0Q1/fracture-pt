@@ -92,13 +92,10 @@ pub async fn show(
                 return Err(Error::NotFound);
             };
 
-            let is_platform_admin =
-                fracture_core::models::organizations::Model::is_user_platform_admin(
-                    &ctx.db, user.id,
-                )
-                .await;
+            let is_staff =
+                fracture_core::models::organizations::Model::is_user_staff(&ctx.db, user.id).await;
 
-            if !is_platform_admin {
+            if !is_staff {
                 let is_org_member = fracture_core::models::_entities::org_members::Entity::find()
                     .filter(
                         fracture_core::models::_entities::org_members::Column::OrgId
@@ -164,11 +161,10 @@ pub async fn destroy(
 
     let is_uploader = upload.uploaded_by == user.id;
     if !is_uploader {
-        let is_platform_admin =
-            fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id)
-                .await;
+        let is_staff =
+            fracture_core::models::organizations::Model::is_user_staff(&ctx.db, user.id).await;
 
-        if !is_platform_admin {
+        if !is_staff {
             let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
             let is_org_admin = org_ctx
                 .as_ref()

@@ -21,17 +21,28 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use serial_test::serial;
 
 async fn create_user(db: &sea_orm::DatabaseConnection, suffix: &str) -> users::Model {
-    users::Model::find_or_create_from_oidc(
+    let user = users::Model::find_or_create_from_oidc(
         db,
         &OidcUserInfo {
             provider: "test".to_string(),
             subject: format!("test-auth-{suffix}"),
             email: format!("auth-{suffix}@example.com"),
             name: Some(format!("Auth User {suffix}")),
+            email_verified: true,
         },
     )
     .await
-    .expect("Failed to create test user")
+    .expect("Failed to create test user");
+    organizations::Model::ensure_default_membership(
+        db,
+        &format!("test-org-{suffix}"),
+        &format!("Test Org {suffix}"),
+        fracture_pt::models::org_members::OrgRole::Owner,
+        user.id,
+    )
+    .await
+    .expect("ensure org membership");
+    user
 }
 
 async fn create_service(db: &sea_orm::DatabaseConnection, suffix: &str) -> services::Model {

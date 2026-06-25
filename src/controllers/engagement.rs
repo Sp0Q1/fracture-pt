@@ -50,8 +50,7 @@ async fn compute_access(
             .unwrap_or_default()
             .is_some();
     let is_assigned = pentester_assignments::Model::is_assigned(db, user_id, engagement.id).await;
-    let is_admin =
-        fracture_core::models::organizations::Model::is_user_platform_admin(db, user_id).await;
+    let is_admin = fracture_core::models::organizations::Model::is_user_staff(db, user_id).await;
 
     EngagementAccess {
         can_view: is_org_member || is_assigned || is_admin,
@@ -786,7 +785,7 @@ pub async fn delete_comment(
 
     // Only the author or a platform admin can delete
     let is_admin =
-        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+        fracture_core::models::organizations::Model::is_user_staff(&ctx.db, user.id).await;
     if comment.user_id != user.id && !is_admin {
         return Err(Error::NotFound);
     }

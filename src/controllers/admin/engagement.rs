@@ -80,7 +80,7 @@ pub async fn list(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let items = engagements::Model::find_all_pending(&ctx.db).await;
     let items_with_org = resolve_org_names(&ctx.db, &items).await;
@@ -97,7 +97,7 @@ pub async fn list_all(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let items = engagements::Entity::find()
         .order_by(engagements::Column::Id, Order::Desc)
@@ -119,7 +119,7 @@ pub async fn show(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, user.id).await?;
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
@@ -183,7 +183,7 @@ pub async fn create_offer(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
@@ -243,7 +243,7 @@ pub async fn assign_pentester(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;
@@ -315,7 +315,7 @@ pub async fn update_status(
     let user = middleware::get_current_user(&jar, &ctx).await;
     let user = require_user!(user);
     let org_ctx = middleware::get_org_context_or_default(&jar, &ctx.db, &user).await;
-    fracture_core::require_platform_admin!(org_ctx);
+    fracture_core::require_staff!(org_ctx);
     let item = engagements::Model::find_by_pid(&ctx.db, &pid)
         .await
         .ok_or_else(|| Error::NotFound)?;

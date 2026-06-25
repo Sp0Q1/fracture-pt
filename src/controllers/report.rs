@@ -63,7 +63,7 @@ pub async fn download(
 
     // Access: org member, assigned pentester, or platform admin
     let is_admin =
-        fracture_core::models::organizations::Model::is_user_platform_admin(&ctx.db, user.id).await;
+        fracture_core::models::organizations::Model::is_user_staff(&ctx.db, user.id).await;
     let is_org_member = crate::models::_entities::org_members::Entity::find()
         .filter(crate::models::_entities::org_members::Column::OrgId.eq(item.org_id))
         .filter(crate::models::_entities::org_members::Column::UserId.eq(user.id))

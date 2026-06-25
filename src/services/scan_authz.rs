@@ -140,7 +140,7 @@ pub struct ScanCaller {
     pub has_member_role: bool,
     /// Whether the caller is a platform admin. Platform admins can override
     /// the active-scope check — but the override is logged.
-    pub is_platform_admin: bool,
+    pub is_staff: bool,
 }
 
 /// Decide what the caller may run against a target right now.
@@ -154,7 +154,7 @@ pub async fn evaluate_scan_auth(
     target: &scan_targets::Model,
     caller: ScanCaller,
 ) -> Result<ScanAuth, sea_orm::DbErr> {
-    if !caller.has_member_role && !caller.is_platform_admin {
+    if !caller.has_member_role && !caller.is_staff {
         return Ok(ScanAuth::deny_all(DenialReason::InsufficientRole));
     }
 
@@ -167,7 +167,7 @@ pub async fn evaluate_scan_auth(
     if target_in_signed_engagement(db, target.id).await? {
         unlock_reasons.push(UnlockReason::SignedEngagement);
     }
-    if caller.is_platform_admin {
+    if caller.is_staff {
         unlock_reasons.push(UnlockReason::PlatformAdminOverride);
     }
 
