@@ -15,7 +15,7 @@ Severity scale is **Extreme / High / Elevated / Moderate / Low** (no CVSS). The 
 | ORM | SeaORM 1.1 (SQLite dev, Postgres prod) |
 | Templating | Tera (autoescape on) |
 | i18n | Fluent (via fluent-templates) |
-| Auth | OIDC (Zitadel by default) — provided by `fracture-core` |
+| Auth | OIDC (Keycloak in dev; any OIDC IdP in prod) — provided by `fracture-core` |
 | Markdown | comrak (`unsafe = false`) |
 | Background jobs | Loco's worker + Tokio |
 | Container runtime | Podman compose for dev, ghcr.io images for prod |
@@ -290,7 +290,7 @@ This is **billing tier**, separate from the **scan-mode tier** (passive/active) 
 Production is deployed via `fracture-ctl` (the IdP-agnostic CLI in the CMS repo) using `ghcr.io` images. The compose stack runs:
 
 - `app` — fracture-pt
-- `zitadel` — OIDC
+- `keycloak` — OIDC (dev)
 - `mailcrab` (dev) / SMTP relay (prod) — email
 - `pentext-docbuilder` — report rendering
 - *(planned)* `worker` + per-tool sidecars for amass, nmap, nuclei, sslscan

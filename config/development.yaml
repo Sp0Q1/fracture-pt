@@ -52,8 +52,8 @@ settings:
     default_name: {{ get_env(name="DEFAULT_ORG_NAME", default="GetHacked Clients") }}
     default_role: {{ get_env(name="DEFAULT_ORG_ROLE", default="member") }}
   oidc:
-    provider_name: zitadel
-    issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="http://localhost:8080") }}
+    provider_name: keycloak
+    issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="http://localhost:8080/realms/tenant-acme") }}
     client_id: "{{ get_env(name='OIDC_CLIENT_ID') }}"
     client_secret: {{ get_env(name="OIDC_CLIENT_SECRET") }}
     project_id: "{{ get_env(name='OIDC_PROJECT_ID', default='') }}"

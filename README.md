@@ -70,7 +70,7 @@ fracture-core (library)     <- upstream CMS framework
 
 ```bash
 git clone https://github.com/Sp0Q1/fracture-pt.git && cd fracture-pt
-./dev/setup.sh                       # starts Zitadel + MailCrab, provisions OIDC app
+./dev/setup.sh                       # starts Keycloak + MailCrab (realms imported), writes .env
 podman compose up -d mailcrab app    # build and start app
 ```
 
@@ -79,7 +79,7 @@ Open http://localhost:5150 -- log in with `testuser` / `TestPassword1!`
 | Service | URL |
 |---|---|
 | App | http://localhost:5150 |
-| Zitadel (IdP) | http://localhost:8080 |
+| Keycloak (IdP) | http://localhost:8080 (admin / admin) |
 | MailCrab (SMTP) | http://localhost:1080 |
 
 ### Rebuild after code changes
@@ -197,8 +197,8 @@ fracture-ctl up    # pulls and deploys the new image
 | Problem | Fix |
 |---|---|
 | `Authentication Not Available` | Check OIDC env vars. Restart app after the IdP is ready. |
-| `Invalid audiences` | Set `OIDC_PROJECT_ID` to the Zitadel project ID. |
-| `No email claim` | Enable "ID Token User Info Assertion" in Zitadel OIDC app. |
+| `Invalid audiences` | Keycloak sets `aud` = client_id; leave `OIDC_PROJECT_ID` empty. |
+| `No email claim` | Ensure the client requests the `email` scope (Keycloak includes it by default). |
 | Container can't reach IdP | Add `extra_hosts: ["auth.domain:host-gateway"]` to compose. |
 | `unauthorized!` on login | `JWT_SECRET` must be valid base64. |
 | SQLite read-only errors | Check volume ownership matches container user (uid 1000). |

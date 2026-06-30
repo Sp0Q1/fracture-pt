@@ -19,7 +19,7 @@ cd fracture-pt
 
 # 2. Generate dev secrets and bring the stack up
 ./dev/setup.sh                # creates .env, generates JWT_SECRET, etc.
-podman compose up -d          # zitadel + mailcrab + app
+podman compose up -d          # keycloak + mailcrab + app
 
 # 3. Build pentext-docbuilder (one-off; needed for report PDFs)
 ./dev/build-docbuilder.sh
@@ -203,7 +203,7 @@ or use `cargo sweep` if installed. CI caches `~/.cargo/registry`, `~/.cargo/git`
 |---|---|---|
 | `cargo test` hangs | DB path not writable | Check `DATABASE_URL` |
 | `JWT_SECRET` rejected | Not base64 | Regenerate with `openssl rand -base64 32` |
-| OIDC redirect loop | Zitadel not reachable | `podman compose ps zitadel`; check ports |
+| OIDC redirect loop | Keycloak not reachable | `podman compose ps keycloak`; check ports |
 | Migration fails on boot | Schema mismatch from a prior dev DB | Drop the dev volume: `podman volume rm gethacked_app_data` (DESTROYS DEV DATA) |
 | Clippy "too many lines" on a migration | Migration's `up()` body is large | Add `#[allow(clippy::too_many_lines)]` with a one-line justification (migrations are inherently long) |
 | Semgrep flags a finding | Real or false positive | Fix the code, or add `// nosemgrep: <rule-id> -- <reason>` immediately above the line with a justification |

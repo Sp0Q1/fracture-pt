@@ -63,11 +63,11 @@ Verify:
 Authenticated pages (engagements, findings, jobs, admin) redirect to OIDC and
 need the full stack below.
 
-## 3. Full stack — with auth (Zitadel)
+## 3. Full stack — with auth (Keycloak)
 
 ```bash
-./dev/setup.sh           # writes .env (dev secrets + JWT_SECRET), provisions Zitadel
-podman compose up -d     # zitadel + zitadel-db + mailcrab + app
+./dev/setup.sh           # starts Keycloak (realms imported declaratively) + MailCrab; writes .env
+podman compose up -d     # keycloak + mailcrab + app
 ./dev/build-docbuilder.sh   # one-off; needed for report PDFs
 podman compose logs -f app  # watch while exercising
 ```
@@ -96,4 +96,4 @@ the golden path plus one edge case. Minimum coverage for the pentest lifecycle:
 - [ ] **Browser console** — zero CSP violations on every page touched.
 
 Do not mark work complete on `cargo test` alone. If the IdP-dependent steps
-can't be run (no Zitadel), say so explicitly in the PR.
+can't be run (no Keycloak), say so explicitly in the PR.
