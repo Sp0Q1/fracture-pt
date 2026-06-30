@@ -90,7 +90,7 @@
         <span><a href="/free-scan" class="nav-free-scan">Free Scan</a></span>
         {% endblock nav_guest %}
         {% endif %}
-        {% if is_platform_admin %}
+        {% if is_staff %}
         <a href="/admin">Admin</a>
         {% endif %}
         <ot-dropdown class="nav-end">
@@ -112,7 +112,7 @@
                 <hr>
                 {% block account_menu_items %}
                 <a href="/orgs" role="menuitem">Organizations</a>
-                {% if is_platform_admin %}
+                {% if is_staff %}
                 <hr>
                 <a href="/admin" role="menuitem">Platform Admin</a>
                 {% endif %}

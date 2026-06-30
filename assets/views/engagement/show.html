@@ -338,7 +338,7 @@
             <strong>{{ comment.author_name }}</strong>
             <small class="text-muted ml-2">{{ comment.created_at }}</small>
         </div>
-        {% if comment.user_id == current_user_id or is_platform_admin %}
+        {% if comment.user_id == current_user_id or is_staff %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/engagements/{{ item.pid }}/comments/{{ comment.pid }}/delete" method="post" class="d-inline">
             <button type="submit" data-variant="danger" data-size="sm" data-confirm="Delete this comment?">Delete</button>

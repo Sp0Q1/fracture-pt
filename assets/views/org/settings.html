@@ -51,7 +51,7 @@
                 <label for="name">Organization Name</label>
                 <input id="name" name="name" type="text" value="{{ org.name }}" required />
             </div>
-            {% if is_platform_admin %}
+            {% if is_staff %}
             <div data-field>
                 <label for="plan_tier">Plan Tier</label>
                 <select id="plan_tier" name="plan_tier">
@@ -81,7 +81,7 @@
         <a href="/orgs/{{ org.pid }}/members" class="button outline">Manage Members</a>
     </div>
 
-    {% if is_platform_admin %}
+    {% if is_staff %}
     <article class="card form-card mt-6">
         <h3>Danger Zone</h3>
         {% if org.is_personal %}
