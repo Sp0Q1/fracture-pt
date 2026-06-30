@@ -1,0 +1,48 @@
+{# GetHacked-branded override of the framework's blog post page. See
+   blog/public_index.html for why this override exists. #}
+{% extends "public_base.html" %}
+
+{% block title %}{{ post.meta_title | default(value=post.title) }} — GetHacked.eu{% endblock title %}
+
+{% block meta_description %}{{ post.meta_description | default(value=post.excerpt | default(value="")) }}{% endblock meta_description %}
+
+{% block canonical %}<link rel="canonical" href="{{ base_url | safe }}/blog/{{ post.slug }}">{% endblock canonical %}
+
+{% block og_tags %}
+<meta property="og:title" content="{{ post.meta_title | default(value=post.title) }}">
+<meta property="og:description" content="{{ post.meta_description | default(value=post.excerpt | default(value="")) }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ base_url | safe }}/blog/{{ post.slug }}">
+{% if post.published_at %}<meta property="article:published_time" content="{{ post.published_at }}">{% endif %}
+{% endblock og_tags %}
+
+{% block structured_data %}
+{# Built and escaped server-side (see views::blog::blog_jsonld); safe to emit. #}
+<script type="application/ld+json">{{ structured_data | safe }}</script>
+{% endblock structured_data %}
+
+{% block content %}
+{% if preview %}
+<article class="card">
+    <p><strong>Draft preview</strong> — this post is not published; only platform admins can see this page.
+    <a href="/admin/blog">Back to blog admin</a></p>
+</article>
+{% endif %}
+<article class="blog-post">
+    <div class="page-header">
+        <h1>{{ post.title }}</h1>
+        <p class="page-subtitle">
+            By {{ author_name }}
+            {% if post.published_at %} &middot; Published {{ post.published_at }}{% endif %}
+        </p>
+    </div>
+
+    <div class="blog-post-body">
+        {{ post.body_html | safe }}
+    </div>
+
+    <div class="blog-back-link">
+        <a href="/blog" class="button outline">&larr; Back to Blog</a>
+    </div>
+</article>
+{% endblock content %}
