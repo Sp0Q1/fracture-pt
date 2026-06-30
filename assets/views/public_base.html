@@ -1,0 +1,20 @@
+{# Public layout for framework-provided public pages (e.g. the blog).
+
+   The framework's blog templates (blog/public_index.html, blog/public_show.html)
+   extend "public_base.html". fracture-core ships a default public_base.html with
+   generic CMS branding/nav; by providing our own here, `register_templates`
+   skips the framework's (it only adds a template when one isn't already
+   defined), so those pages render inside GetHacked's own chrome instead.
+
+   We simply extend base.html: every block the public pages fill — title,
+   meta_description, canonical, og_tags, structured_data, content — is already
+   defined there, so they flow straight through into our nav/footer/styling.
+   base.html is guest-safe (it branches on `user_name`), so this works for
+   anonymous blog readers too. #}
+{% extends "base.html" %}
+
+{# Keep the blog's RSS auto-discovery link the framework's public_base provided,
+   without dropping base.html's own <head> contents (favicon, etc.). #}
+{% block head %}{{ super() }}
+  <link rel="alternate" type="application/atom+xml" title="Blog" href="/blog/feed.xml">
+{% endblock head %}

@@ -1,0 +1,47 @@
+{# GetHacked-branded override of the framework's blog index. Overrides
+   fracture-core's blog/public_index.html (register_templates skips a template
+   we already define) so the public blog carries our branding, not the CMS's.
+   base_url is a trusted config value; mark it safe so the URL isn't
+   HTML-entity-escaped in canonical/og tags. #}
+{% extends "public_base.html" %}
+
+{% block title %}Blog — GetHacked.eu{% endblock title %}
+
+{% block meta_description %}Latest posts from the GetHacked.eu blog — offensive security, pentesting, and research.{% endblock meta_description %}
+
+{% block canonical %}<link rel="canonical" href="{{ base_url | safe }}/blog">{% endblock canonical %}
+
+{% block og_tags %}
+<meta property="og:title" content="Blog — GetHacked.eu">
+<meta property="og:description" content="Latest posts from the GetHacked.eu blog — offensive security, pentesting, and research.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ base_url | safe }}/blog">
+{% endblock og_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Blog</h1>
+    <p class="page-subtitle">Latest posts</p>
+</div>
+
+{% if posts %}
+    {% for post in posts %}
+    <article class="card card-accent blog-post-card">
+        <header>
+            <a href="/blog/{{ post.slug }}">{{ post.title }}</a>
+        </header>
+        {% if post.excerpt %}
+            <p>{{ post.excerpt }}</p>
+        {% endif %}
+        {% if post.published_at %}
+            <small>Published {{ post.published_at }}</small>
+        {% endif %}
+    </article>
+    {% endfor %}
+{% else %}
+    <article class="card empty-state">
+        <h3>No Posts Yet</h3>
+        <p>Check back soon for new content.</p>
+    </article>
+{% endif %}
+{% endblock content %}
