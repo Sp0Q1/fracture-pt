@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # Wait before adopting a freshly published release: a malicious version in a
+    # compromised-package attack is usually yanked within days, so a cooldown
+    # avoids ever bumping to it.
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
       - rust
@@ -14,6 +19,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
       - ci
