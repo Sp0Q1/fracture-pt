@@ -1,13 +1,22 @@
 use axum::response::Redirect;
 use loco_rs::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter,
+};
+use serde::Deserialize;
 
 use super::auth::{AdminRole, OrgAuth, ViewerRole};
-use crate::models::_entities::{engagements, pentester_assignments};
+use crate::models::_entities::{engagements, finding_comments, pentester_assignments};
 use crate::models::findings;
 use crate::models::org_members::OrgRole;
 use crate::models::organizations as org_model;
 use crate::views;
+
+/// A new comment posted on a finding.
+#[derive(Debug, Deserialize)]
+pub struct CommentParams {
+    pub content: String,
+}
 
 /// `GET /findings` -- list all findings for org.
 #[debug_handler]
@@ -69,6 +78,18 @@ pub async fn show(
         .await
         .ok_or_else(|| Error::NotFound)?;
     let user_orgs = org_model::Model::find_visible_orgs(&ctx.db, auth.user.id).await?;
+    // Edit access mirrors the engagement's finding-edit gate: staff or the
+    // assigned pentester. The link targets the existing engagement edit route.
+    // A finding may be unattached to an engagement (engagement_id is optional).
+    let (engagement, is_assigned) = if let Some(eid) = item.engagement_id {
+        let eng = engagements::Entity::find_by_id(eid).one(&ctx.db).await?;
+        let assigned = pentester_assignments::Model::is_assigned(&ctx.db, auth.user.id, eid).await;
+        (eng, assigned)
+    } else {
+        (None, false)
+    };
+    let can_edit = auth.is_staff() || is_assigned;
+    let comments = finding_comments::Model::find_by_finding_with_users(&ctx.db, item.id).await;
     views::finding::show(
         &v,
         &auth.user,
@@ -76,7 +97,37 @@ pub async fn show(
         &user_orgs,
         &item,
         auth.is_staff(),
+        engagement.as_ref(),
+        can_edit,
+        &comments,
     )
+}
+
+/// `POST /findings/:pid/comments` -- add a comment to a finding.
+///
+/// Any org member who can view the finding may comment (clients and staff
+/// alike), so findings are a shared discussion surface.
+#[debug_handler]
+pub async fn add_comment(
+    Path(pid): Path<String>,
+    State(ctx): State<AppContext>,
+    auth: OrgAuth<ViewerRole>,
+    Form(params): Form<CommentParams>,
+) -> Result<Response> {
+    let item = findings::Model::find_by_pid_and_org(&ctx.db, &pid, auth.org_ctx.org.id)
+        .await
+        .ok_or_else(|| Error::NotFound)?;
+    if params.content.trim().is_empty() {
+        return Err(Error::BadRequest("Comment cannot be empty".into()));
+    }
+    let comment = finding_comments::ActiveModel {
+        finding_id: Set(item.id),
+        user_id: Set(auth.user.id),
+        content: Set(params.content),
+        ..Default::default()
+    };
+    comment.insert(&ctx.db).await?;
+    Ok(Redirect::to(&format!("/findings/{pid}")).into_response())
 }
 
 /// `POST /findings/:pid/delete` -- delete a single finding (org admin+).
@@ -126,5 +177,6 @@ pub fn routes() -> Routes {
         .add("/", get(list))
         .add("/bulk-delete", post(bulk_delete))
         .add("/{pid}", get(show))
+        .add("/{pid}/comments", post(add_comment))
         .add("/{pid}/delete", post(delete))
 }

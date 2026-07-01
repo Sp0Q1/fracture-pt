@@ -35,7 +35,7 @@ settings:
   uploads:
     max_file_size: 5242880
     max_total_size: 20971520
-    storage_root: /app/data/uploads
+    storage_root: {{ get_env(name="UPLOADS_STORAGE_ROOT", default="/app/data/uploads") }}
     allowed_types:
       - image/png
       - image/jpeg
@@ -51,6 +51,11 @@ settings:
     default_slug: {{ get_env(name="DEFAULT_ORG_SLUG", default="gethacked-clients") }}
     default_name: {{ get_env(name="DEFAULT_ORG_NAME", default="GetHacked Clients") }}
     default_role: {{ get_env(name="DEFAULT_ORG_ROLE", default="member") }}
+    # A login carrying the IdP `platform-staff` role is provisioned into this
+    # staff org (the seeded gethacked-admin org, is_staff=true) so "staff
+    # sign-in" actually grants staff. Leave staff_slug empty to disable.
+    staff_slug: {{ get_env(name="STAFF_ORG_SLUG", default="gethacked-admin") }}
+    staff_name: {{ get_env(name="STAFF_ORG_NAME", default="GetHacked Platform") }}
   oidc:
     provider_name: keycloak
     issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="http://localhost:8080/realms/tenant-acme") }}
