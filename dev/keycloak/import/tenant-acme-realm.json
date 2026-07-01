@@ -13,7 +13,13 @@
       "enabled": true,
       "firstName": "Acme",
       "lastName": "Owner",
-      "credentials": [ { "type": "password", "value": "password", "temporary": false } ]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ]
     }
   ],
   "clients": [
@@ -25,13 +31,33 @@
       "publicClient": false,
       "secret": "fracture-dev-secret",
       "standardFlowEnabled": true,
-      "redirectUris": [ "http://localhost:5150/api/auth/oidc/callback" ],
-      "webOrigins": [ "+" ],
+      "redirectUris": [
+        "http://localhost:5150/api/auth/oidc/callback"
+      ],
+      "webOrigins": [
+        "+"
+      ],
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:5150",
         "backchannel.logout.url": "http://localhost:5150/api/auth/oidc/backchannel-logout",
         "backchannel.logout.session.required": "true"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "identityProviders": [
@@ -75,7 +101,10 @@
   ],
   "roles": {
     "realm": [
-      { "name": "platform-staff", "description": "Brokered cross-tenant staff (maps to platform admin in-app)" }
+      {
+        "name": "platform-staff",
+        "description": "Brokered cross-tenant staff (maps to platform admin in-app)"
+      }
     ]
   }
 }
