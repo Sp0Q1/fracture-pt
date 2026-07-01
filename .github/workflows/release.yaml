@@ -13,7 +13,7 @@ jobs:
 
   release:
     needs: ci
-    uses: Sp0Q1/fracture-cms/.github/workflows/release-app.yaml@433a48e4b910e050c151e38a726310111df0d406 # cms main
+    uses: Sp0Q1/fracture-cms/.github/workflows/release-app.yaml@cdd4062fa2d758584a355c70d68add4be1f551b1 # cms main
     with:
       image_name: ghcr.io/${{ github.repository }}
     # No `secrets: inherit` — the reusable workflow only needs GITHUB_TOKEN,
