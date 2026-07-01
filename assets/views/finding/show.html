@@ -66,6 +66,9 @@
 
     <div class="form-actions">
         <a href="/findings" class="button" data-variant="secondary">Back to Findings</a>
+        {% if can_edit and engagement_pid %}
+        <a href="/engagements/{{ engagement_pid }}/findings/{{ item.pid }}/edit" class="button">Edit Finding</a>
+        {% endif %}
         {% if is_admin %}
         <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
         <form action="/findings/{{ item.pid }}/delete" method="post" class="d-inline">
@@ -74,4 +77,41 @@
         {% endif %}
     </div>
 </article>
+
+<article class="card" id="comments">
+    <header>
+        <h3>Comments <span class="badge secondary">{{ comments | length }}</span></h3>
+    </header>
+    {% if comments %}
+    <div class="vstack comment-list">
+        {% for c in comments %}
+        <div class="comment">
+            <div class="comment-meta">
+                <strong>{{ c.author }}</strong>
+                <small class="text-lighter">{{ c.created_at | truncate(length=16, end="") }}</small>
+            </div>
+            <div class="markdown-content">{{ c.content_html | safe }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="page-subtitle">No comments yet.</p>
+    {% endif %}
+
+    <!-- nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -->
+    <form action="/findings/{{ item.pid }}/comments" method="post" class="mt-4">
+        <div data-field>
+            <label for="comment-content">Add a comment</label>
+            <textarea id="comment-content" name="content" rows="3" required data-md-editor
+                placeholder="Write a comment... Markdown supported; drag &amp; drop or paste images."></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Post Comment</button>
+        </div>
+    </form>
+</article>
 {% endblock content %}
+
+{% block js %}
+<script src="{{ asset(path='/static/md-editor.js') | safe }}" integrity="{{ sri(path='/static/md-editor.js') | safe }}" crossorigin="anonymous"></script>
+{% endblock js %}

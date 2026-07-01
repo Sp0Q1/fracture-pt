@@ -4,6 +4,7 @@ pub mod engagement_comments;
 pub mod engagement_offers;
 pub mod engagement_targets;
 pub mod engagements;
+pub mod finding_comments;
 pub mod findings;
 pub mod invoices;
 pub mod non_findings;
