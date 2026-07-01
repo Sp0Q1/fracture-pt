@@ -55,6 +55,10 @@ settings:
     default_slug: {{ get_env(name="DEFAULT_ORG_SLUG", default="gethacked-clients") }}
     default_name: {{ get_env(name="DEFAULT_ORG_NAME", default="GetHacked Clients") }}
     default_role: {{ get_env(name="DEFAULT_ORG_ROLE", default="member") }}
+    # A login carrying the IdP `platform-staff` role is provisioned into this
+    # staff org (seeded gethacked-admin, is_staff=true). Leave empty to disable.
+    staff_slug: {{ get_env(name="STAFF_ORG_SLUG", default="gethacked-admin") }}
+    staff_name: {{ get_env(name="STAFF_ORG_NAME", default="GetHacked Platform") }}
   oidc:
     provider_name: {{ get_env(name="OIDC_PROVIDER_NAME", default="zitadel") }}
     issuer_url: {{ get_env(name="OIDC_ISSUER_URL", default="") }}
